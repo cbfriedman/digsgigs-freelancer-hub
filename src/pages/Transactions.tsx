@@ -24,7 +24,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStripeConnect } from "@/hooks/useStripeConnect";
 import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star, AlertTriangle, Wallet } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
@@ -39,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Transaction {
   id: string;
@@ -59,8 +60,14 @@ interface Transaction {
   bids?: {
     amount: number;
   } | null;
+  /** Client (gigger) profile — for digger view */
   profiles?: {
     full_name: string | null;
+  } | null;
+  /** Digger (freelancer) profile — for consumer view */
+  digger_profile?: {
+    profile_name: string | null;
+    business_name: string;
   } | null;
   /** When true, this row is from paid milestones (fallback when transaction row missing) */
   fromMilestone?: boolean;
@@ -74,6 +81,11 @@ const Transactions = () => {
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState<'digger' | 'consumer' | null>(null);
   const [diggerId, setDiggerId] = useState<string | null>(null);
+  /** When true, user has both digger and gigger roles; they can switch between Earnings and Payments views */
+  const [hasBothRoles, setHasBothRoles] = useState(false);
+  /** Which view we're showing when hasBothRoles: 'digger' = earnings, 'gigger' = payments made */
+  const [transactionView, setTransactionView] = useState<'digger' | 'gigger'>('digger');
+  const [userId, setUserId] = useState<string | null>(null);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
@@ -183,13 +195,14 @@ const Transactions = () => {
   const checkAuthAndLoad = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session?.user) {
         navigate('/auth?redirect=/transactions');
         return;
       }
 
-      // Prefer digger view if user has a digger profile (so Diggers always see their earnings, even when profile.user_type is consumer/gigger)
+      setUserId(session.user.id);
+
       const { data: diggerProfile, error: diggerError } = await supabase
         .from('digger_profiles')
         .select('id')
@@ -197,29 +210,15 @@ const Transactions = () => {
         .maybeSingle();
 
       if (!diggerError && diggerProfile?.id) {
-        setUserType('digger');
         setDiggerId(diggerProfile.id);
+        setHasBothRoles(true); // Can switch to "Payments (Gigger)" to see payments they made as client
+        setTransactionView('digger');
+        setUserType('digger');
         await loadTransactions(session.user.id, 'digger', diggerProfile.id);
         return;
       }
 
-      // Otherwise load as consumer (Gigger) – require profile for redirect
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile) {
-        toast({
-          title: "Profile not found",
-          description: "Please complete your profile first",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
+      setHasBothRoles(false);
       setUserType('consumer');
       await loadTransactions(session.user.id, 'consumer', null);
     } catch (error: any) {
@@ -238,29 +237,43 @@ const Transactions = () => {
     }
   };
 
-  const loadTransactions = async (userId: string, type: 'digger' | 'consumer', diggerId: string | null) => {
+  const switchTransactionView = async (view: 'digger' | 'gigger') => {
+    if (!userId || view === transactionView) return;
+    setLoading(true);
     try {
+      setTransactionView(view);
+      if (view === 'gigger') {
+        setUserType('consumer');
+        await loadTransactions(userId, 'consumer', null);
+      } else {
+        setUserType('digger');
+        await loadTransactions(userId, 'digger', diggerId);
+      }
+    } catch {
+      setTransactionView(transactionView);
+      setUserType(transactionView === 'digger' ? 'digger' : 'consumer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTransactions = async (userId: string, type: 'digger' | 'consumer', diggerIdParam: string | null) => {
+    try {
+      const selectConsumer = `
+        *,
+        gigs ( id, title, consumer_id ),
+        bids ( amount ),
+        profiles:consumer_id ( full_name ),
+        digger_profiles!transactions_digger_id_fkey ( profile_name, business_name )
+      `;
       let query = supabase
         .from('transactions')
-        .select(`
-          *,
-          gigs (
-            id,
-            title,
-            consumer_id
-          ),
-          bids (
-            amount
-          ),
-          profiles:consumer_id (
-            full_name
-          )
-        `)
+        .select(selectConsumer)
         .order('created_at', { ascending: false });
 
       // Filter based on user type
-      if (type === 'digger' && diggerId) {
-        query = query.eq('digger_id', diggerId);
+      if (type === 'digger' && diggerIdParam) {
+        query = query.eq('digger_id', diggerIdParam);
       } else if (type === 'consumer') {
         query = query.eq('consumer_id', userId);
       }
@@ -273,10 +286,11 @@ const Transactions = () => {
         ...row,
         bids: row.bids ?? null,
         profiles: row.profiles ?? null,
+        digger_profile: row.digger_profiles ?? null,
       }));
 
       // Diggers: include paid milestones that may have no transaction row (so they always see earnings)
-      if (type === 'digger' && diggerId) {
+      if (type === 'digger' && diggerIdParam) {
         const existingMilestoneIds = new Set((list as any[]).map((t: any) => t.milestone_payment_id).filter(Boolean));
         const { data: paidMilestones } = await supabase
           .from('milestone_payments')
@@ -297,7 +311,7 @@ const Transactions = () => {
         for (const m of milestones) {
           const contract = (m as any).escrow_contracts;
           const gigs = contract?.gigs;
-          if (!contract || contract.digger_id !== diggerId || existingMilestoneIds.has(m.id)) continue;
+          if (!contract || contract.digger_id !== diggerIdParam || existingMilestoneIds.has(m.id)) continue;
           existingMilestoneIds.add(m.id);
           const gross = Number(m.amount);
           const giggerPaid = Math.round(gross * 1.03 * 100) / 100; // Gigger pays gross + 3%
@@ -320,6 +334,25 @@ const Transactions = () => {
           });
         }
         list.sort((a, b) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime());
+
+        // Enrich milestone-only rows with client (consumer) name
+        const missingConsumerIds = [...new Set(
+          list
+            .filter((t: Transaction) => !t.profiles?.full_name && t.gigs?.consumer_id)
+            .map((t: Transaction) => t.gigs.consumer_id)
+        )];
+        if (missingConsumerIds.length > 0) {
+          const { data: consumerProfiles } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', missingConsumerIds);
+          const byId = new Map((consumerProfiles || []).map((p: { id: string; full_name: string | null }) => [p.id, p]));
+          list = list.map((t: Transaction) => {
+            if (t.profiles?.full_name != null) return t;
+            const profile = t.gigs?.consumer_id ? byId.get(t.gigs.consumer_id) : null;
+            return { ...t, profiles: profile ? { full_name: profile.full_name } : { full_name: null } };
+          }) as Transaction[];
+        }
       }
 
       setTransactions(list);
@@ -343,6 +376,19 @@ const Transactions = () => {
       });
     }
   };
+
+  const getClientDisplayName = (tx: Transaction) =>
+    tx.profiles?.full_name?.trim() || "Client";
+  const getProfessionalDisplayName = (tx: Transaction) =>
+    tx.digger_profile?.profile_name?.trim() ||
+    tx.digger_profile?.business_name?.trim() ||
+    "Professional";
+  const getTransactionDate = (tx: Transaction) =>
+    tx.completed_at || tx.created_at;
+  const getTransactionRef = (tx: Transaction) =>
+    tx.fromMilestone || tx.milestone_payment_id
+      ? "Milestone payment"
+      : `#${tx.id.slice(-6)}`;
 
   const getCommissionTierColor = (rate: number) => {
     if (rate === 0) return 'text-green-600';
@@ -607,6 +653,23 @@ const Transactions = () => {
               )}
             </div>
 
+          {/* View switcher for users with both Digger and Gigger roles */}
+          {hasBothRoles && userType != null && (
+            <Tabs
+              value={transactionView}
+              onValueChange={(v) => v === 'digger' || v === 'gigger' ? switchTransactionView(v) : undefined}
+            >
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="digger" disabled={loading}>
+                  Earnings (as Digger)
+                </TabsTrigger>
+                <TabsTrigger value="gigger" disabled={loading}>
+                  Payments (as Gigger)
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+
           {/* Digger: payout account status + link to Account */}
           {userType === 'digger' && !payoutLoading && !canReceivePayments && (
             <Alert className="border-amber-500/30 bg-amber-500/10">
@@ -794,97 +857,116 @@ const Transactions = () => {
                 </CardContent>
               </Card>
             ) : (
-              filteredTransactions.map((transaction) => (
-                <Card key={transaction.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-xl">{transaction.gigs.title}</CardTitle>
-                        <CardDescription>
-                          {userType === 'consumer' ? (
-                            <>Work completed by a digger</>
-                          ) : (
-                            <>Client: {transaction.profiles?.full_name || 'Anonymous'}</>
-                          )}
+              filteredTransactions.map((transaction) => {
+                const dateStr = getTransactionDate(transaction);
+                const isMilestone = transaction.fromMilestone || !!transaction.milestone_payment_id;
+                const gross = transaction.total_amount / 1.03;
+                return (
+                <Card
+                  key={transaction.id}
+                  className={`overflow-hidden ${transaction.status === 'completed' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-amber-500'}`}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CardTitle className="text-xl break-words">{transaction.gigs.title}</CardTitle>
+                          <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
+                            {getTransactionRef(transaction)}
+                          </span>
+                        </div>
+                        <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                          <span>
+                            {userType === 'consumer'
+                              ? <>Professional: <strong className="text-foreground">{getProfessionalDisplayName(transaction)}</strong></>
+                              : <>Client: <strong className="text-foreground">{getClientDisplayName(transaction)}</strong></>}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                            {format(new Date(dateStr), 'MMM d, yyyy')}
+                            <span className="text-muted-foreground/80">({formatDistanceToNow(new Date(dateStr), { addSuffix: true })})</span>
+                          </span>
                         </CardDescription>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {transaction.fromMilestone && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isMilestone && (
                           <Badge variant="secondary">Milestone</Badge>
                         )}
-                        <Badge variant="default">
+                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                           {transaction.status}
                         </Badge>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Transaction Details */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Total Amount:</span>
-                          <span className="font-semibold">${transaction.total_amount.toFixed(2)}</span>
-                        </div>
-                        {userType === 'digger' && (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Amounts & fees */}
+                      <div className="space-y-3 rounded-lg bg-muted/50 p-4">
+                        <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Amount details</div>
+                        {userType === 'digger' ? (
                           <>
-                            {(transaction.fromMilestone || transaction.milestone_payment_id) && (
+                            {isMilestone && (
                               <>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-muted-foreground">Gross (milestone amount):</span>
-                                  <span className="font-medium">
-                                    ${(transaction.total_amount / 1.03).toFixed(2)}
-                                  </span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Gross (milestone amount)</span>
+                                  <span className="font-medium">${gross.toFixed(2)}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-muted-foreground">Platform fee (8%, paid by you):</span>
-                                  <span className="font-semibold text-destructive">
-                                    -${(transaction.total_amount / 1.03 - transaction.digger_payout).toFixed(2)}
-                                  </span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Platform fee (8%)</span>
+                                  <span className="font-medium text-destructive">−${(gross - transaction.digger_payout).toFixed(2)}</span>
                                 </div>
                               </>
                             )}
-                            {!transaction.fromMilestone && !transaction.milestone_payment_id && transaction.commission_rate > 0 && (
-                              <div className="flex items-center justify-between text-sm">
+                            {!isMilestone && transaction.commission_rate > 0 && (
+                              <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                  Commission ({(transaction.commission_rate * 100).toFixed(0)}%
-                                  {' - '}
-                                  <span className={getCommissionTierColor(transaction.commission_rate)}>
-                                    {getCommissionTierName(transaction.commission_rate)}
-                                  </span>):
+                                  Commission ({(transaction.commission_rate * 100).toFixed(0)}% — <span className={getCommissionTierColor(transaction.commission_rate)}>{getCommissionTierName(transaction.commission_rate)}</span>)
                                 </span>
-                                <span className="font-semibold text-destructive">
-                                  -${transaction.commission_amount.toFixed(2)}
-                                </span>
+                                <span className="font-medium text-destructive">−${transaction.commission_amount.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {!isMilestone && transaction.bids?.amount != null && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Bid amount</span>
+                                <span className="font-medium">${Number(transaction.bids.amount).toFixed(2)}</span>
                               </div>
                             )}
                             <Separator />
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold">Your Payout:</span>
-                              <span className="text-xl font-bold text-primary">
-                                ${transaction.digger_payout.toFixed(2)}
-                              </span>
+                            <div className="flex justify-between items-baseline">
+                              <span className="font-semibold">Your payout</span>
+                              <span className="text-xl font-bold text-primary">${transaction.digger_payout.toFixed(2)}</span>
                             </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Amount paid</span>
+                              <span className="font-semibold">${transaction.total_amount.toFixed(2)}</span>
+                            </div>
+                            {isMilestone && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Milestone gross</span>
+                                <span className="font-medium">${gross.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {transaction.bids?.amount != null && !isMilestone && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Bid amount</span>
+                                <span className="font-medium">${Number(transaction.bids.amount).toFixed(2)}</span>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
 
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-2 text-sm flex flex-col justify-center">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {transaction.completed_at 
-                              ? formatDistanceToNow(new Date(transaction.completed_at), { addSuffix: true })
-                              : formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true })}
-                          </span>
+                          <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span><span className="text-muted-foreground">Total amount:</span> <strong>${transaction.total_amount.toFixed(2)}</strong></span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {(transaction.fromMilestone || transaction.milestone_payment_id)
-                              ? `Gross: $${(transaction.total_amount / 1.03).toFixed(2)}`
-                              : `Original bid: $${transaction.bids?.amount?.toFixed(2) || '0.00'}`}
-                          </span>
+                          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground">Paid on {format(new Date(dateStr), 'MMMM d, yyyy')}</span>
                         </div>
                       </div>
                     </div>
@@ -996,7 +1078,8 @@ const Transactions = () => {
                     )}
                   </CardContent>
                 </Card>
-              ))
+              );
+              })
             )}
           </div>
         </div>

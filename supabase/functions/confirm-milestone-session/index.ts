@@ -121,6 +121,33 @@ serve(async (req) => {
     logStep("Milestone marked paid");
 
     let bidId = (await supabaseClient.from("gigs").select("awarded_bid_id").eq("id", gigId).single()).data?.awarded_bid_id;
+    let diggerPayout = Number(milestone.digger_payout);
+    let depositAdvanceCents = 0;
+    if (Number(milestone.milestone_number) === 1) {
+      const { data: depositRow } = await supabaseClient
+        .from("gigger_deposits")
+        .select("id, bid_id")
+        .eq("gig_id", gigId)
+        .eq("status", "paid")
+        .order("paid_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (depositRow?.bid_id) {
+        const { data: bidRow } = await supabaseClient.from("bids").select("amount").eq("id", depositRow.bid_id).single();
+        if (bidRow?.amount != null) depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+      }
+      if (depositAdvanceCents === 0) {
+        const { data: gigRow } = await supabaseClient.from("gigs").select("awarded_bid_id").eq("id", gigId).single();
+        if (gigRow?.awarded_bid_id) {
+          const { data: bidRow } = await supabaseClient.from("bids").select("amount").eq("id", gigRow.awarded_bid_id).single();
+          if (bidRow?.amount != null) depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+        }
+      }
+      if (depositAdvanceCents > 0) {
+        diggerPayout += depositAdvanceCents / 100;
+        logStep("Added 7% deposit advance to digger_payout", { diggerPayout });
+      }
+    }
     if (!bidId) {
       const bidRow = await supabaseClient
         .from("bids")
@@ -131,15 +158,6 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       bidId = bidRow.data?.id ?? null;
-    }
-
-    let diggerPayout = Number(milestone.digger_payout);
-    if (milestone.milestone_number === 1 && bidId) {
-      const { data: bidRow } = await supabaseClient.from("bids").select("amount").eq("id", bidId).single();
-      const { data: depositRow } = await supabaseClient.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
-      if (bidRow?.amount != null && depositRow) {
-        diggerPayout += Math.round(Number(bidRow.amount) * 0.07 * 100) / 100;
-      }
     }
 
     const amountCents = Math.round(Number(milestone.amount) * 100);
@@ -165,6 +183,35 @@ serve(async (req) => {
       logStep("Failed to insert transaction", { error: txErr.message });
     } else {
       logStep("Transaction inserted", { total_amount: (amountCents + transactionFeeCents) / 100, completed_at: completedAt });
+    }
+
+    if (depositAdvanceCents > 0) {
+      const { data: diggerProfile } = await supabaseClient
+        .from("digger_profiles")
+        .select("stripe_connect_account_id")
+        .eq("id", diggerId)
+        .single();
+      if (diggerProfile?.stripe_connect_account_id) {
+        try {
+          const transfer = await stripe.transfers.create(
+            {
+              amount: depositAdvanceCents,
+              currency: "usd",
+              destination: diggerProfile.stripe_connect_account_id,
+              description: "7% deposit advance (first milestone)",
+              metadata: {
+                milestone_payment_id: milestonePaymentId,
+                escrow_contract_id: escrowContractId,
+                type: "milestone_7pct_deposit",
+              },
+            },
+            { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+          );
+          logStep("7% deposit advance transferred to digger", { transferId: transfer.id });
+        } catch (e) {
+          logStep("Failed to create 7% transfer (webhook may do it)", { error: e instanceof Error ? e.message : String(e) });
+        }
+      }
     }
 
     return new Response(

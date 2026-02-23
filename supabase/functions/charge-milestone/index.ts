@@ -97,21 +97,39 @@ serve(async (req) => {
 
       let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100);
       let depositAdvanceCents = 0;
-      // First milestone + paid deposit: add 7% of bid (from 15% deposit) to digger
-      if ((milestone as any).milestone_number === 1) {
-        const { data: gigRow } = await supabaseAdmin.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
-        const bidId = gigRow?.awarded_bid_id;
-        if (bidId) {
-          const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", bidId).single();
-          const { data: depositRow } = await supabaseAdmin.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
-          if (bidRow?.amount != null && depositRow) {
-            depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
-            diggerPayoutCents += depositAdvanceCents;
-            logStep("Adding 7% deposit advance to first milestone", { depositAdvanceCents });
+      const isFirstMilestone = Number((milestone as any).milestone_number) === 1;
+      if (isFirstMilestone) {
+        let bidAmountForSevenPercent: number | null = null;
+        const { data: depositRow } = await supabaseAdmin
+          .from("gigger_deposits")
+          .select("id, bid_id")
+          .eq("gig_id", contract.gig_id)
+          .eq("status", "paid")
+          .order("paid_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (depositRow?.bid_id) {
+          const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", depositRow.bid_id).single();
+          if (bidRow?.amount != null) bidAmountForSevenPercent = Number(bidRow.amount);
+        }
+        if (bidAmountForSevenPercent == null) {
+          const { data: gigRow } = await supabaseAdmin.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
+          if (gigRow?.awarded_bid_id) {
+            const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", gigRow.awarded_bid_id).single();
+            if (bidRow?.amount != null) bidAmountForSevenPercent = Number(bidRow.amount);
+            logStep("First milestone: using awarded_bid_id for 7% (deposit row not found)", { gigId: contract.gig_id });
           }
+        }
+        if (bidAmountForSevenPercent != null) {
+          depositAdvanceCents = Math.round(bidAmountForSevenPercent * 0.07 * 100);
+          diggerPayoutCents += depositAdvanceCents;
+          logStep("Adding 7% deposit advance to first milestone (Checkout)", { depositAdvanceCents, diggerPayoutCents });
+        } else {
+          logStep("First milestone: no bid amount for 7%", { gigId: contract.gig_id });
         }
       }
       const diggerReceivesDollars = diggerPayoutCents / 100;
+      const sevenPercentDisplayDollars = (depositAdvanceCents / 100).toFixed(2);
 
       const { data: giggerProfile } = await supabaseAdmin
         .from("profiles")
@@ -128,29 +146,49 @@ serve(async (req) => {
         }
       }
 
+      const showSevenPercentOnCheckout = depositAdvanceCents > 0;
+      const milestoneAmountDollars = Number(milestone.amount).toFixed(2);
+      const mainDescription = showSevenPercentOnCheckout
+        ? `You pay $${(totalChargeCents / 100).toFixed(2)} (milestone + 3% fee). Professional receives: $${milestoneAmountDollars} (milestone) + $${sevenPercentDisplayDollars} (7% deposit) = $${diggerReceivesDollars.toFixed(2)} total.`
+        : `You pay $${(totalChargeCents / 100).toFixed(2)} (milestone + 3% fee). Professional receives $${diggerReceivesDollars.toFixed(2)}.`;
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Milestone: ${desc}`,
+              description: mainDescription,
+            },
+            unit_amount: totalChargeCents,
+          },
+          quantity: 1,
+        },
+      ];
+      if (showSevenPercentOnCheckout) {
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `7% deposit (to professional): $${sevenPercentDisplayDollars}`,
+              description: `Professional receives: $${milestoneAmountDollars} (milestone) + $${sevenPercentDisplayDollars} (7% deposit) = $${diggerReceivesDollars.toFixed(2)} total. From your 15% deposit; no extra charge.`,
+            },
+            unit_amount: 0,
+          },
+          quantity: 1,
+        });
+      }
+      // Stripe rule: transfer_data.amount cannot exceed the session total. Customer pays totalChargeCents (e.g. $1030).
+      // The 7% deposit is from the existing 15% deposit (already on platform); we transfer it separately in the webhook.
+      const transferFromThisPaymentCents = diggerPayoutCents - depositAdvanceCents;
       const session = await stripe.checkout.sessions.create({
         customer: customerId ?? undefined,
         customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `Milestone: ${desc}`,
-                description: depositAdvanceCents > 0
-                  ? `Milestone payment ($${(totalChargeCents / 100).toFixed(2)} incl. 3% fee). Professional receives $${diggerReceivesDollars.toFixed(2)} (milestone $${Number(milestone.amount).toFixed(2)} + 7% deposit advance).`
-                  : `Milestone payment ($${(totalChargeCents / 100).toFixed(2)} incl. 3% fee). Professional receives $${diggerReceivesDollars.toFixed(2)}.`,
-              },
-              unit_amount: totalChargeCents,
-            },
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: "payment",
         payment_intent_data: {
           transfer_data: {
             destination: diggerProfile.stripe_connect_account_id,
-            amount: diggerPayoutCents,
+            amount: transferFromThisPaymentCents,
           },
         },
         success_url: `${origin}/gig/${contract.gig_id}?milestone_paid=true&session_id={CHECKOUT_SESSION_ID}`,
@@ -237,18 +275,34 @@ serve(async (req) => {
       .single();
 
     let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100); // gross - 8%
-    // First milestone + paid deposit: add 7% of bid (from deposit) to digger
-    if ((milestone as any).milestone_number === 1) {
-      const { data: gigRow } = await supabaseAdmin.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
-      const bidId = gigRow?.awarded_bid_id;
-      if (bidId) {
-        const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", bidId).single();
-        const { data: depositRow } = await supabaseAdmin.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
-        if (bidRow?.amount != null && depositRow) {
-          const advanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
-          diggerPayoutCents += advanceCents;
-          logStep("Adding 7% deposit advance to first milestone", { advanceCents });
+    // First milestone: find paid deposit by gig_id; add 7% of bid to digger
+    const isFirstMilestone = Number((milestone as any).milestone_number) === 1;
+    if (isFirstMilestone) {
+      let bidAmountForSevenPercent: number | null = null;
+      const { data: depositRow } = await supabaseAdmin
+        .from("gigger_deposits")
+        .select("id, bid_id")
+        .eq("gig_id", contract.gig_id)
+        .eq("status", "paid")
+        .order("paid_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (depositRow?.bid_id) {
+        const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", depositRow.bid_id).single();
+        if (bidRow?.amount != null) bidAmountForSevenPercent = Number(bidRow.amount);
+      }
+      if (bidAmountForSevenPercent == null) {
+        const { data: gigRow } = await supabaseAdmin.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
+        if (gigRow?.awarded_bid_id) {
+          const { data: bidRow } = await supabaseAdmin.from("bids").select("amount").eq("id", gigRow.awarded_bid_id).single();
+          if (bidRow?.amount != null) bidAmountForSevenPercent = Number(bidRow.amount);
+          logStep("First milestone: using awarded_bid_id for 7% (deposit row not found)", { gigId: contract.gig_id });
         }
+      }
+      if (bidAmountForSevenPercent != null) {
+        const advanceCents = Math.round(bidAmountForSevenPercent * 0.07 * 100);
+        diggerPayoutCents += advanceCents;
+        logStep("Adding 7% deposit advance to first milestone (direct)", { advanceCents, diggerPayoutCents });
       }
     }
     let stripeTransferId: string | null = null;

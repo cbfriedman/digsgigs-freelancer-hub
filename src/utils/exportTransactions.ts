@@ -11,12 +11,9 @@ interface Transaction {
   status: string;
   created_at: string;
   completed_at: string | null;
-  gigs: {
-    title: string;
-  };
-  profiles: {
-    full_name: string | null;
-  };
+  gigs: { title: string };
+  profiles?: { full_name: string | null } | null;
+  digger_profile?: { profile_name: string | null; business_name: string } | null;
 }
 
 export const exportToCSV = (
@@ -24,16 +21,15 @@ export const exportToCSV = (
   userType: 'digger' | 'consumer',
   filename: string = 'transactions'
 ) => {
-  // Define headers based on user type
   const headers = userType === 'digger'
-    ? ['Date', 'Gig Title', 'Client', 'Total Amount', 'Commission', 'Your Payout', 'Status']
-    : ['Date', 'Gig Title', 'Total Amount', 'Status'];
+    ? ['Date', 'Project (Gig)', 'Client', 'Total Amount', 'Fee', 'Your Payout', 'Status']
+    : ['Date', 'Project (Gig)', 'Professional', 'Total Amount', 'Fee', 'Status'];
 
-  // Convert transactions to CSV rows
   const rows = transactions.map(tx => {
     const date = format(new Date(tx.completed_at || tx.created_at), 'MMM dd, yyyy');
     const gigTitle = tx.gigs.title;
-    const clientName = tx.profiles?.full_name || 'Anonymous';
+    const clientName = tx.profiles?.full_name?.trim() || '—';
+    const professionalName = tx.digger_profile?.profile_name?.trim() || tx.digger_profile?.business_name?.trim() || '—';
     const totalAmount = `$${tx.total_amount.toFixed(2)}`;
     const commission = `$${tx.commission_amount.toFixed(2)}`;
     const payout = `$${tx.digger_payout.toFixed(2)}`;
@@ -42,7 +38,7 @@ export const exportToCSV = (
     if (userType === 'digger') {
       return [date, gigTitle, clientName, totalAmount, commission, payout, status];
     } else {
-      return [date, gigTitle, totalAmount, status];
+      return [date, gigTitle, professionalName, totalAmount, commission, status];
     }
   });
 
@@ -106,25 +102,26 @@ export const exportToPDF = (
     yPosition += 10;
   }
 
-  // Prepare table data
   const headers = userType === 'digger'
-    ? ['Date', 'Gig Title', 'Total', 'Commission', 'Payout', 'Status']
-    : ['Date', 'Gig Title', 'Total Amount', 'Status'];
+    ? ['Date', 'Project', 'Client', 'Total', 'Fee', 'Payout', 'Status']
+    : ['Date', 'Project', 'Professional', 'Total', 'Fee', 'Status'];
 
   const rows = transactions.map(tx => {
     const date = format(new Date(tx.completed_at || tx.created_at), 'MM/dd/yy');
     const gigTitle = tx.gigs.title.length > 30 
       ? tx.gigs.title.substring(0, 30) + '...' 
       : tx.gigs.title;
+    const clientName = tx.profiles?.full_name?.trim() || '—';
+    const professionalName = tx.digger_profile?.profile_name?.trim() || tx.digger_profile?.business_name?.trim() || '—';
     const totalAmount = `$${tx.total_amount.toFixed(2)}`;
     const commission = `$${tx.commission_amount.toFixed(2)}`;
     const payout = `$${tx.digger_payout.toFixed(2)}`;
     const status = tx.status;
 
     if (userType === 'digger') {
-      return [date, gigTitle, totalAmount, commission, payout, status];
+      return [date, gigTitle, clientName, totalAmount, commission, payout, status];
     } else {
-      return [date, gigTitle, totalAmount, status];
+      return [date, gigTitle, professionalName, totalAmount, commission, status];
     }
   });
 
@@ -154,18 +151,21 @@ export const exportToPDF = (
     },
     columnStyles: userType === 'digger' 
       ? {
-          0: { cellWidth: 22 },
+          0: { cellWidth: 20 },
           1: { cellWidth: 'auto' },
-          2: { cellWidth: 25, halign: 'right' },
-          3: { cellWidth: 28, halign: 'right' },
-          4: { cellWidth: 25, halign: 'right' },
-          5: { cellWidth: 22, halign: 'center' }
+          2: { cellWidth: 22 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 20, halign: 'right' },
+          5: { cellWidth: 22, halign: 'right' },
+          6: { cellWidth: 20, halign: 'center' }
         }
       : {
-          0: { cellWidth: 25 },
+          0: { cellWidth: 20 },
           1: { cellWidth: 'auto' },
-          2: { cellWidth: 35, halign: 'right' },
-          3: { cellWidth: 25, halign: 'center' }
+          2: { cellWidth: 24 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 20, halign: 'right' },
+          5: { cellWidth: 20, halign: 'center' }
         }
   });
 

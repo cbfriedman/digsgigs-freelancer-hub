@@ -148,6 +148,33 @@ serve(async (req) => {
             logStep('Milestone marked paid (destination charge - digger received funds at charge time)');
 
             let bidId = (await supabaseClient.from('gigs').select('awarded_bid_id').eq('id', gigIdMeta).single()).data?.awarded_bid_id;
+            let diggerPayout = Number(milestone.digger_payout);
+            let depositAdvanceCents = 0;
+            if (Number(milestone.milestone_number) === 1) {
+              const { data: depositRow } = await supabaseClient
+                .from('gigger_deposits')
+                .select('id, bid_id')
+                .eq('gig_id', gigIdMeta)
+                .eq('status', 'paid')
+                .order('paid_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (depositRow?.bid_id) {
+                const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', depositRow.bid_id).single();
+                if (bidRow?.amount != null) depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+              }
+              if (depositAdvanceCents === 0) {
+                const { data: gigRow } = await supabaseClient.from('gigs').select('awarded_bid_id').eq('id', gigIdMeta).single();
+                if (gigRow?.awarded_bid_id) {
+                  const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', gigRow.awarded_bid_id).single();
+                  if (bidRow?.amount != null) depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+                }
+              }
+              if (depositAdvanceCents > 0) {
+                diggerPayout += depositAdvanceCents / 100;
+                logStep('7% deposit advance for first milestone (will transfer separately)', { depositAdvanceCents });
+              }
+            }
             if (!bidId) {
               const bidRow = await supabaseClient
                 .from('bids')
@@ -158,15 +185,6 @@ serve(async (req) => {
                 .limit(1)
                 .maybeSingle();
               bidId = bidRow.data?.id ?? null;
-            }
-
-            let diggerPayout = Number(milestone.digger_payout);
-            if (milestone.milestone_number === 1 && bidId) {
-              const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', bidId).single();
-              const { data: depositRow } = await supabaseClient.from('gigger_deposits').select('id').eq('bid_id', bidId).eq('status', 'paid').maybeSingle();
-              if (bidRow?.amount != null && depositRow) {
-                diggerPayout += Math.round(Number(bidRow.amount) * 0.07 * 100) / 100;
-              }
             }
 
             const amountCents = Math.round(Number(milestone.amount) * 100);
@@ -187,6 +205,33 @@ serve(async (req) => {
               milestone_payment_id: milestonePaymentId,
               is_escrow: false,
             });
+
+            if (depositAdvanceCents > 0) {
+              const { data: diggerProfile } = await supabaseClient
+                .from('digger_profiles')
+                .select('stripe_connect_account_id')
+                .eq('id', diggerIdMeta)
+                .single();
+              if (diggerProfile?.stripe_connect_account_id) {
+                const transfer = await stripe.transfers.create(
+                  {
+                    amount: depositAdvanceCents,
+                    currency: 'usd',
+                    destination: diggerProfile.stripe_connect_account_id,
+                    description: '7% deposit advance (first milestone)',
+                    metadata: {
+                      milestone_payment_id: milestonePaymentId,
+                      escrow_contract_id: escrowContractId,
+                      type: 'milestone_7pct_deposit',
+                    },
+                  },
+                  { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+                );
+                logStep('7% deposit advance transferred to digger', { transferId: transfer.id, amountCents: depositAdvanceCents });
+              } else {
+                logStep('Digger has no Connect account - 7% deposit advance not transferred', { diggerId: diggerIdMeta });
+              }
+            }
 
             logStep('Milestone payment completed via Checkout webhook');
           }
@@ -365,6 +410,102 @@ serve(async (req) => {
           logStep('Lead purchase recorded successfully', { tier, amount: purchasePrice });
         } else {
           logStep('Unhandled checkout session - no matching purchase type', { metadata });
+        }
+      }
+    }
+
+    // Milestone payment (saved card + 3DS): PaymentIntent succeeds after client confirmCardPayment
+    // If only the main webhook URL is configured in Stripe, this event comes here instead of stripe-webhook-milestone
+    if (event.type === 'payment_intent.succeeded') {
+      const pi = event.data.object;
+      const metadata = pi.metadata || {};
+      if (metadata.type === 'milestone') {
+        const milestonePaymentId = metadata.milestone_payment_id;
+        if (milestonePaymentId) {
+          const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+          );
+          const { data: milestone, error: mErr } = await supabaseClient
+            .from('milestone_payments')
+            .select('id, milestone_number, amount, digger_payout, description, status, stripe_payment_intent_id, escrow_contract_id, escrow_contracts!inner(digger_id, gig_id, consumer_id)')
+            .eq('id', milestonePaymentId)
+            .single();
+
+          if (!mErr && milestone && !(milestone as any).stripe_payment_intent_id) {
+            const contract = (milestone as any).escrow_contracts;
+            let diggerPayoutCents = Math.round(Number((milestone as any).digger_payout ?? milestone.amount) * 100);
+            if (Number((milestone as any).milestone_number) === 1) {
+              let addCents = 0;
+              const { data: depositRow } = await supabaseClient
+                .from('gigger_deposits')
+                .select('id, bid_id')
+                .eq('gig_id', contract.gig_id)
+                .eq('status', 'paid')
+                .order('paid_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (depositRow?.bid_id) {
+                const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', depositRow.bid_id).single();
+                if (bidRow?.amount != null) addCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+              }
+              if (addCents === 0) {
+                const { data: gigRow } = await supabaseClient.from('gigs').select('awarded_bid_id').eq('id', contract.gig_id).single();
+                if (gigRow?.awarded_bid_id) {
+                  const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', gigRow.awarded_bid_id).single();
+                  if (bidRow?.amount != null) addCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+                }
+              }
+              if (addCents > 0) {
+                diggerPayoutCents += addCents;
+                logStep('Adding 7% deposit advance to first milestone (payment_intent.succeeded)', { addCents, diggerPayoutCents });
+              }
+            }
+            const { data: diggerProfile } = await supabaseClient.from('digger_profiles').select('stripe_connect_account_id').eq('id', contract.digger_id).single();
+            let stripeTransferId = null;
+            if (diggerProfile?.stripe_connect_account_id) {
+              const transfer = await stripe.transfers.create({
+                amount: diggerPayoutCents,
+                currency: 'usd',
+                destination: diggerProfile.stripe_connect_account_id,
+                description: `Milestone - ${(milestone as any).description?.slice(0, 50) || 'Contract milestone'}`,
+                metadata: { milestone_payment_id: milestonePaymentId, escrow_contract_id: milestone.escrow_contract_id },
+              });
+              stripeTransferId = transfer.id;
+              logStep('Milestone transfer created (PI.succeeded)', { transferId: transfer.id, amountCents: diggerPayoutCents });
+            }
+            await supabaseClient.from('milestone_payments').update({
+              status: 'paid',
+              stripe_payment_intent_id: pi.id,
+              ...(stripeTransferId && { stripe_transfer_id: stripeTransferId, released_at: new Date().toISOString() }),
+            }).eq('id', milestonePaymentId);
+            let bidId = (await supabaseClient.from('gigs').select('awarded_bid_id').eq('id', contract.gig_id).single()).data?.awarded_bid_id;
+            if (!bidId) {
+              const bidRow = await supabaseClient.from('bids').select('id').eq('gig_id', contract.gig_id).eq('digger_id', contract.digger_id).eq('status', 'accepted').limit(1).maybeSingle();
+              bidId = bidRow.data?.id ?? null;
+            }
+            const gross = Number(milestone.amount);
+            const diggerPayoutDollars = diggerPayoutCents / 100;
+            const giggerPaid = (pi.amount_received ?? 0) / 100;
+            const transactionFeeAmount = Math.round(gross * 0.03 * 100) / 100;
+            await supabaseClient.from('transactions').insert({
+              gig_id: contract.gig_id,
+              bid_id: bidId ?? null,
+              consumer_id: contract.consumer_id,
+              digger_id: contract.digger_id,
+              total_amount: giggerPaid,
+              commission_rate: 0.03,
+              commission_amount: transactionFeeAmount,
+              digger_payout: diggerPayoutDollars,
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              stripe_payment_intent_id: pi.id,
+              escrow_contract_id: milestone.escrow_contract_id,
+              milestone_payment_id: milestonePaymentId,
+              is_escrow: false,
+            });
+            logStep('Milestone payment completed via payment_intent.succeeded');
+          }
         }
       }
     }

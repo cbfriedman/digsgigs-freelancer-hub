@@ -313,6 +313,7 @@ const MyGigs = () => {
     }
 
     setLeaveRefLoading(true);
+    const gigIdForRef = leaveRefGig.id;
     try {
       const { error } = await supabase.from("references").insert({
         digger_id: awardedDiggerId,
@@ -323,12 +324,22 @@ const MyGigs = () => {
         verification_tier: "platform",
         is_verified: true,
       });
-      if (error) throw error;
+      if (error) {
+        // 23505 = unique_violation (one platform reference per digger+gig); treat as already left
+        if (error.code === "23505") {
+          setLeaveRefGig(null);
+          setLeaveRefDescription("");
+          setPlatformRefGigIds((prev) => new Set(prev).add(gigIdForRef));
+          toast.info("You've already left a reference for this gig. It's shown as \"Reference left\".");
+          return;
+        }
+        throw error;
+      }
 
       // Notify the digger that they received a reference (edge function uses service role to insert)
       try {
         await supabase.functions.invoke("notify-digger-reference-received", {
-          body: { gigId: leaveRefGig.id },
+          body: { gigId: gigIdForRef },
         });
       } catch (_) {
         // Non-blocking: reference was saved; notification is best-effort
@@ -337,7 +348,7 @@ const MyGigs = () => {
       toast.success("Reference added. It will show as \"Verified on DigsandGigs\" on the Digger's profile.");
       setLeaveRefGig(null);
       setLeaveRefDescription("");
-      setPlatformRefGigIds((prev) => new Set(prev).add(leaveRefGig.id));
+      setPlatformRefGigIds((prev) => new Set(prev).add(gigIdForRef));
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to add reference.");
     } finally {
@@ -548,7 +559,12 @@ const MyGigs = () => {
                     )}
                     {gig.status === "completed" &&
                       (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
-                      !platformRefGigIds.has(gig.id) && (
+                      (platformRefGigIds.has(gig.id) ? (
+                        <Button variant="outline" className="min-w-0" disabled title="Reference already left">
+                          <MessageSquare className="mr-2 h-4 w-4 opacity-60" />
+                          Reference left
+                        </Button>
+                      ) : (
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -561,7 +577,7 @@ const MyGigs = () => {
                           <MessageSquare className="mr-2 h-4 w-4" />
                           Leave reference
                         </Button>
-                      )}
+                      ))}
                     {gig.status === "completed" &&
                       (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
                       !reviewedGigIds.has(gig.id) && (

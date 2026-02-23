@@ -95,20 +95,33 @@ serve(async (req) => {
     }
 
     const contract = (milestone as any).escrow_contracts;
-    let diggerPayoutCents = Math.round(Number((milestone as any).digger_payout ?? milestone.amount) * 100); // base payout (e.g. gross - 8%)
+    let diggerPayoutCents = Math.round(Number((milestone as any).digger_payout ?? milestone.amount) * 100);
 
-    // First milestone + paid gigger deposit: add 7% of bid to digger (deposit advance)
-    if ((milestone as any).milestone_number === 1) {
-      const { data: gigRow } = await supabase.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
-      const bidId = gigRow?.awarded_bid_id;
-      if (bidId) {
-        const { data: bidRow } = await supabase.from("bids").select("amount").eq("id", bidId).single();
-        const { data: depositRow } = await supabase.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
-        if (bidRow?.amount != null && depositRow) {
-          const depositAdvanceCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
-          diggerPayoutCents += depositAdvanceCents;
-          logStep("Adding 7% deposit advance to first milestone transfer", { depositAdvanceCents });
+    if (Number((milestone as any).milestone_number) === 1) {
+      let addCents = 0;
+      const { data: depositRow } = await supabase
+        .from("gigger_deposits")
+        .select("id, bid_id")
+        .eq("gig_id", contract.gig_id)
+        .eq("status", "paid")
+        .order("paid_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (depositRow?.bid_id) {
+        const { data: bidRow } = await supabase.from("bids").select("amount").eq("id", depositRow.bid_id).single();
+        if (bidRow?.amount != null) addCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+      }
+      if (addCents === 0) {
+        const { data: gigRow } = await supabase.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single();
+        if (gigRow?.awarded_bid_id) {
+          const { data: bidRow } = await supabase.from("bids").select("amount").eq("id", gigRow.awarded_bid_id).single();
+          if (bidRow?.amount != null) addCents = Math.round(Number(bidRow.amount) * 0.07 * 100);
+          logStep("First milestone: using awarded_bid_id for 7% (deposit row not found)");
         }
+      }
+      if (addCents > 0) {
+        diggerPayoutCents += addCents;
+        logStep("Adding 7% deposit advance to first milestone transfer", { addCents, diggerPayoutCents });
       }
     }
 

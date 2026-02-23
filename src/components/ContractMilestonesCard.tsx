@@ -73,7 +73,8 @@ export function ContractMilestonesCard({
   const [searchParams, setSearchParams] = useSearchParams();
   const [contract, setContract] = useState<ContractWithMilestones | null>(null);
   const [gigInfo, setGigInfo] = useState<{ consumer_id: string; awarded_digger_id: string | null } | null>(null);
-  const [exclusiveWithDeposit, setExclusiveWithDeposit] = useState<{ bidAmount: number } | null>(null);
+  /** For exclusive (success_based) gigs: bid amount and whether 15% deposit was paid. Used for first-milestone 7% display. */
+  const [exclusiveWithDeposit, setExclusiveWithDeposit] = useState<{ bidAmount: number; depositPaid: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -137,15 +138,15 @@ export function ContractMilestonesCard({
         return;
       }
 
-      // Check if exclusive gig with paid deposit (for first-milestone 7% advance display)
-      let exclusive: { bidAmount: number } | null = null;
+      // First-milestone 7% deposit advance: show for exclusive (success_based) gigs so both gigger and digger see it
+      let exclusive: { bidAmount: number; depositPaid: boolean } | null = null;
       const { data: gigRow } = await supabase.from("gigs").select("awarded_bid_id").eq("id", gigId).single();
       const bidId = gigRow?.awarded_bid_id;
       if (bidId && !cancelled) {
         const { data: bidRow } = await supabase.from("bids").select("amount, pricing_model").eq("id", bidId).single();
         const { data: depositRow } = await supabase.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
-        if (bidRow?.pricing_model === "success_based" && bidRow?.amount != null && depositRow) {
-          exclusive = { bidAmount: bidRow.amount };
+        if (bidRow?.pricing_model === "success_based" && bidRow?.amount != null) {
+          exclusive = { bidAmount: bidRow.amount, depositPaid: !!depositRow };
         }
       }
       if (!cancelled) setExclusiveWithDeposit(exclusive);
@@ -741,20 +742,27 @@ export function ContractMilestonesCard({
                     </span>
                   )}
                 </p>
-                {exclusiveWithDeposit && m.milestone_number === 1 && m.status === "paid" && (
+                {/* First milestone: one clear line for 7% */}
+                {exclusiveWithDeposit && m.milestone_number === 1 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    7% deposit advance: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} — {isGigger ? "From your 15% deposit, released to the professional when you approve this first milestone." : "From the client's 15% deposit, released to you when they approve this first milestone."}
+                  </p>
+                )}
+                {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && m.status === "paid" && (
                   <p className="text-xs text-green-700 dark:text-green-400 mt-0.5 font-medium">
                     {isDigger
                       ? `You received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`
                       : `Professional received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`}
                   </p>
                 )}
-                {exclusiveWithDeposit && m.milestone_number === 1 && m.status !== "paid" && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && m.status !== "paid" && (
+                  <p className="text-sm font-medium text-foreground mt-1.5">
                     {isDigger
-                      ? `You receive $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit)`
-                      : `Professional receives $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit)`}
+                      ? `You receive $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit).`
+                      : `When you approve: professional receives $${Number(m.amount).toFixed(2)} (milestone) + $${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (7% deposit) = $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} total.`}
                   </p>
                 )}
+                {/* Gigger: spell out that professional gets milestone + 7% so it’s obvious */}
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 {m.status === "pending" && isDigger && (
@@ -844,10 +852,12 @@ export function ContractMilestonesCard({
                             )}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[240px]">
+                        <TooltipContent side="left" className="max-w-[280px]">
                           {hasPaymentMethod
                             ? "Choose to pay with your saved card (recommended) or enter a new card on Checkout."
-                            : "Pay via Stripe Checkout (milestone + 3% fee). The professional receives the milestone minus 8% platform fee."}
+                            : exclusiveWithDeposit?.depositPaid && m.milestone_number === 1
+                              ? "Pay via Stripe Checkout (milestone + 3% fee). The professional receives the milestone plus 7% deposit advance."
+                              : "Pay via Stripe Checkout (milestone + 3% fee). The professional receives the milestone minus 8% platform fee."}
                         </TooltipContent>
                       </Tooltip>
                     )}
