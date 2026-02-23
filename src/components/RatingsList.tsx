@@ -17,19 +17,66 @@ export const RatingsList = ({ diggerId, isDigger, diggerName }: RatingsListProps
 
   const fetchRatings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data: ratingsData, error } = await supabase
         .from("ratings")
         .select(`
           *,
           profiles:consumer_id (
-            full_name
+            full_name,
+            avatar_url,
+            country
+          ),
+          gigs:gig_id (
+            id,
+            title,
+            location,
+            category_id,
+            categories (
+              name
+            )
           )
         `)
         .eq("digger_id", diggerId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setRatings(data || []);
+      const list = ratingsData || [];
+
+      // Fetch project total budget from escrow_contracts for each gig
+      const gigIds = [...new Set(list.map((r: any) => r.gig_id).filter(Boolean))];
+      let budgetByGig: Record<string, number> = {};
+      if (gigIds.length > 0) {
+        const { data: escrows } = await supabase
+          .from("escrow_contracts")
+          .select("gig_id, total_amount")
+          .in("gig_id", gigIds);
+        (escrows || []).forEach((e: { gig_id: string; total_amount: number }) => {
+          budgetByGig[e.gig_id] = Number(e.total_amount);
+        });
+      }
+
+      // Fallback: sum transactions per gig if no escrow (legacy)
+      const gigIdsWithoutEscrow = gigIds.filter((id) => budgetByGig[id] == null);
+      if (gigIdsWithoutEscrow.length > 0) {
+        const { data: txRows } = await supabase
+          .from("transactions")
+          .select("gig_id, total_amount")
+          .eq("digger_id", diggerId)
+          .in("gig_id", gigIdsWithoutEscrow);
+        gigIdsWithoutEscrow.forEach((id) => { budgetByGig[id] = 0; });
+        (txRows || []).forEach((t: { gig_id: string; total_amount: number }) => {
+          budgetByGig[t.gig_id] = (budgetByGig[t.gig_id] ?? 0) + Number(t.total_amount);
+        });
+      }
+
+      setRatings(
+        list.map((r: any) => ({
+          ...r,
+          profiles: r.profiles ?? { full_name: null, avatar_url: null, country: null },
+          gigs: r.gigs ?? null,
+          projectTotalBudget: r.gig_id ? budgetByGig[r.gig_id] : null,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching ratings:", error);
     } finally {
@@ -88,12 +135,7 @@ export const RatingsList = ({ diggerId, isDigger, diggerName }: RatingsListProps
       
       <div className="space-y-4">
         {ratings.map((rating) => (
-          <RatingCard
-            key={rating.id}
-            rating={rating}
-            isDigger={isDigger}
-            onResponseSubmitted={fetchRatings}
-          />
+          <RatingCard key={rating.id} rating={rating} />
         ))}
       </div>
     </>

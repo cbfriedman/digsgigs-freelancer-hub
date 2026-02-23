@@ -71,6 +71,9 @@ interface Transaction {
   } | null;
   /** When true, this row is from paid milestones (fallback when transaction row missing) */
   fromMilestone?: boolean;
+  /** Milestone description (e.g. "Phase 1: Design") when this is a milestone payment */
+  milestone_description?: string | null;
+  milestone_number?: number | null;
 }
 
 const Transactions = () => {
@@ -88,10 +91,13 @@ const Transactions = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
+  const [totalPaid, setTotalPaid] = useState(0);
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'all' | '30' | '90' | '180'>('all');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const INITIAL_DISPLAY_LIMIT = 5;
+  const [displayLimit, setDisplayLimit] = useState(INITIAL_DISPLAY_LIMIT);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [triggeringMonthly, setTriggeringMonthly] = useState(false);
   const [ratingDialog, setRatingDialog] = useState<{
@@ -148,6 +154,10 @@ const Transactions = () => {
     applyFiltersAndSort();
   }, [transactions, sortBy, filterStatus, dateRange]);
 
+  useEffect(() => {
+    setDisplayLimit(INITIAL_DISPLAY_LIMIT);
+  }, [sortBy, filterStatus, dateRange]);
+
   const applyFiltersAndSort = () => {
     let filtered = [...transactions];
 
@@ -183,12 +193,15 @@ const Transactions = () => {
 
     setFilteredTransactions(filtered);
 
-    // Update stats for diggers based on filtered data
+    // Update stats based on filtered data
     if (userType === 'digger') {
       const earnings = filtered.reduce((sum, tx) => sum + (tx.digger_payout || 0), 0);
       const commission = filtered.reduce((sum, tx) => sum + (tx.commission_amount || 0), 0);
       setTotalEarnings(earnings);
       setTotalCommission(commission);
+    } else if (userType === 'consumer') {
+      const paid = filtered.reduce((sum, tx) => sum + (tx.total_amount || 0), 0);
+      setTotalPaid(paid);
     }
   };
 
@@ -264,7 +277,8 @@ const Transactions = () => {
         gigs ( id, title, consumer_id ),
         bids ( amount ),
         profiles:consumer_id ( full_name ),
-        digger_profiles!transactions_digger_id_fkey ( profile_name, business_name )
+        digger_profiles!transactions_digger_id_fkey ( profile_name, business_name ),
+        milestone_payments ( description, milestone_number )
       `;
       let query = supabase
         .from('transactions')
@@ -282,12 +296,17 @@ const Transactions = () => {
 
       if (error) throw error;
 
-      let list: Transaction[] = (data || []).map((row: any) => ({
-        ...row,
-        bids: row.bids ?? null,
-        profiles: row.profiles ?? null,
-        digger_profile: row.digger_profiles ?? null,
-      }));
+      let list: Transaction[] = (data || []).map((row: any) => {
+        const mp = row.milestone_payments;
+        return {
+          ...row,
+          bids: row.bids ?? null,
+          profiles: row.profiles ?? null,
+          digger_profile: row.digger_profiles ?? null,
+          milestone_description: mp?.description ?? null,
+          milestone_number: mp?.milestone_number ?? null,
+        };
+      });
 
       // Diggers: include paid milestones that may have no transaction row (so they always see earnings)
       if (type === 'digger' && diggerIdParam) {
@@ -297,6 +316,8 @@ const Transactions = () => {
           .select(`
             id,
             amount,
+            description,
+            milestone_number,
             digger_payout,
             platform_fee,
             released_at,
@@ -331,6 +352,8 @@ const Transactions = () => {
             bids: null,
             profiles: null,
             fromMilestone: true,
+            milestone_description: (m as any).description ?? null,
+            milestone_number: (m as any).milestone_number ?? null,
           });
         }
         list.sort((a, b) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime());
@@ -389,18 +412,6 @@ const Transactions = () => {
     tx.fromMilestone || tx.milestone_payment_id
       ? "Milestone payment"
       : `#${tx.id.slice(-6)}`;
-
-  const getCommissionTierColor = (rate: number) => {
-    if (rate === 0) return 'text-green-600';
-    if (rate <= 0.04) return 'text-blue-600';
-    return 'text-orange-600';
-  };
-
-  const getCommissionTierName = (rate: number) => {
-    if (rate === 0) return 'Premium';
-    if (rate <= 0.04) return 'Pro';
-    return 'Free';
-  };
 
   const handleExportCSV = () => {
     if (filteredTransactions.length === 0) {
@@ -576,7 +587,7 @@ const Transactions = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-          <div className="max-w-5xl mx-auto space-y-8">
+          <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -683,67 +694,10 @@ const Transactions = () => {
             </Alert>
           )}
 
-          {/* Stats for Diggers */}
-          {userType === 'digger' && (
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Earned
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-primary">
-                    ${totalEarnings.toFixed(2)}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {dateRange !== 'all' 
-                      ? `In last ${dateRange} days`
-                      : 'After commission'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Commission Paid
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-destructive">
-                    ${totalCommission.toFixed(2)}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {dateRange !== 'all' 
-                      ? `In last ${dateRange} days`
-                      : 'Platform fees'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Completed Gigs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {filteredTransactions.length}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {dateRange !== 'all' 
-                      ? `In last ${dateRange} days`
-                      : 'Total transactions'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Transactions List */}
-          <div className="space-y-4">
+          {/* 7:3 grid: left = transaction list, right = summary stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-8 items-start">
+            {/* Left: Transactions list */}
+            <div className="space-y-4 min-w-0">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">All Transactions</h2>
@@ -857,7 +811,8 @@ const Transactions = () => {
                 </CardContent>
               </Card>
             ) : (
-              filteredTransactions.map((transaction) => {
+              <>
+              {filteredTransactions.slice(0, displayLimit).map((transaction) => {
                 const dateStr = getTransactionDate(transaction);
                 const isMilestone = transaction.fromMilestone || !!transaction.milestone_payment_id;
                 const gross = transaction.total_amount / 1.03;
@@ -875,6 +830,11 @@ const Transactions = () => {
                             {getTransactionRef(transaction)}
                           </span>
                         </div>
+                        {(isMilestone && (transaction.milestone_description ?? transaction.milestone_number != null)) && (
+                          <p className="text-sm text-muted-foreground">
+                            {[transaction.milestone_number != null && `Milestone ${transaction.milestone_number}`, transaction.milestone_description].filter(Boolean).join(': ')}
+                          </p>
+                        )}
                         <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                           <span>
                             {userType === 'consumer'
@@ -906,23 +866,9 @@ const Transactions = () => {
                         {userType === 'digger' ? (
                           <>
                             {isMilestone && (
-                              <>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">Gross (milestone amount)</span>
-                                  <span className="font-medium">${gross.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">Platform fee (8%)</span>
-                                  <span className="font-medium text-destructive">−${(gross - transaction.digger_payout).toFixed(2)}</span>
-                                </div>
-                              </>
-                            )}
-                            {!isMilestone && transaction.commission_rate > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Commission ({(transaction.commission_rate * 100).toFixed(0)}% — <span className={getCommissionTierColor(transaction.commission_rate)}>{getCommissionTierName(transaction.commission_rate)}</span>)
-                                </span>
-                                <span className="font-medium text-destructive">−${transaction.commission_amount.toFixed(2)}</span>
+                                <span className="text-muted-foreground">Gross (milestone amount)</span>
+                                <span className="font-medium">${gross.toFixed(2)}</span>
                               </div>
                             )}
                             {!isMilestone && transaction.bids?.amount != null && (
@@ -970,23 +916,6 @@ const Transactions = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Commission Breakdown for Diggers (skip for milestone-only rows) */}
-                    {userType === 'digger' && !transaction.fromMilestone && !transaction.milestone_payment_id && transaction.commission_rate > 0 && (
-                      <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">
-                          💡 Tip: With a{' '}
-                          {transaction.commission_rate >= 0.09 
-                            ? 'Pro plan (8% escrow), you would have saved ' + 
-                              ((transaction.total_amount * 0.01)).toFixed(2)
-                            : transaction.commission_rate >= 0.08
-                            ? 'Premium plan, you would have saved ' + 
-                              transaction.commission_amount.toFixed(2)
-                            : 'current plan, you\'re already saving the most!'}
-                          {' '}on this transaction
-                        </p>
-                      </div>
-                    )}
 
                     {/* Rating and Dispute for Consumers */}
                     {userType === 'consumer' && transaction.status === 'completed' && (
@@ -1079,8 +1008,110 @@ const Transactions = () => {
                   </CardContent>
                 </Card>
               );
-              })
+              })}
+              {filteredTransactions.length > INITIAL_DISPLAY_LIMIT && (
+                <div className="flex justify-center gap-2 pt-4 flex-wrap">
+                  {displayLimit < filteredTransactions.length ? (
+                    <Button variant="outline" onClick={() => setDisplayLimit(filteredTransactions.length)}>
+                      Load more ({filteredTransactions.length - displayLimit} more)
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => setDisplayLimit(INITIAL_DISPLAY_LIMIT)}>
+                      Load less
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
             )}
+            </div>
+
+            {/* Right: Summary stats (7:3 grid) */}
+            <div className="lg:sticky lg:top-8 space-y-4">
+              {userType === 'digger' && (
+                <>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Total Earned
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-primary">
+                        ${totalEarnings.toFixed(2)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'After commission'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Total Commission Paid
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-destructive">
+                        ${totalCommission.toFixed(2)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Platform fees'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Completed Gigs
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {filteredTransactions.length}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Total transactions'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {userType === 'consumer' && (
+                <>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Total Paid
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-primary">
+                        ${totalPaid.toFixed(2)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Amount paid'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Transactions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {filteredTransactions.length}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Total count'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

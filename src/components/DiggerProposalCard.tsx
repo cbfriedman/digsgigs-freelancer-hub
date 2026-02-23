@@ -18,6 +18,7 @@ import {
   Info,
   Pin,
   PinOff,
+  X,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
@@ -114,6 +115,9 @@ interface DiggerProposalCardProps {
   isOtherBidAwarded?: boolean;
   /** Another bid on this gig is hired (accepted); Gigger cannot hire another digger. */
   isOtherBidHired?: boolean;
+  /** When provided and this bid is awarded waiting response, show Cancel award button (Gigger). */
+  onCancelAward?: () => void | Promise<void>;
+  cancelAwardLoading?: boolean;
 }
 
 export function DiggerProposalCard({
@@ -135,6 +139,8 @@ export function DiggerProposalCard({
   isAwardedWaitingResponse = false,
   isOtherBidAwarded = false,
   isOtherBidHired = false,
+  onCancelAward,
+  cancelAwardLoading = false,
 }: DiggerProposalCardProps) {
   const navigate = useNavigate();
   const [showFullProposal, setShowFullProposal] = useState(false);
@@ -444,6 +450,19 @@ export function DiggerProposalCard({
                 <MessageSquare className="h-4 w-4" />
                 Chat
               </Button>
+              {isOwner && isAwardedWaitingResponse && onCancelAward && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCancelAward()}
+                  disabled={cancelAwardLoading}
+                  className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 gap-1.5"
+                  title="Cancel the award and reopen the gig; your deposit will be refunded"
+                >
+                  {cancelAwardLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                  Cancel award
+                </Button>
+              )}
               {bid.status === "pending" && onAccept && !isAwardedWaitingResponse && (
                 (isOtherBidAwarded || isOtherBidHired) ? (
                   <Tooltip>

@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList, defaultBidFilters, BID_SORT_OPTIONS, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
@@ -20,6 +20,7 @@ import { generateJobPostingSchema } from "@/components/StructuredData";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
+import { getLocalTimeForCountry } from "@/pages/DiggerDetail/utils";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
@@ -44,6 +45,7 @@ interface Gig {
   status: string;
   created_at: string;
   location: string;
+  work_type?: string | null;
   timeline?: string | null;
   category_id?: string | null;
   requirements?: string | null;
@@ -64,7 +66,10 @@ interface Gig {
     full_name: string | null;
     avatar_url: string | null;
     country: string | null;
+    state?: string | null;
+    city?: string | null;
     timezone: string | null;
+    created_at?: string | null;
     email_verified: boolean | null;
     phone_verified: boolean | null;
     payment_verified: boolean | null;
@@ -144,6 +149,34 @@ const GigDetail = () => {
   useEffect(() => {
     loadData();
   }, [id, userRoles]);
+
+  // Fetch client verification from auth for "About the client" (so Email/Social show correctly)
+  useEffect(() => {
+    if (!id || !gig?.id || isOwner || !gig.consumer_id) {
+      setClientVerificationFromAuth(null);
+      return;
+    }
+    setClientVerificationFromAuth(null);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await invokeEdgeFunction<{ email_verified?: boolean; social_verified?: boolean }>(
+          supabase,
+          "get-client-verification",
+          { body: { gigId: id } }
+        );
+        if (cancelled) return;
+        if (data != null && (typeof data.email_verified === "boolean" || typeof data.social_verified === "boolean"))
+          setClientVerificationFromAuth({
+            email_verified: !!data.email_verified,
+            social_verified: !!data.social_verified,
+          });
+      } catch {
+        // ignore; fall back to profile columns only
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id, gig?.id, gig?.consumer_id, isOwner]);
 
   // After Gigger returns from Stripe: confirm session and mark Digger as hired (fallback if webhook didn't run)
   useEffect(() => {
@@ -295,169 +328,163 @@ const GigDetail = () => {
   const loadData = async () => {
     if (!id) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    // Wave 1: Fetch session and gig in parallel so we can show the page sooner
+    const gigSelect = `
+      id, consumer_id, title, description, budget_min, budget_max, timeline, location, work_type, category_id, requirements,
+      preferred_regions, status, confirmation_status, is_confirmed_lead, confirmed_at, created_at, updated_at,
+      purchase_count, calculated_price_cents, bumped_at, deadline, poster_country, skills_required,
+      awarded_at, awarded_bid_id, awarded_digger_id,
+      categories (name, description),
+      profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, state, city, timezone, created_at, email_verified, phone_verified, payment_verified, id_verified, social_verified),
+      gig_skills (skills (name))
+    `;
+    const [sessionResult, gigResult] = await Promise.all([
+      supabase.auth.getSession(),
+      (supabase.from("gigs") as any).select(gigSelect).eq("id", id).single(),
+    ]);
+
+    const { data: { session } } = sessionResult;
     setCurrentUser(session?.user || null);
 
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_type")
-        .eq("id", session.user.id)
-        .single();
-      // Treat as digger if profiles.user_type is "digger" OR user has digger role (user_roles table)
-      const userIsDigger = profile?.user_type === "digger" || (userRoles && userRoles.includes("digger"));
-      setIsDigger(userIsDigger);
-      if (!userIsDigger) setDiggerCanBid(false);
-
-      if (userIsDigger) {
-        let diggerProfileRow: { id: string } | null = null;
-        const { data: existingProfile } = await supabase
-          .from("digger_profiles" as any)
-          .select("id")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        diggerProfileRow = existingProfile as unknown as { id: string } | null;
-
-        // Create minimal digger profile if none exists so they can complete photo + rate and then bid
-        if (!diggerProfileRow) {
-          const { data: profileRow } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", session.user.id)
-            .single();
-          const businessName = (profileRow?.full_name && String(profileRow.full_name).trim()) || "My Business";
-          const { data: created } = await supabase
-            .from("digger_profiles" as any)
-            .insert({
-              user_id: session.user.id,
-              business_name: businessName,
-              location: "Not set",
-              phone: "Not set",
-            } as any)
-            .select("id")
-            .single();
-          diggerProfileRow = created as unknown as { id: string } | null;
-        }
-
-        if (diggerProfileRow) {
-          setDiggerId(diggerProfileRow.id);
-
-          // At-rest minimum to bid: profile photo and hourly rate — use same completion logic as profile/dashboard so 20% = can bid
-          const { data: diggerDetail } = await supabase
-            .from("digger_profiles" as any)
-            .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
-            .eq("id", diggerProfileRow.id)
-            .single();
-          // Normalize profiles (join can return object or array) so completion logic matches profile page
-          const raw = diggerDetail as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
-          const profilesNorm = raw?.profiles != null
-            ? (Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles)
-            : null;
-          const completion = computeDiggerProfileDetailCompletion(raw ? { ...raw, profiles: profilesNorm } : null);
-          const profilePhotoDone = completion.items.find((i) => i.id === "profile-photo")?.completed ?? false;
-          const hourlyRateDone = completion.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
-          setDiggerCanBid(profilePhotoDone && hourlyRateDone);
-
-          // Check for existing bid
-          const { data: bid } = await supabase
-            .from("bids" as any)
-            .select("*")
-            .eq("gig_id", id)
-            .eq("digger_id", diggerProfileRow.id)
-            .maybeSingle();
-
-          setExistingBid(bid as any);
-
-          // Check if digger has purchased this lead
-          const { data: leadPurchase } = await supabase
-            .from("lead_purchases")
-            .select("id")
-            .eq("gig_id", id)
-            .eq("digger_id", diggerProfileRow.id)
-            .eq("status", "completed")
-            .maybeSingle();
-
-          setHasLeadPurchase(!!leadPurchase);
-
-          // Diggers can see budget so they can tailor their proposal and bid within range
-          setCanSeeBudget(true);
-        } else {
-          setDiggerCanBid(false);
-        }
-      } else {
-        // Non-diggers (consumers) can always see budget
-        setCanSeeBudget(true);
-      }
-    }
-
-    // Do not request contact fields here so diggers never receive gigger contact info; owner fetches them separately
-    const { data: gigData, error: gigError } = await (supabase
-      .from("gigs") as any)
-      .select(`
-        id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id, requirements,
-        preferred_regions, status, confirmation_status, is_confirmed_lead, confirmed_at, created_at, updated_at,
-        purchase_count, calculated_price_cents, bumped_at, deadline, poster_country, skills_required,
-        awarded_at, awarded_bid_id, awarded_digger_id,
-        categories (name, description),
-        profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, social_verified),
-        gig_skills (skills (name))
-      `)
-      .eq("id", id)
-      .single();
-
+    const { data: gigData, error: gigError } = gigResult;
     if (gigError || !gigData) {
-      toast({
-        title: "Gig not found",
-        variant: "destructive",
-      });
+      toast({ title: "Gig not found", variant: "destructive" });
       navigate("/browse-gigs");
       return;
     }
-
     setGig(gigData as Gig);
-    const isOwner = session?.user?.id === gigData.consumer_id;
-    setIsOwner(isOwner);
+    const isOwnerUser = session?.user?.id === gigData.consumer_id;
+    setIsOwner(isOwnerUser);
 
-    // Only the gig owner should receive contact fields (for edit/manage); diggers get them only after unlock/award
-    if (isOwner && session?.user?.id) {
-      const { data: contactRow } = await supabase
-        .from("gigs")
-        .select("client_name, consumer_email, consumer_phone")
-        .eq("id", id)
-        .eq("consumer_id", session.user.id)
-        .single();
-      if (contactRow) {
-        setGig((prev) => prev ? { ...prev, ...contactRow } : prev);
-      }
+    // Wave 2: Profile, owner contact, and client stats in parallel (only need session + gig)
+    const profilePromise = session?.user
+      ? supabase.from("profiles").select("user_type").eq("id", session.user.id).single()
+      : Promise.resolve({ data: null });
+    const ownerContactPromise = isOwnerUser && session?.user?.id
+      ? supabase.from("gigs").select("client_name, consumer_email, consumer_phone").eq("id", id).eq("consumer_id", session.user.id).single()
+      : Promise.resolve({ data: null });
+    const clientStatsPromise = gigData.consumer_id
+      ? supabase.from("gigs").select("id, status, awarded_at").eq("consumer_id", gigData.consumer_id)
+      : Promise.resolve({ data: [] });
+    const clientSpentPromise = gigData.consumer_id
+      ? supabase.from("escrow_contracts" as any).select("total_amount, status").eq("consumer_id", gigData.consumer_id)
+      : Promise.resolve({ data: [] });
+
+    const [profileRes, ownerContactRes, clientStatsRes, clientSpentRes] = await Promise.all([
+      profilePromise,
+      ownerContactPromise,
+      clientStatsPromise,
+      clientSpentPromise,
+    ]);
+
+    const profile = profileRes.data as { user_type?: string } | null;
+    const userIsDigger = profile?.user_type === "digger" || (userRoles && userRoles.includes("digger"));
+    setIsDigger(userIsDigger);
+    if (!userIsDigger) setDiggerCanBid(false);
+
+    if (ownerContactRes.data) {
+      setGig((prev) => (prev ? { ...prev, ...ownerContactRes.data } : prev));
     }
-
-    // Fetch client (Gigger) project counts for "About the client" card
-    if (gigData.consumer_id) {
-      const { data: gigs } = await supabase
-        .from("gigs")
-        .select("id, status, awarded_at")
-        .eq("consumer_id", gigData.consumer_id);
-      const list = gigs ?? [];
-      const open = list.filter((g: { status: string }) => g.status === "open").length;
-      const active = list.filter((g: { status: string; awarded_at?: string | null }) =>
-        g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")
-      ).length;
-      const completed = list.filter((g: { status: string }) => g.status === "completed").length;
+    if (clientStatsRes.data && Array.isArray(clientStatsRes.data)) {
+      const list = clientStatsRes.data as { status: string; awarded_at?: string | null }[];
+      const open = list.filter((g) => g.status === "open").length;
+      const active = list.filter((g) => g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")).length;
+      const completed = list.filter((g) => g.status === "completed").length;
       setClientGigStats({ open, active, completed, total: list.length });
     } else {
       setClientGigStats(null);
     }
+    if (clientSpentRes.data && Array.isArray(clientSpentRes.data)) {
+      const spent = (clientSpentRes.data as { total_amount: number; status: string }[])
+        .filter((r) => r.status === "completed")
+        .reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
+      setClientSpentBudget(spent > 0 ? spent : null);
+    } else {
+      setClientSpentBudget(null);
+    }
+
+    if (!userIsDigger) {
+      setCanSeeBudget(true);
+      setLoading(false);
+      if (fbConfigured && gigData) {
+        trackFBEvent("ViewContent", {
+          content_name: gigData.title,
+          content_ids: [gigData.id],
+          content_type: "gig",
+          value: gigData.budget_min || 0,
+          currency: "USD",
+        });
+      }
+      return;
+    }
+
+    // Wave 3: Digger-specific — get or create digger profile, then fetch bid/lead/completion in parallel
+    let diggerProfileRow: { id: string } | null = null;
+    const { data: existingProfile } = await supabase
+      .from("digger_profiles" as any)
+      .select("id")
+      .eq("user_id", session!.user!.id)
+      .maybeSingle();
+    diggerProfileRow = existingProfile as unknown as { id: string } | null;
+
+    if (!diggerProfileRow) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", session!.user!.id)
+        .single();
+      const businessName = (profileRow as { full_name?: string } | null)?.full_name?.trim() || "My Business";
+      const { data: created } = await supabase
+        .from("digger_profiles" as any)
+        .insert({
+          user_id: session!.user!.id,
+          business_name: businessName,
+          location: "Not set",
+          phone: "Not set",
+        } as any)
+        .select("id")
+        .single();
+      diggerProfileRow = created as unknown as { id: string } | null;
+    }
+
+    if (!diggerProfileRow) {
+      setDiggerCanBid(false);
+      setLoading(false);
+      return;
+    }
+
+    setDiggerId(diggerProfileRow.id);
+    setCanSeeBudget(true);
+
+    const [diggerDetailRes, bidRes, leadRes] = await Promise.all([
+      supabase
+        .from("digger_profiles" as any)
+        .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
+        .eq("id", diggerProfileRow.id)
+        .single(),
+      supabase.from("bids" as any).select("*").eq("gig_id", id).eq("digger_id", diggerProfileRow!.id).maybeSingle(),
+      supabase.from("lead_purchases").select("id").eq("gig_id", id).eq("digger_id", diggerProfileRow!.id).eq("status", "completed").maybeSingle(),
+    ]);
+
+    const diggerDetail = diggerDetailRes.data as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
+    const profilesNorm =
+      diggerDetail?.profiles != null ? (Array.isArray(diggerDetail.profiles) ? diggerDetail.profiles[0] : diggerDetail.profiles) : null;
+    const completion = computeDiggerProfileDetailCompletion(diggerDetail ? { ...diggerDetail, profiles: profilesNorm } : null);
+    const profilePhotoDone = completion?.items.find((i) => i.id === "profile-photo")?.completed ?? false;
+    const hourlyRateDone = completion?.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
+    setDiggerCanBid(profilePhotoDone && hourlyRateDone);
+    setExistingBid((bidRes.data as any) ?? null);
+    setHasLeadPurchase(!!leadRes.data);
 
     setLoading(false);
 
-    // Track ViewContent event for Facebook Pixel
     if (fbConfigured && gigData) {
-      trackFBEvent('ViewContent', {
+      trackFBEvent("ViewContent", {
         content_name: gigData.title,
         content_ids: [gigData.id],
-        content_type: 'gig',
+        content_type: "gig",
         value: gigData.budget_min || 0,
-        currency: 'USD',
+        currency: "USD",
       });
     }
   };
@@ -497,10 +524,15 @@ const GigDetail = () => {
   const [bumping, setBumping] = useState(false);
   const [reposting, setReposting] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [cancelAwardLoading, setCancelAwardLoading] = useState(false);
   const [expandSuccessCoverLetter, setExpandSuccessCoverLetter] = useState(false);
   const [hasClientSentMessage, setHasClientSentMessage] = useState(false);
   const [editingProposal, setEditingProposal] = useState(false);
   const [clientGigStats, setClientGigStats] = useState<ClientGigStats | null>(null);
+  /** Total amount client has spent on completed contracts (for "About the client" card) */
+  const [clientSpentBudget, setClientSpentBudget] = useState<number | null>(null);
+  /** Verification from auth (email/social) for About the client when profile columns are not set */
+  const [clientVerificationFromAuth, setClientVerificationFromAuth] = useState<{ email_verified: boolean; social_verified: boolean } | null>(null);
   const PROPOSAL_PREVIEW_LEN = 280;
 
   const handleBump = async () => {
@@ -571,6 +603,31 @@ const GigDetail = () => {
     }
     toast({ title: "Gig removed." });
     navigate("/my-gigs");
+  };
+
+  /** Gigger cancels the award: refund deposit, gig back to open, bid no longer awarded. */
+  const handleCancelAward = async () => {
+    if (!id || !gig) return;
+    if (!window.confirm("Cancel this award? Your deposit will be refunded and the gig will be open again for other proposals. The awarded professional will be notified.")) return;
+    setCancelAwardLoading(true);
+    try {
+      const data = await invokeEdgeFunction<{ success?: boolean; message?: string; refunded?: boolean }>(
+        supabase,
+        "gigger-cancel-award",
+        { body: { gigId: id } }
+      );
+      if (data?.success) {
+        toast({
+          title: "Award cancelled",
+          description: data?.refunded ? "Your deposit has been refunded. The gig is open again." : data?.message ?? "The gig is open again.",
+        });
+        loadData();
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to cancel award", description: e?.message ?? "Try again.", variant: "destructive" });
+    } finally {
+      setCancelAwardLoading(false);
+    }
   };
 
   /** Digger accepts the award: bid → accepted, gig → in_progress, fee/deposit logic runs, Gigger notified. */
@@ -781,7 +838,17 @@ const GigDetail = () => {
                     Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
                   </span>
                 </div>
-                <CardTitle className="text-3xl">{gig.title}</CardTitle>
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <CardTitle className="text-3xl">{gig.title}</CardTitle>
+                  {canSeeBudget && (gig.budget_min != null || gig.budget_max != null) && (
+                    <span className="text-xl font-semibold text-primary shrink-0">
+                      {formatBudget(gig.budget_min, gig.budget_max)}
+                    </span>
+                  )}
+                  {showDiggerContent && !canSeeBudget && (
+                    <span className="text-sm text-muted-foreground shrink-0">Submit a bid to view budget</span>
+                  )}
+                </div>
                 {gig.status === "completed" && (
                   <p className="text-sm text-muted-foreground mt-1">
                     This job is completed. Payment & milestones and reviews are below.
@@ -789,6 +856,19 @@ const GigDetail = () => {
                 )}
                 {isOwner && (
                   <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t">
+                    {gig.status === "awarded" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelAward}
+                        disabled={cancelAwardLoading}
+                        className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                        title="Cancel the award and reopen the gig; your deposit will be refunded"
+                      >
+                        {cancelAwardLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
+                        Cancel award
+                      </Button>
+                    )}
                     {gig.status === "open" && (
                       <Button
                         variant="outline"
@@ -849,27 +929,21 @@ const GigDetail = () => {
                   )}
                 </div>
 
-                {getGigSkillNames(gig).length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Diggers with these skills can tailor their proposals to your project.
-                  </p>
-                )}
-
-                {/* At-a-glance: category, budget, location, pref regions, poster country — displayed under description */}
+                {/* At-a-glance: job type, preferred location, deadline (no category tag, no budget here, no client flag) */}
                 <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-xl bg-muted/40 px-4 py-3 border border-transparent">
-                  {gig.categories && (
-                    <div className="flex items-center gap-1.5">
-                      <Tag className="h-4 w-4 shrink-0 text-primary" />
-                      <span>{gig.categories.name}</span>
-                    </div>
-                  )}
                   <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-4 w-4 shrink-0 text-primary" />
-                    <span>{canSeeBudget ? formatBudget(gig.budget_min, gig.budget_max) : (showDiggerContent ? "Submit a bid to view budget" : formatBudget(gig.budget_min, gig.budget_max))}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4 shrink-0 text-primary" />
-                    <span>{gig.location || "Remote"}</span>
+                    <Briefcase className="h-4 w-4 shrink-0 text-primary" />
+                    <span>
+                      {gig.work_type === "remote"
+                        ? "Remote"
+                        : gig.work_type === "hybrid"
+                          ? "Hybrid"
+                          : gig.work_type === "onsite"
+                            ? "On-site"
+                            : gig.work_type === "flexible"
+                              ? "Flexible"
+                              : gig.location || "Remote"}
+                    </span>
                   </div>
                   {gig.preferred_regions && gig.preferred_regions.length > 0 && (
                     <div className="flex items-center gap-1.5">
@@ -881,20 +955,6 @@ const GigDetail = () => {
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 shrink-0 text-primary" />
                       <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {gig.poster_country && (
-                    <div className="flex items-center gap-1.5" title={gig.poster_country}>
-                      {getCodeForCountryName(gig.poster_country) ? (
-                        <img
-                          src={`https://flagcdn.com/w20/${getCodeForCountryName(gig.poster_country).toLowerCase()}.png`}
-                          alt=""
-                          className="h-4 w-5 object-cover rounded-sm shrink-0"
-                          width={20}
-                          height={15}
-                        />
-                      ) : null}
-                      <span className="uppercase font-medium text-foreground">{getCodeForCountryName(gig.poster_country) || gig.poster_country}</span>
                     </div>
                   )}
                 </div>
@@ -970,39 +1030,6 @@ const GigDetail = () => {
                       );
                     })()}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Buy the lead — separate from proposal form so Diggers can unlock contact without submitting a proposal */}
-            {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
-              <Card className="border-primary/30 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    Contact the client now
-                  </CardTitle>
-                  <CardDescription>
-                    Pay once to unlock contact information. After payment clears, you&apos;ll see the client&apos;s details and can reach out directly—no proposal required.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <p className="text-2xl font-bold text-primary">
-                      {(() => {
-                        const mid = gig.budget_min != null && gig.budget_max != null
-                          ? (gig.budget_min + gig.budget_max) / 2
-                          : gig.budget_min ?? gig.budget_max ?? 0;
-                        const price = mid > 0 ? Math.min(49, Math.max(3, Math.round(mid * 0.02 * 100) / 100)) : null;
-                        return price != null ? `Lead price: $${price}` : "Lead price: $3–$49";
-                      })()}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">2% of project budget ($3–$49). Bogus leads fully refundable.</p>
-                  </div>
-                  <Button onClick={() => navigate(`/lead/${id}/unlock`)} className="gap-2 shrink-0">
-                    <Unlock className="h-4 w-4" />
-                    Unlock lead
-                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -1376,12 +1403,46 @@ const GigDetail = () => {
                 onClearFilters={() => setBidFilters(defaultBidFilters)}
                 onAwardSuccess={loadData}
                 gigStatus={gig?.status}
+                onCancelAward={handleCancelAward}
+                cancelAwardLoading={cancelAwardLoading}
               />
             )}
           </div>
 
-          {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = client info */}
+          {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = Contact client + client info */}
           <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
+            {/* Contact the client now — always in sidebar for non-owners (Diggers) */}
+            {!isOwner && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    Contact the client now
+                  </CardTitle>
+                  <CardDescription>
+                    Pay once to unlock contact information. After payment clears, you&apos;ll see the client&apos;s details and can reach out directly—no proposal required.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <div>
+                    <p className="text-2xl font-bold text-primary">
+                      {(() => {
+                        const mid = gig.budget_min != null && gig.budget_max != null
+                          ? (gig.budget_min + gig.budget_max) / 2
+                          : gig.budget_min ?? gig.budget_max ?? 0;
+                        const price = mid > 0 ? Math.min(49, Math.max(3, Math.round(mid * 0.02 * 100) / 100)) : null;
+                        return price != null ? `Lead price: $${price}` : "Lead price: $3–$49";
+                      })()}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">2% of project budget ($3–$49). Bogus leads fully refundable.</p>
+                  </div>
+                  <Button onClick={() => navigate(`/lead/${id}/unlock`)} className="gap-2 w-full sm:w-auto shrink-0">
+                    <Unlock className="h-4 w-4" />
+                    Unlock lead
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             {isOwner && (
               <>
                 {/* Showing X of Y + sort */}
@@ -1564,7 +1625,12 @@ const GigDetail = () => {
                 </Card>
               </>
             )}
-            {!isOwner && activeRole !== "gigger" && (
+            {!isOwner && activeRole !== "gigger" && (() => {
+              // Normalize profile: Supabase can return relation as object or array; support both and snake_case from API
+              const raw = (gig as any).profiles;
+              const clientProfile = raw == null ? null : Array.isArray(raw) ? raw[0] : raw;
+              const p = clientProfile || gig.profiles || null;
+              return (
               <Card className="border-muted/50 bg-muted/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1574,11 +1640,11 @@ const GigDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Photo + name (user-level, same for Digger/Gigger) */}
-                  {(gig.profiles?.avatar_url || gig.profiles?.full_name || gig.client_name) && (
+                  {(p?.avatar_url || p?.full_name || gig.client_name) && (
                     <div className="flex items-center gap-3">
-                      {gig.profiles?.avatar_url ? (
+                      {p?.avatar_url ? (
                         <img
-                          src={gig.profiles.avatar_url}
+                          src={p.avatar_url}
                           alt=""
                           className="h-12 w-12 rounded-full object-cover shrink-0"
                           width={48}
@@ -1592,72 +1658,113 @@ const GigDetail = () => {
                       <div className="min-w-0">
                         <div className="text-xs text-muted-foreground uppercase tracking-wide">Client</div>
                         <div className="font-medium truncate">
-                          {gig.profiles?.full_name?.trim() || gig.client_name?.trim() || "Client"}
+                          {p?.full_name?.trim() || gig.client_name?.trim() || "Client"}
                         </div>
                       </div>
                     </div>
                   )}
-                  {/* Nationality (user-level; fallback to gig poster_country) */}
-                  {(() => {
-                    const country = gig.profiles?.country ?? gig.poster_country ?? null;
-                    if (!country) return <p className="text-sm text-muted-foreground">Client location not specified.</p>;
-                    const code = getCodeForCountryName(country);
-                    return (
-                      <div className="flex items-center gap-3">
-                        {code ? (
-                          <img
-                            src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
-                            alt=""
-                            className="h-8 w-10 object-cover rounded shrink-0"
-                            width={40}
-                            height={32}
-                          />
-                        ) : null}
-                        <div>
-                          <div className="text-xs text-muted-foreground uppercase tracking-wide">Nationality</div>
-                          <div className="font-medium">{code ? `${code} · ${country}` : country}</div>
+                  {/* Location (Gigger full location: city, state, country) — always shown */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Location</div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      {(() => {
+                        const parts = [p?.city, p?.state, p?.country ?? gig.poster_country].filter((s) => s?.trim());
+                        const fullLocation = parts.length > 0 ? parts.join(", ") : null;
+                        const country = p?.country ?? gig.poster_country ?? null;
+                        const code = country ? getCodeForCountryName(country) : "";
+                        if (fullLocation) {
+                          return (
+                            <span className="flex items-center gap-1.5">
+                              {code ? <img src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded shrink-0" width={20} height={15} /> : null}
+                              <span>{fullLocation}</span>
+                            </span>
+                          );
+                        }
+                        if (country) {
+                          return (
+                            <span className="flex items-center gap-1.5">
+                              {code ? <img src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded shrink-0" width={20} height={15} /> : null}
+                              <span>{code ? `${code} · ${country}` : country}</span>
+                            </span>
+                          );
+                        }
+                        return <span className="text-muted-foreground">Not specified</span>;
+                      })()}
+                    </div>
+                  </div>
+                  {/* Local time (Gigger timezone, or fallback from country) — always shown */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Local time</div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Clock className="h-4 w-4 text-primary shrink-0" />
+                      {formatClientLocalTime(p?.timezone ?? null) ||
+                        (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null) ||
+                        <span className="text-muted-foreground">Not specified</span>}
+                    </div>
+                  </div>
+                  {/* Verification status (profile + auth fallback for email/social) — always shown */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Verification status</div>
+                    {(() => {
+                      const emailVerified = p?.email_verified ?? clientVerificationFromAuth?.email_verified ?? false;
+                      const socialVerified = p?.social_verified ?? clientVerificationFromAuth?.social_verified ?? false;
+                      const phoneVerified = p?.phone_verified ?? false;
+                      const paymentVerified = p?.payment_verified ?? false;
+                      const idVerified = p?.id_verified ?? false;
+                      const hasAny = emailVerified || phoneVerified || paymentVerified || idVerified || socialVerified;
+                      return hasAny ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {emailVerified && (
+                            <Badge variant="secondary" className="text-xs gap-0.5">
+                              <Mail className="h-3 w-3" /> Email
+                            </Badge>
+                          )}
+                          {phoneVerified && (
+                            <Badge variant="secondary" className="text-xs gap-0.5">
+                              <Phone className="h-3 w-3" /> Phone
+                            </Badge>
+                          )}
+                          {paymentVerified && (
+                            <Badge variant="secondary" className="text-xs gap-0.5">
+                              <CreditCard className="h-3 w-3" /> Payment
+                            </Badge>
+                          )}
+                          {idVerified && (
+                            <Badge variant="secondary" className="text-xs gap-0.5">
+                              <IdCard className="h-3 w-3" /> ID
+                            </Badge>
+                          )}
+                          {socialVerified && (
+                            <Badge variant="secondary" className="text-xs gap-0.5">
+                              <Share2 className="h-3 w-3" /> Social
+                            </Badge>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Local time (user-level timezone) */}
-                  {formatClientLocalTime(gig.profiles?.timezone ?? null) && (
+                      ) : (
+                        <div className="text-sm font-medium text-muted-foreground">Not specified</div>
+                      );
+                    })()}
+                  </div>
+                  {/* Joined date (user-level) — real calendar date */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Joined</div>
+                    <div className="text-sm font-medium">
+                      {p?.created_at
+                        ? format(new Date(p.created_at), "MMMM d, yyyy")
+                        : "Not specified"}
+                    </div>
+                  </div>
+                  {/* Spent budget (total paid on platform) */}
+                  {clientSpentBudget != null && clientSpentBudget > 0 && (
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <DollarSign className="h-4 w-4 text-primary shrink-0" />
                       <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Local time</div>
-                        <div className="text-sm font-medium">{formatClientLocalTime(gig.profiles?.timezone ?? null)}</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Spent budget</div>
+                        <div className="text-sm font-semibold text-primary">
+                          ${clientSpentBudget.toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {/* Verification badges (user-level) */}
-                  {(gig.profiles?.email_verified || gig.profiles?.phone_verified || gig.profiles?.payment_verified || gig.profiles?.id_verified || gig.profiles?.social_verified) && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {gig.profiles?.email_verified && (
-                        <Badge variant="secondary" className="text-xs gap-0.5">
-                          <Mail className="h-3 w-3" /> Email
-                        </Badge>
-                      )}
-                      {gig.profiles?.phone_verified && (
-                        <Badge variant="secondary" className="text-xs gap-0.5">
-                          <Phone className="h-3 w-3" /> Phone
-                        </Badge>
-                      )}
-                      {gig.profiles?.payment_verified && (
-                        <Badge variant="secondary" className="text-xs gap-0.5">
-                          <CreditCard className="h-3 w-3" /> Payment
-                        </Badge>
-                      )}
-                      {gig.profiles?.id_verified && (
-                        <Badge variant="secondary" className="text-xs gap-0.5">
-                          <IdCard className="h-3 w-3" /> ID
-                        </Badge>
-                      )}
-                      {gig.profiles?.social_verified && (
-                        <Badge variant="secondary" className="text-xs gap-0.5">
-                          <Share2 className="h-3 w-3" /> Social
-                        </Badge>
-                      )}
                     </div>
                   )}
                   {/* Project stats (Gigger) */}
@@ -1683,7 +1790,7 @@ const GigDetail = () => {
                   )}
                 </CardContent>
               </Card>
-            )}
+            );})()}
 
             {showDiggerContent && (
               <Card className="bg-primary/5 border-primary/20">

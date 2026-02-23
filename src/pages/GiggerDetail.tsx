@@ -21,6 +21,8 @@ import {
   Upload,
   Trash2,
   ImagePlus,
+  Clock,
+  MapPin,
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -514,7 +516,9 @@ export default function GiggerDetail() {
     { label: "Phone", isActive: profile.phone_verified != null ? !!profile.phone_verified : !!(profile.phone?.trim() && profile.phone !== "Not specified"), icon: Phone },
     { label: "Email", isActive: profile.email_verified != null ? !!profile.email_verified : !!profile.email, icon: Mail },
     { label: "Payment", isActive: profile.payment_verified != null ? !!profile.payment_verified : false, icon: CreditCard },
+    { label: "Social", isActive: profile.social_verified != null ? !!profile.social_verified : false, icon: Share2 },
   ];
+  const hasAnyVerification = verificationItems.some((i) => i.isActive);
   const coverUrl = profile.cover_photo_url ?? null;
 
   return (
@@ -640,13 +644,11 @@ export default function GiggerDetail() {
                       <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profile.profile_title?.trim() || "Client / Project owner"}</p>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      {displayLocationText && (
-                        <span className="flex items-center gap-2">
-                          {countryCode ? (<><img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded-sm shrink-0" width={20} height={15} /><span className="uppercase font-medium text-foreground text-sm">{countryCode}</span></>) : null}
-                          <span>{displayLocationText}</span>
-                        </span>
-                      )}
-                      {localTime && (<span className="flex items-center gap-1"><span className="text-muted-foreground/70">•</span><span>{localTime} local</span></span>)}
+                      <span className="flex items-center gap-2">
+                        {countryCode ? (<><img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded-sm shrink-0" width={20} height={15} /><span className="uppercase font-medium text-foreground text-sm">{countryCode}</span></>) : null}
+                        <span>{displayLocationText || "Not specified"}</span>
+                      </span>
+                      <span className="flex items-center gap-1"><span className="text-muted-foreground/70">•</span><span>{localTime ? `${localTime} local` : "Local time: Not specified"}</span></span>
                       {profile.created_at && (<span className="flex items-center gap-1"><span className="text-muted-foreground/70">•</span><span>Joined {formatJoinDate(profile.created_at)}</span></span>)}
                     </div>
                   </div>
@@ -715,18 +717,48 @@ export default function GiggerDetail() {
           <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
             <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
               <Card className="w-full">
-                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Verifications</CardTitle></CardHeader>
-                <CardContent className="pt-0 px-4 pb-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {verificationItems.map((item) => (
-                      <div key={item.label} className="flex items-center gap-2">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                          <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
-                        </div>
-                        <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
-                      </div>
-                    ))}
+                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Location & time</CardTitle></CardHeader>
+                <CardContent className="pt-0 px-4 pb-4 space-y-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Location</div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      {displayLocationText ? (
+                        <span className="flex items-center gap-1.5">
+                          {countryCode ? <img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded-sm shrink-0" width={20} height={15} /> : null}
+                          <span>{displayLocationText}</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not specified</span>
+                      )}
+                    </div>
                   </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Local time</div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Clock className="h-4 w-4 text-primary shrink-0" />
+                      {localTime ? <span>{localTime}</span> : <span className="text-muted-foreground">Not specified</span>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Verification status</CardTitle></CardHeader>
+                <CardContent className="pt-0 px-4 pb-4">
+                  {hasAnyVerification ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {verificationItems.map((item) => (
+                        <div key={item.label} className="flex items-center gap-2">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                            <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                          </div>
+                          <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Not specified</p>
+                  )}
                 </CardContent>
               </Card>
               <Card className="w-full rounded-xl border border-border/70 border-primary/20 bg-primary/5 overflow-hidden">

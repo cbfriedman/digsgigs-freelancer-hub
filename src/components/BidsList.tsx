@@ -219,6 +219,10 @@ interface BidsListProps {
   onAwardSuccess?: () => void;
   /** Gig status so ContractMilestonesCard can hide when status is 'awarded' (Digger sees Accept/Decline on page). */
   gigStatus?: string | null;
+  /** Called when Gigger cancels the award from the proposal list; parent should refetch. */
+  onCancelAward?: () => void | Promise<void>;
+  /** When true, show loading state on Cancel award button (e.g. while parent is calling edge function). */
+  cancelAwardLoading?: boolean;
 }
 
 export const BidsList = ({
@@ -236,6 +240,8 @@ export const BidsList = ({
   currentUserId,
   onAwardSuccess,
   gigStatus,
+  onCancelAward,
+  cancelAwardLoading = false,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
@@ -381,19 +387,34 @@ export const BidsList = ({
         .order('amount', { ascending: true }); // Race to the bottom - lowest bids first
 
       if (error) throw error;
-      
-      // Fetch reference counts for each digger
-      const bidsWithRefs = await Promise.all(
-        ((data as any) || []).map(async (bid: any) => {
-          const { count } = await supabase
-            .from('references')
-            .select('*', { count: 'exact', head: true })
-            .eq('digger_id', bid.digger_profiles.id)
-            .eq('is_verified', true);
-          return { ...bid, reference_count: count || 0 };
-        })
-      );
-      
+
+      const bidsList = (data as any) || [];
+      if (bidsList.length === 0) {
+        setBids([]);
+        return;
+      }
+
+      // Single query for all verified reference counts (avoid N+1)
+      const diggerIds = [...new Set(bidsList.map((b: any) => b.digger_profiles?.id).filter(Boolean))] as string[];
+      const refCountByDigger: Record<string, number> = {};
+      diggerIds.forEach((did) => {
+        refCountByDigger[did] = 0;
+      });
+      if (diggerIds.length > 0) {
+        const { data: refRows } = await supabase
+          .from('references')
+          .select('digger_id')
+          .in('digger_id', diggerIds)
+          .eq('is_verified', true);
+        (refRows || []).forEach((r: { digger_id: string }) => {
+          refCountByDigger[r.digger_id] = (refCountByDigger[r.digger_id] ?? 0) + 1;
+        });
+      }
+      const bidsWithRefs = bidsList.map((bid: any) => ({
+        ...bid,
+        reference_count: refCountByDigger[bid.digger_profiles?.id] ?? 0,
+      }));
+
       setBids(bidsWithRefs);
     } catch (error) {
       console.error('Error loading bids:', error);
@@ -806,6 +827,8 @@ export const BidsList = ({
               isOtherBidHired={displayedBids.some(
                 (b) => b.id !== bid.id && !!b.awarded && b.status === "accepted"
               )}
+              onCancelAward={gigStatus === "awarded" ? onCancelAward : undefined}
+              cancelAwardLoading={cancelAwardLoading}
             />
           ))}
         </>

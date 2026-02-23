@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -26,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Percent, CreditCard, AlertCircle, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, Upload, X, CheckCircle2, Shield } from "lucide-react";
+import { Loader2, Percent, CreditCard, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, CheckCircle2, Shield } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +34,6 @@ interface MilestoneItem {
   id: string;
   description: string;
   amount: string;
-}
-
-// Attachment (client-side only for now)
-interface AttachmentFile {
-  id: string;
-  file: File;
-  name: string;
 }
 
 const COVER_LETTER_MIN = 50;
@@ -77,18 +69,6 @@ const NON_EXCLUSIVE_MAX = 49; // $49 maximum
 const DEPOSIT_BASE_RATE = 0.05; // 5% base
 const DEPOSIT_MIN = 249; // $249 minimum deposit
 
-// Available payment methods
-const PAYMENT_METHOD_OPTIONS = [
-  { value: "credit_card", label: "Credit Card" },
-  { value: "bank_transfer", label: "Bank Transfer (ACH)" },
-  { value: "check", label: "Check" },
-  { value: "paypal", label: "PayPal" },
-  { value: "venmo", label: "Venmo" },
-  { value: "zelle", label: "Zelle" },
-  { value: "cash", label: "Cash" },
-  { value: "crypto", label: "Cryptocurrency" },
-];
-
 /** When provided, the form is in edit mode: pre-filled and submit updates the bid instead of inserting. */
 export interface ExistingBidForEdit {
   id: string;
@@ -97,10 +77,11 @@ export interface ExistingBidForEdit {
   amount_min?: number | null;
   amount_max?: number | null;
   timeline: string;
-  payment_terms?: string | null;
   milestones?: { description: string; amount: number }[] | null;
-  accepted_payment_methods?: string[] | null;
   pricing_model?: "pay_per_lead" | "success_based" | null;
+  /** Not shown in form anymore; kept for API compatibility */
+  payment_terms?: string | null;
+  accepted_payment_methods?: string[] | null;
 }
 
 interface BidSubmissionTemplateProps {
@@ -137,17 +118,11 @@ export const BidSubmissionTemplate = ({
         ? "pay_per_lead"
         : (onBuyLeadClick ? "success_based" : initialPricingModel)
   );
-  // New fields for milestones, payment methods, and payment terms
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
-  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>([]);
-  const [paymentTerms, setPaymentTerms] = useState("Payments are due when milestones are met and before the work continues.");
-  // UX: confirmation modal, timeline as number+unit, currency, attachments
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [timelineNumber, setTimelineNumber] = useState("");
   const [timelineUnit, setTimelineUnit] = useState("weeks");
-  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [dragOver, setDragOver] = useState(false);
 
   // Pre-fill form when editing an existing bid (single amount: use amount or derive from min/max)
   useEffect(() => {
@@ -158,7 +133,6 @@ export const BidSubmissionTemplate = ({
     setAmount(initialAmount ? String(initialAmount) : "");
     setTimeline(existingBid.timeline || "");
     setProposal(existingBid.proposal || "");
-    setPaymentTerms(existingBid.payment_terms?.trim() || "Payments are due when milestones are met and before the work continues.");
     if (existingBid.pricing_model === "success_based" || existingBid.pricing_model === "pay_per_lead") {
       setPricingModel(existingBid.pricing_model);
     }
@@ -170,9 +144,6 @@ export const BidSubmissionTemplate = ({
           amount: m.amount != null ? String(m.amount) : "",
         }))
       );
-    }
-    if (Array.isArray(existingBid.accepted_payment_methods) && existingBid.accepted_payment_methods.length > 0) {
-      setAcceptedPaymentMethods(existingBid.accepted_payment_methods);
     }
   }, [existingBid?.id]);
 
@@ -212,8 +183,6 @@ export const BidSubmissionTemplate = ({
         timeline: validated.timeline,
         proposal: validated.proposal,
         milestones: milestonesData.length > 0 ? milestonesData : null,
-        accepted_payment_methods: acceptedPaymentMethods.length > 0 ? acceptedPaymentMethods : null,
-        payment_terms: paymentTerms.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -261,13 +230,6 @@ export const BidSubmissionTemplate = ({
       } catch (emailError) {
         console.error('Failed to send email notification:', emailError);
       }
-
-      toast({
-        title: "Proposal submitted!",
-        description: pricingModel === "success_based"
-          ? "Your proposal has been submitted. A 2% referral fee will be charged only if you're selected."
-          : "Your proposal has been submitted successfully.",
-      });
 
       const win = window as any;
       if (win.fbq) {
@@ -461,23 +423,6 @@ export const BidSubmissionTemplate = ({
             </p>
           </section>
 
-          {pricingModel === "success_based" && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-orange-800 dark:text-orange-200 mb-1">
-                    Exclusive Engagement Selected
-                  </p>
-                  <p className="text-orange-700 dark:text-orange-300">
-                    You pay nothing upfront. An 8% referral fee (${REFERRAL_FEE_MIN} minimum) 
-                    will be charged only if you&apos;re awarded and accept. You must accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmitClick} className="space-y-6 sm:space-y-8 p-4 sm:p-6">
             {/* Pro tip */}
             <div className="flex gap-3 p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/20">
@@ -597,9 +542,8 @@ export const BidSubmissionTemplate = ({
                   <div>
                     <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
                       <Milestone className="w-4 h-4" />
-                      Milestone breakdown (optional)
+                      Milestone breakdown
                     </Label>
-                    <p className="text-xs text-muted-foreground mt-1">Last milestone should be 10% (due when work is complete).</p>
                   </div>
                   <Button
                     type="button"
@@ -658,114 +602,6 @@ export const BidSubmissionTemplate = ({
               )}
               </div>
             </section>
-
-            <Separator />
-
-            {/* C. Attachments */}
-            <section className="space-y-3" aria-labelledby="attachments-heading">
-              <h2 id="attachments-heading" className="text-lg font-semibold">Attachments (optional)</h2>
-              <div
-                className={cn(
-                  "rounded-xl sm:rounded-2xl border-2 border-dashed p-4 sm:p-8 text-center transition-colors",
-                  dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 bg-muted/20 hover:bg-muted/30"
-                )}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const files = Array.from(e.dataTransfer.files);
-                  files.forEach((file) => {
-                    setAttachments((prev) => [...prev, { id: crypto.randomUUID(), file, name: file.name }]);
-                  });
-                }}
-              >
-                <Upload className="w-8 h-8 sm:w-10 sm:h-10 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">Drag and drop files here, or tap to browse</p>
-                <p className="text-xs text-muted-foreground">PDF, images, docs. Max 10MB per file.</p>
-                <Input
-                  type="file"
-                  className="hidden"
-                  id="file-upload"
-                  multiple
-                  onChange={(e) => {
-                    const files = e.target.files ? Array.from(e.target.files) : [];
-                    files.forEach((file) => setAttachments((prev) => [...prev, { id: crypto.randomUUID(), file, name: file.name }]));
-                    e.target.value = "";
-                  }}
-                />
-                <Label htmlFor="file-upload" className="cursor-pointer text-primary text-sm font-medium hover:underline mt-2 inline-block">
-                  Choose files
-                </Label>
-              </div>
-              {attachments.length > 0 && (
-                <ul className="space-y-2">
-                  {attachments.map((a) => (
-                    <li key={a.id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
-                      <span className="truncate">{a.name}</span>
-                      <Button type="button" variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <Separator />
-
-            {/* Payment methods & terms (compact) */}
-            <section className="space-y-4">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-primary" />
-                Accepted payment methods
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Select the payment methods you accept for this project.
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {PAYMENT_METHOD_OPTIONS.map((method) => (
-                  <label
-                    key={method.value}
-                    className={`flex items-center gap-2 p-3 sm:p-2 rounded-lg border cursor-pointer transition-colors min-h-[44px] sm:min-h-0 ${
-                      acceptedPaymentMethods.includes(method.value)
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground"
-                    }`}
-                  >
-                    <Checkbox
-                      checked={acceptedPaymentMethods.includes(method.value)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setAcceptedPaymentMethods([...acceptedPaymentMethods, method.value]);
-                        } else {
-                          setAcceptedPaymentMethods(acceptedPaymentMethods.filter(v => v !== method.value));
-                        }
-                      }}
-                    />
-                    <span className="text-sm">{method.label}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-
-            {/* Payment Terms */}
-            <div className="space-y-2">
-              <Label htmlFor="paymentTerms" className="text-base font-semibold">
-                Payment Terms
-              </Label>
-              <Textarea
-                id="paymentTerms"
-                placeholder="e.g., 50% upfront, 50% on completion; or adjust the default below"
-                value={paymentTerms}
-                onChange={(e) => setPaymentTerms(e.target.value)}
-                rows={3}
-                maxLength={1000}
-              />
-              <p className="text-xs text-muted-foreground">
-                {paymentTerms.length}/1000 characters
-              </p>
-            </div>
 
             <Separator />
 

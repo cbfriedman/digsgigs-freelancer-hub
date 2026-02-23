@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Info, Percent, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Info, Percent, CreditCard } from "lucide-react";
 import { z } from "zod";
 
 // SECURITY: Input validation schema
@@ -197,23 +197,6 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
         </div>
       </CardHeader>
       <CardContent>
-        {pricingModel === "success_based" && (
-          <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-orange-800 dark:text-orange-200 mb-1">
-                  Exclusive Engagement Selected
-                </p>
-                <p className="text-orange-700 dark:text-orange-300">
-                  You pay nothing upfront. An 8% referral fee (${REFERRAL_FEE_MIN} minimum) 
-                  will be charged only if you're awarded and accept the job.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="amount">Your Bid Amount ($)</Label>

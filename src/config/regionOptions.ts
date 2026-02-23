@@ -261,6 +261,27 @@ export const getCodeForCountryName = (countryName: string): string => {
 };
 
 /**
+ * Country code for display/flag: prefers explicit country (e.g. profiles.country), then tries
+ * location string (full then last segment after comma). Only returns a code when the value
+ * is clearly a country, so the flag is not shown for city-only strings.
+ */
+export function getCountryCodeForDisplay(
+  explicitCountry?: string | null,
+  location?: string | null
+): string {
+  if (explicitCountry?.trim()) {
+    const code = getCodeForCountryName(explicitCountry.trim());
+    if (code) return code;
+  }
+  if (!location?.trim()) return "";
+  const trimmed = location.trim();
+  const code = getCodeForCountryName(trimmed);
+  if (code) return code;
+  const lastPart = trimmed.split(",").map((s) => s.trim()).filter(Boolean).pop();
+  return lastPart ? getCodeForCountryName(lastPart) : "";
+}
+
+/**
  * Format selected values for display (handles both region codes and country codes)
  */
 export const formatSelectionDisplay = (values: string[] | null): string => {

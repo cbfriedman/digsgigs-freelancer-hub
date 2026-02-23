@@ -12,7 +12,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw, Plus } from "lucide-react";
 import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
 import { loadStripe } from "@stripe/stripe-js";
@@ -84,6 +95,10 @@ export function ContractMilestonesCard({
   const [endingContract, setEndingContract] = useState(false);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [giggerRatingDialogOpen, setGiggerRatingDialogOpen] = useState(false);
+  const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
+  const [addMilestoneDescription, setAddMilestoneDescription] = useState("");
+  const [addMilestoneAmount, setAddMilestoneAmount] = useState("");
+  const [addMilestoneSubmitting, setAddMilestoneSubmitting] = useState(false);
   type ReviewDisplay = { rating: number; review_text: string | null; created_at: string };
   const [myReview, setMyReview] = useState<ReviewDisplay | null>(null);
   const [theirReview, setTheirReview] = useState<ReviewDisplay | null>(null);
@@ -467,6 +482,42 @@ export function ContractMilestonesCard({
       });
     } finally {
       setEndingContract(false);
+    }
+  };
+
+  const handleAddMilestone = async () => {
+    const desc = addMilestoneDescription.trim();
+    const amount = parseFloat(addMilestoneAmount);
+    if (!desc) {
+      toast({ title: "Description required", variant: "destructive" });
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: "Enter a valid amount greater than 0", variant: "destructive" });
+      return;
+    }
+    setAddMilestoneSubmitting(true);
+    try {
+      await invokeEdgeFunction(supabase, "add-milestone", {
+        body: { gigId, description: desc, amount },
+      });
+      toast({
+        title: "Milestone added",
+        description: "The professional can submit it when the work is done; you'll pay when you approve.",
+      });
+      setAddMilestoneOpen(false);
+      setAddMilestoneDescription("");
+      setAddMilestoneAmount("");
+      setReloadKey((k) => k + 1);
+      onUpdate?.();
+    } catch (e) {
+      toast({
+        title: "Could not add milestone",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddMilestoneSubmitting(false);
     }
   };
 
@@ -874,6 +925,24 @@ export function ContractMilestonesCard({
           ))}
         </TooltipProvider>
 
+        {isGigger && contract.status === "active" && (
+          <div className="pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setAddMilestoneOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add milestone
+            </Button>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Add an extra deliverable and amount. The professional can submit it when done; you pay when you approve.
+            </p>
+          </div>
+        )}
+
         {paidCount === totalCount && totalCount > 0 && isGigger && contract.status === "active" && (
           <div className="pt-2 border-t">
             <Button
@@ -895,6 +964,54 @@ export function ContractMilestonesCard({
           </div>
         )}
       </CardContent>
+
+      <Dialog open={addMilestoneOpen} onOpenChange={setAddMilestoneOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add milestone</DialogTitle>
+            <DialogDescription>
+              Add an extra deliverable to this contract. Enter a description and amount. The professional can submit it when the work is done; you'll be charged (milestone + 3% fee) when you approve. Secure and reliable.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="add-milestone-desc">Description</Label>
+              <Textarea
+                id="add-milestone-desc"
+                placeholder="e.g. Phase 2: Revisions and polish"
+                value={addMilestoneDescription}
+                onChange={(e) => setAddMilestoneDescription(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="add-milestone-amount">Amount ($)</Label>
+              <Input
+                id="add-milestone-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                value={addMilestoneAmount}
+                onChange={(e) => setAddMilestoneAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddMilestoneOpen(false)} disabled={addMilestoneSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMilestone} disabled={addMilestoneSubmitting}>
+              {addMilestoneSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Add milestone"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {contract.status === "completed" && (
         <>

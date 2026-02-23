@@ -9,7 +9,7 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, UserCircle, X } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, UserCircle, X, MapPin, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +27,6 @@ import {
 } from "@/config/giggerContactMethods";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
@@ -65,6 +64,8 @@ const PostGig = () => {
   const [skillsRequired, setSkillsRequired] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [skillSearchQuery, setSkillSearchQuery] = useState("");
+  const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  const [workType, setWorkType] = useState<"remote" | "hybrid" | "onsite" | "flexible">("remote");
   const { skillsByCategory, allSkills } = useSkillsByCategory();
 
   // Load gigger's profile: country (for poster_country) and contact (name, email, phone) so we use account data instead of asking again
@@ -203,8 +204,17 @@ const PostGig = () => {
   const handleSkillInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      addSkill(skillInput);
+      const q = skillInput.trim().toLowerCase();
+      const firstMatch = allSkills.find(
+        (s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase()) && (!q || s.name.toLowerCase().includes(q))
+      );
+      if (firstMatch && (e.key === "Enter" && skillInput.trim())) {
+        addSkill(firstMatch.name);
+      } else if (normalizeSkillInput(skillInput)) {
+        addSkill(skillInput);
+      }
       setSkillInput("");
+      setSkillDropdownOpen(false);
     }
   };
 
@@ -295,7 +305,7 @@ const PostGig = () => {
           budget_min: finalBudgetMin,
           budget_max: finalBudgetMax,
           timeline: TIMELINE_OPTIONS.find(t => t.value === finalTimeline)?.label || finalTimeline,
-          location: "Remote",
+          work_type: workType,
           client_name: finalClientName.trim(),
           consumer_email: finalClientEmail.trim(),
           consumer_phone: finalClientPhone.trim() || null,
@@ -592,14 +602,14 @@ const PostGig = () => {
                 />
               </div>
 
-              {/* Skills required (optional) - select from database or add custom */}
+              {/* Skills required (optional) - type to see related skills in dropdown, or press Enter for custom */}
               <div className="space-y-3 p-6 rounded-xl bg-muted/20 border border-border/50">
                 <Label className="text-base font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   Skills required <span className="text-muted-foreground font-normal text-sm">(optional)</span>
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Select from the list or type a skill not listed and press Enter. Diggers use this to match and tailor their proposals.
+                  Type a skill to see suggestions; click one or press Enter to add. Diggers use this to match and tailor their proposals.
                 </p>
                 {skillsRequired.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -622,48 +632,51 @@ const PostGig = () => {
                     ))}
                   </div>
                 )}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Select from database</p>
+                <div className="relative max-w-md">
                   <Input
-                    placeholder="Search skills..."
-                    value={skillSearchQuery}
-                    onChange={(e) => setSkillSearchQuery(e.target.value)}
-                    className="rounded-lg border-border/60 max-w-md"
-                  />
-                  <ScrollArea className="h-[140px] w-full rounded-lg border border-border/60 bg-background px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(skillsByCategory).map(([categoryName, skills]) => {
-                        const searchLower = skillSearchQuery.trim().toLowerCase();
-                        const filtered = skills
-                          .filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase()))
-                          .filter((s) => !searchLower || s.name.toLowerCase().includes(searchLower));
-                        return (
-                          <span key={categoryName} className="contents">
-                            {filtered.map((skill) => (
-                              <button
-                                type="button"
-                                key={skill.id}
-                                onClick={() => addSkill(skill.name)}
-                                className="inline-flex items-center rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/5 transition-colors"
-                              >
-                                + {skill.name}
-                              </button>
-                            ))}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
-                <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Or add a skill not in the list</p>
-                  <Input
-                    placeholder="Type skill and press Enter"
+                    placeholder="Type to search skills (e.g. React, SEO, design)..."
                     value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
+                    onChange={(e) => {
+                      setSkillInput(e.target.value);
+                      setSkillDropdownOpen(true);
+                    }}
+                    onFocus={() => setSkillDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setSkillDropdownOpen(false), 180)}
                     onKeyDown={handleSkillInputKeyDown}
-                    className="rounded-xl border-border/50 max-w-md"
+                    className="rounded-xl border-border/60"
                   />
+                  {skillDropdownOpen && (skillInput.trim() || allSkills.length > 0) && (
+                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-auto py-1">
+                      {(() => {
+                        const q = skillInput.trim().toLowerCase();
+                        const filtered = allSkills
+                          .filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase()))
+                          .filter((s) => !q || s.name.toLowerCase().includes(q))
+                          .slice(0, 20);
+                        if (filtered.length === 0 && skillInput.trim()) {
+                          return (
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                              onMouseDown={(e) => { e.preventDefault(); addSkill(normalizeSkillInput(skillInput)); setSkillInput(""); setSkillDropdownOpen(false); }}
+                            >
+                              Add &quot;{skillInput.trim()}&quot;
+                            </button>
+                          );
+                        }
+                        return filtered.map((skill) => (
+                          <button
+                            type="button"
+                            key={skill.id}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                            onMouseDown={(e) => { e.preventDefault(); addSkill(skill.name); setSkillInput(""); setSkillDropdownOpen(false); }}
+                          >
+                            {skill.name}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -735,6 +748,39 @@ const PostGig = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Job type: Remote, Hybrid, On-site, Flexible */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      Job type
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      How should the work be done? Helps Diggers know if they can apply.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: "remote" as const, label: "Remote" },
+                        { value: "hybrid" as const, label: "Hybrid" },
+                        { value: "onsite" as const, label: "On-site" },
+                        { value: "flexible" as const, label: "Flexible" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setWorkType(opt.value)}
+                          className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                            workType === opt.value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted/50"
+                          }`}
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Region Preference */}

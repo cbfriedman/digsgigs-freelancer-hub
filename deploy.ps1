@@ -27,7 +27,13 @@ $functions = @(
     "send-gig-confirmation",
     "post-gig",
     "submit-contact-form",
-    "elevenlabs-conversation-token"
+    "elevenlabs-conversation-token",
+    "add-milestone",
+    "create-payment-contract",
+    "charge-milestone",
+    "confirm-milestone-session",
+    "submit-milestone",
+    "end-contract"
 )
 
 foreach ($func in $functions) {

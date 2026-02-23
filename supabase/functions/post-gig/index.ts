@@ -14,6 +14,7 @@ interface PostGigPayload {
   budget_max: number;
   timeline: string;
   location?: string;
+  work_type?: "remote" | "hybrid" | "onsite" | "flexible";
   client_name: string;
   consumer_email: string;
   consumer_phone?: string | null;
@@ -51,7 +52,8 @@ serve(async (req) => {
       budget_min,
       budget_max,
       timeline,
-      location = "Remote",
+      location,
+      work_type = "remote",
       client_name,
       consumer_email,
       consumer_phone = null,
@@ -61,6 +63,8 @@ serve(async (req) => {
       skills_required = null,
       contact_preferences = null,
     } = body;
+
+    const locationDisplay = location?.trim() || (work_type === "remote" ? "Remote" : work_type === "hybrid" ? "Hybrid" : work_type === "onsite" ? "On-site" : "Flexible");
 
     if (!title?.trim() || !description?.trim()) {
       return new Response(
@@ -114,7 +118,8 @@ serve(async (req) => {
         budget_min: budget_min ?? 0,
         budget_max: budget_max ?? 0,
         timeline: timeline ?? null,
-        location: location ?? "Remote",
+        location: locationDisplay,
+        work_type: ["remote", "hybrid", "onsite", "flexible"].includes(work_type) ? work_type : "remote",
         client_name: (client_name ?? "").trim(),
         consumer_email: (consumer_email ?? "").trim(),
         consumer_phone: consumer_phone?.trim() || null,

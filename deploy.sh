@@ -26,6 +26,12 @@ functions=(
     "award-lead"
     "match-leads-to-diggers"
     "stripe-webhook-lead-purchase"
+    "add-milestone"
+    "create-payment-contract"
+    "charge-milestone"
+    "confirm-milestone-session"
+    "submit-milestone"
+    "end-contract"
 )
 
 for func in "${functions[@]}"; do

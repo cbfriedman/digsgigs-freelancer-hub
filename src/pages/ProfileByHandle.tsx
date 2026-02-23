@@ -97,17 +97,26 @@ export default function ProfileByHandle() {
     const load = async () => {
       setLoading(true);
       try {
-        let row: ResolveRow | null = null;
+        // Resolve handle and session in parallel to reduce wait
+        const resolvePromise = isUuid(handle)
+          ? supabase
+              .from("profiles")
+              .select("id, full_name, avatar_url, about_me, handle")
+              .eq("id", handle)
+              .maybeSingle()
+          : supabase.rpc("resolve_profile_handle" as any, { _handle: handle.toLowerCase() });
 
+        const [resolveResult, sessionResult] = await Promise.all([
+          resolvePromise,
+          supabase.auth.getSession(),
+        ]);
+
+        let row: ResolveRow | null = null;
         if (isUuid(handle)) {
-          const { data: byId } = await supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, about_me, handle")
-            .eq("id", handle)
-            .maybeSingle();
+          const byId = (resolveResult as { data: unknown }).data;
           if (byId) {
-            const p = byId as unknown as PublicProfileData;
-            const normalizedHandle = normalizeHandle((p as any).handle);
+            const p = byId as unknown as PublicProfileData & { handle?: string };
+            const normalizedHandle = normalizeHandle(p.handle);
             if (normalizedHandle && normalizedHandle !== handle.toLowerCase()) {
               const target = `/profile/${normalizedHandle}${safeRole === "overview" ? "" : `/${safeRole}`}`;
               navigate(target, { replace: true });
@@ -126,10 +135,8 @@ export default function ProfileByHandle() {
             };
           }
         } else {
-          const { data } = await supabase.rpc("resolve_profile_handle" as any, {
-            _handle: handle.toLowerCase(),
-          });
-          row = ((data as ResolveRow[] | null) || [])[0] || null;
+          const data = (resolveResult as { data: ResolveRow[] | null }).data;
+          row = (data || [])[0] || null;
         }
 
         if (!row) {
@@ -142,8 +149,9 @@ export default function ProfileByHandle() {
           return;
         }
 
-        const [{ data: sessionData }, { data: pData }, { data: dData }, { data: gData }] = await Promise.all([
-          supabase.auth.getSession(),
+        const sessionData = sessionResult.data;
+
+        const [{ data: pData }, { data: dData }, { data: gData }] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, full_name, avatar_url, about_me, handle, gigger_public")

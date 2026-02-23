@@ -2075,6 +2075,7 @@ export type Database = {
           title: string
           updated_at: string
           uploaded_by_telemarketer: boolean | null
+          work_type: string | null
         }
         Insert: {
           ai_matched_codes?: boolean | null
@@ -2105,6 +2106,7 @@ export type Database = {
           lead_number?: string | null
           lead_source?: string | null
           location: string
+          work_type?: string | null
           location_lat?: number | null
           location_lng?: number | null
           naics_codes?: string[] | null
@@ -2165,6 +2167,7 @@ export type Database = {
           title?: string
           updated_at?: string
           uploaded_by_telemarketer?: boolean | null
+          work_type?: string | null
         }
         Relationships: [
           {
@@ -3945,6 +3948,7 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
+          country: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -3956,6 +3960,7 @@ export type Database = {
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -3967,6 +3972,7 @@ export type Database = {
         Update: {
           about_me?: string | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
