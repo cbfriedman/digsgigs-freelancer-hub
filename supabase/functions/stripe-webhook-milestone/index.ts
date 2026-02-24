@@ -131,20 +131,32 @@ serve(async (req) => {
       .eq("id", contract.digger_id)
       .single();
 
+    // If the PaymentIntent was created with transfer_data (saved PM destination charge), Stripe already transferred that amount at capture. Only transfer the remainder (e.g. 7% deposit advance).
+    const alreadyTransferredCents = (pi.transfer_data?.amount ?? 0) as number;
+    const remainderCents = diggerPayoutCents - alreadyTransferredCents;
+
     let stripeTransferId: string | null = null;
-    if (diggerProfile?.stripe_connect_account_id) {
-      const transfer = await stripe.transfers.create({
-        amount: diggerPayoutCents,
-        currency: "usd",
-        destination: diggerProfile.stripe_connect_account_id,
-        description: `Milestone - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
-        metadata: {
-          milestone_payment_id: milestonePaymentId,
-          escrow_contract_id: milestone.escrow_contract_id,
-        },
-      });
-      stripeTransferId = transfer.id;
-      logStep("Transfer created", { transferId: transfer.id });
+    if (diggerProfile?.stripe_connect_account_id && remainderCents > 0) {
+      try {
+        const transfer = await stripe.transfers.create({
+          amount: remainderCents,
+          currency: "usd",
+          destination: diggerProfile.stripe_connect_account_id,
+          description: `Milestone - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
+          metadata: {
+            milestone_payment_id: milestonePaymentId,
+            escrow_contract_id: milestone.escrow_contract_id,
+          },
+        });
+        stripeTransferId = transfer.id;
+        logStep("Transfer created (remainder only)", { transferId: transfer.id, remainderCents, alreadyTransferredCents });
+      } catch (transferErr) {
+        logStep("Transfer failed (e.g. insufficient platform balance for 7% advance)", {
+          error: transferErr instanceof Error ? transferErr.message : String(transferErr),
+        });
+      }
+    } else if (alreadyTransferredCents > 0) {
+      logStep("Main amount already transferred via transfer_data", { alreadyTransferredCents });
     }
 
     await supabase
@@ -152,10 +164,8 @@ serve(async (req) => {
       .update({
         status: "paid",
         stripe_payment_intent_id: pi.id,
-        ...(stripeTransferId && {
-          stripe_transfer_id: stripeTransferId,
-          released_at: new Date().toISOString(),
-        }),
+        ...(stripeTransferId && { stripe_transfer_id: stripeTransferId }),
+        ...(diggerProfile?.stripe_connect_account_id && { released_at: new Date().toISOString() }),
       })
       .eq("id", milestonePaymentId);
 

@@ -157,16 +157,6 @@ export function PaymentContractDialog({
   };
 
   const totalMilestoneAmount = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
-  const totalTransactionFee = milestones.reduce(
-    (sum, m) => sum + (m.amount || 0) * (TRANSACTION_FEE_PERCENT / 100),
-    0
-  );
-  const totalPlatformFee = milestones.reduce(
-    (sum, m) => sum + (m.amount || 0) * (PLATFORM_FEE_PERCENT / 100),
-    0
-  );
-  const totalGiggerPays = totalMilestoneAmount + totalTransactionFee;
-  const totalDiggerReceives = totalMilestoneAmount - totalPlatformFee;
 
   const handleCreateContract = async () => {
     if (milestones.some((m) => !m.description?.trim() || (m.amount ?? 0) <= 0)) {
@@ -438,27 +428,6 @@ export function PaymentContractDialog({
                 )}
               </div>
             ))}
-          </div>
-
-          <div className="border-t pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Total milestones</span>
-              <span className={Math.abs(totalMilestoneAmount - milestoneTotal) > 0.01 ? "text-destructive" : ""}>
-                ${totalMilestoneAmount.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Est. 3% transaction fee (you pay per milestone)</span>
-              <span>${totalTransactionFee.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Your total (milestones + 3%)</span>
-              <span>${totalGiggerPays.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Digger net (after 8% platform fee)</span>
-              <span>${totalDiggerReceives.toFixed(2)}</span>
-            </div>
           </div>
 
           <div className="flex gap-2 justify-end">

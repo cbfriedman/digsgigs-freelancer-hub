@@ -646,49 +646,9 @@ export const BidsList = ({
     await handleAwardBid(id);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <LoadingSpinner label="Loading bids..." />
-      </div>
-    );
-  }
-
-  if (displayedBids.length === 0) {
-    if (isOwner && statsInSidebar && rawDisplayed.length > 0 && onClearFilters) {
-      return (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold">Bids</h3>
-            <p className="text-sm text-muted-foreground mt-1">Review bids below. New bids appear in real time.</p>
-          </div>
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground font-medium">No bids match your filters</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Try loosening your filters or clear them to see all {rawDisplayed.length} bid{rawDisplayed.length === 1 ? "" : "s"}.
-              </p>
-              <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onClearFilters}>
-                <X className="h-4 w-4" />
-                Clear all filters
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          {!isOwner && currentDiggerId
-            ? "You haven't placed a bid on this gig yet."
-            : "No bids yet. Diggers will appear here when they bid."}
-        </CardContent>
-      </Card>
-    );
-  }
-
   const totalBids = displayedBids.length;
+  const showBidsEmptyState = !loading && displayedBids.length === 0;
+  const showBidsFilterEmpty = showBidsEmptyState && isOwner && statsInSidebar && rawDisplayed.length > 0 && onClearFilters;
 
   return (
     <div className="space-y-6">
@@ -745,7 +705,6 @@ export const BidsList = ({
           currentUserId={currentUserId}
           currentDiggerProfileId={currentDiggerId ?? null}
           onUpdate={() => {
-            setContractCardKey((k) => k + 1);
             onAwardSuccess?.();
           }}
           gigStatus={gigStatus}
@@ -785,10 +744,44 @@ export const BidsList = ({
         />
       )}
 
-      {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only */}
+      {/* Digger with no bid: show message. When loading, only the relevant part shows loading. */}
+      {!isOwner && currentDiggerId && !loading && displayedBids.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            You haven&apos;t placed a bid on this gig yet.
+          </CardContent>
+        </Card>
+      )}
+      {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only. When loading, only this section shows loading. */}
       {isOwner && (
         <>
-          {displayedBids.map((bid) => (
+          {loading ? (
+            <Card>
+              <CardContent className="py-6 flex flex-col items-center justify-center gap-2">
+                <LoadingSpinner label="Loading bids..." />
+              </CardContent>
+            </Card>
+          ) : showBidsFilterEmpty ? (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground font-medium">No bids match your filters</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Try loosening your filters or clear them to see all {rawDisplayed.length} bid{rawDisplayed.length === 1 ? "" : "s"}.
+                </p>
+                <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onClearFilters}>
+                  <X className="h-4 w-4" />
+                  Clear all filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : showBidsEmptyState ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                No bids yet. Diggers will appear here when they bid.
+              </CardContent>
+            </Card>
+          ) : (
+          displayedBids.map((bid) => (
             <DiggerProposalCard
               key={bid.id}
               bid={bid}
@@ -830,7 +823,7 @@ export const BidsList = ({
               onCancelAward={gigStatus === "awarded" ? onCancelAward : undefined}
               cancelAwardLoading={cancelAwardLoading}
             />
-          ))}
+          )))}
         </>
       )}
 

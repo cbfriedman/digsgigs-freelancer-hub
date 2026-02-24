@@ -218,56 +218,8 @@ serve(async (req) => {
     const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100)); // 3% from Gigger
     const totalChargeCents = amountCents + transactionFeeCents; // Gigger pays gross + 3%
 
-    const idempotencyKey = `milestone-${milestonePaymentId}`;
-
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: totalChargeCents,
-        currency: "usd",
-        customer: defaultPm.stripe_customer_id,
-        payment_method: defaultPm.stripe_payment_method_id,
-        confirm: true,
-        description: `Milestone payment - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
-        metadata: {
-          type: "milestone",
-          milestone_payment_id: milestonePaymentId,
-          escrow_contract_id: milestone.escrow_contract_id,
-          consumer_id: contract.consumer_id,
-          digger_id: contract.digger_id,
-          gig_id: contract.gig_id,
-        },
-        return_url: `${req.headers.get("origin") || ""}/my-gigs?payment=success`,
-      },
-      { idempotencyKey }
-    );
-
-    logStep("PaymentIntent created", {
-      id: paymentIntent.id,
-      status: paymentIntent.status,
-      amount: totalChargeCents,
-    });
-
-    if (paymentIntent.status === "requires_action") {
-      return new Response(
-        JSON.stringify({
-          requiresAction: true,
-          clientSecret: paymentIntent.client_secret,
-          paymentIntentId: paymentIntent.id,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    if (paymentIntent.status !== "succeeded") {
-      return new Response(
-        JSON.stringify({
-          error: "Payment did not succeed",
-          status: paymentIntent.status,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
-    }
-
+    // Compute digger payout and 7% deposit advance before creating PI so we can use transfer_data (destination charge).
+    // Using transfer_data avoids "insufficient available funds" because the transfer happens at capture, not from platform balance.
     const { data: diggerProfile } = await supabaseAdmin
       .from("digger_profiles")
       .select("stripe_connect_account_id")
@@ -275,7 +227,7 @@ serve(async (req) => {
       .single();
 
     let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100); // gross - 8%
-    // First milestone: find paid deposit by gig_id; add 7% of bid to digger
+    let depositAdvanceCents = 0;
     const isFirstMilestone = Number((milestone as any).milestone_number) === 1;
     if (isFirstMilestone) {
       let bidAmountForSevenPercent: number | null = null;
@@ -300,29 +252,114 @@ serve(async (req) => {
         }
       }
       if (bidAmountForSevenPercent != null) {
-        const advanceCents = Math.round(bidAmountForSevenPercent * 0.07 * 100);
-        diggerPayoutCents += advanceCents;
-        logStep("Adding 7% deposit advance to first milestone (direct)", { advanceCents, diggerPayoutCents });
+        depositAdvanceCents = Math.round(bidAmountForSevenPercent * 0.07 * 100);
+        diggerPayoutCents += depositAdvanceCents;
+        logStep("Adding 7% deposit advance to first milestone (saved PM)", { depositAdvanceCents, diggerPayoutCents });
       }
     }
-    let stripeTransferId: string | null = null;
-    if (diggerProfile?.stripe_connect_account_id) {
-      const transfer = await stripe.transfers.create({
-        amount: diggerPayoutCents,
-        currency: "usd",
+    const transferFromThisPaymentCents = diggerPayoutCents - depositAdvanceCents;
+
+    const idempotencyKey = `milestone-${milestonePaymentId}`;
+    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+      amount: totalChargeCents,
+      currency: "usd",
+      customer: defaultPm.stripe_customer_id,
+      payment_method: defaultPm.stripe_payment_method_id,
+      confirm: true,
+      description: `Milestone payment - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
+      metadata: {
+        type: "milestone",
+        milestone_payment_id: milestonePaymentId,
+        escrow_contract_id: milestone.escrow_contract_id,
+        consumer_id: contract.consumer_id,
+        digger_id: contract.digger_id,
+        gig_id: contract.gig_id,
+      },
+      return_url: `${req.headers.get("origin") || ""}/my-gigs?payment=success`,
+    };
+    if (diggerProfile?.stripe_connect_account_id && transferFromThisPaymentCents > 0) {
+      paymentIntentParams.transfer_data = {
         destination: diggerProfile.stripe_connect_account_id,
-        description: `Milestone payment - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
-        metadata: {
-          milestone_payment_id: milestonePaymentId,
-          escrow_contract_id: milestone.escrow_contract_id,
-        },
-      });
-      stripeTransferId = transfer.id;
-      logStep("Transfer created", { transferId: transfer.id });
-    } else {
-      logStep("Digger has no Connect account - payment taken but transfer skipped", {
-        milestonePaymentId,
-      });
+        amount: transferFromThisPaymentCents,
+      };
+      logStep("Using transfer_data (destination charge) to avoid platform balance", { transferFromThisPaymentCents });
+    }
+
+    let paymentIntent: Stripe.PaymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(
+        paymentIntentParams,
+        { idempotencyKey }
+      );
+    } catch (piErr: unknown) {
+      const errMsg = piErr instanceof Error ? piErr.message : String(piErr);
+      if (/insufficient|available balance|balance_insufficient/i.test(errMsg)) {
+        logStep("PaymentIntent failed (balance/transfer); suggesting Checkout", { message: errMsg });
+        return new Response(
+          JSON.stringify({
+            error:
+              "Saved card payment couldn't be completed (platform balance limitation). Please use \"Pay with new card (Checkout)\" instead—it works reliably.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+      throw piErr;
+    }
+
+    logStep("PaymentIntent created", {
+      id: paymentIntent.id,
+      status: paymentIntent.status,
+      amount: totalChargeCents,
+      hasTransferData: !!paymentIntentParams.transfer_data,
+    });
+
+    if (paymentIntent.status === "requires_action") {
+      return new Response(
+        JSON.stringify({
+          requiresAction: true,
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (paymentIntent.status !== "succeeded") {
+      return new Response(
+        JSON.stringify({
+          error: "Payment did not succeed",
+          status: paymentIntent.status,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    // Main transfer was done via transfer_data at capture. Only transfer the 7% deposit advance from platform balance (if any).
+    let stripeTransferId: string | null = null;
+    if (diggerProfile?.stripe_connect_account_id && depositAdvanceCents > 0) {
+      try {
+        const transfer = await stripe.transfers.create({
+          amount: depositAdvanceCents,
+          currency: "usd",
+          destination: diggerProfile.stripe_connect_account_id,
+          description: `Milestone 7% deposit advance - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
+          metadata: {
+            milestone_payment_id: milestonePaymentId,
+            escrow_contract_id: milestone.escrow_contract_id,
+          },
+        });
+        stripeTransferId = transfer.id;
+        logStep("7% deposit advance transfer created", { transferId: transfer.id });
+      } catch (transferErr) {
+        logStep("7% deposit advance transfer failed (platform may have no available balance)", {
+          error: transferErr instanceof Error ? transferErr.message : String(transferErr),
+        });
+        // Milestone is still paid; Digger got transferFromThisPaymentCents via transfer_data. 7% can be reconciled later.
+      }
+    } else if (diggerProfile?.stripe_connect_account_id && transferFromThisPaymentCents === 0) {
+      logStep("No transfer_data amount (unusual); skipping transfer", { milestonePaymentId });
+    } else if (!diggerProfile?.stripe_connect_account_id) {
+      logStep("Digger has no Connect account - payment taken but transfer skipped", { milestonePaymentId });
     }
 
     await supabaseAdmin
@@ -330,10 +367,8 @@ serve(async (req) => {
       .update({
         status: "paid",
         stripe_payment_intent_id: paymentIntent.id,
-        ...(stripeTransferId && {
-          stripe_transfer_id: stripeTransferId,
-          released_at: new Date().toISOString(),
-        }),
+        ...(stripeTransferId && { stripe_transfer_id: stripeTransferId }),
+        ...(diggerProfile?.stripe_connect_account_id && { released_at: new Date().toISOString() }),
       })
       .eq("id", milestonePaymentId);
 
@@ -373,9 +408,18 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
-  } catch (err) {
+    } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     logStep("ERROR", { message: msg });
+    if (/insufficient|available balance|balance_insufficient/i.test(msg)) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Saved card payment couldn't be completed (platform balance limitation). Please use \"Pay with new card (Checkout)\" instead—it works reliably.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
     return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

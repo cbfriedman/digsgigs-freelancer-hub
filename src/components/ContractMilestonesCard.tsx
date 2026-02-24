@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw, Plus } from "lucide-react";
 import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
+import { PaymentMethodForm } from "@/components/PaymentMethodForm";
 import { loadStripe } from "@stripe/stripe-js";
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -90,7 +91,7 @@ export function ContractMilestonesCard({
   const [payingId, setPayingId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
-  const [showPayOptions, setShowPayOptions] = useState<string | null>(null);
+  const [showConnectPaymentDialog, setShowConnectPaymentDialog] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [endingContract, setEndingContract] = useState(false);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
@@ -112,39 +113,49 @@ export function ContractMilestonesCard({
     let cancelled = false;
 
     async function load() {
-      const { data: contractRow, error: contractError } = await supabase
-        .from("escrow_contracts")
-        .select("id, consumer_id, digger_id, total_amount, status")
-        .eq("gig_id", gigId)
-        .in("status", ["active", "completed"])
-        .maybeSingle();
+      // Parallel: contract + gig row (needed for both no-contract and exclusive logic)
+      const [contractRes, gigRes] = await Promise.all([
+        supabase
+          .from("escrow_contracts")
+          .select("id, consumer_id, digger_id, total_amount, status")
+          .eq("gig_id", gigId)
+          .in("status", ["active", "completed"])
+          .maybeSingle(),
+        supabase.from("gigs").select("consumer_id, awarded_digger_id, awarded_bid_id").eq("id", gigId).single(),
+      ]);
 
       if (cancelled) return;
 
+      const { data: contractRow, error: contractError } = contractRes;
+      const { data: gigRow } = gigRes;
+
       if (contractError || !contractRow) {
         setContract(null);
-        if (!contractRow) {
-          const { data: gigRow } = await supabase
-            .from("gigs")
-            .select("consumer_id, awarded_digger_id")
-            .eq("id", gigId)
-            .single();
-          if (!cancelled && gigRow) setGigInfo({ consumer_id: gigRow.consumer_id, awarded_digger_id: gigRow.awarded_digger_id });
-          else if (!cancelled) setGigInfo(null);
-        } else {
-          setGigInfo(null);
-        }
+        if (!contractRow && gigRow) setGigInfo({ consumer_id: gigRow.consumer_id, awarded_digger_id: gigRow.awarded_digger_id });
+        else setGigInfo(null);
         setLoading(false);
         return;
       }
 
-      const { data: milestones, error: milestonesError } = await supabase
-        .from("milestone_payments")
-        .select("id, milestone_number, description, amount, status, stripe_payment_intent_id, released_at")
-        .eq("escrow_contract_id", contractRow.id)
-        .order("milestone_number", { ascending: true });
+      // Contract exists: fetch milestones and (for exclusive) bid + deposit in parallel
+      const bidId = gigRow?.awarded_bid_id;
+      const [milestonesRes, ...exclusiveRes] = await Promise.all([
+        supabase
+          .from("milestone_payments")
+          .select("id, milestone_number, description, amount, status, stripe_payment_intent_id, released_at")
+          .eq("escrow_contract_id", contractRow.id)
+          .order("milestone_number", { ascending: true }),
+        bidId
+          ? supabase.from("bids").select("amount, pricing_model").eq("id", bidId).single()
+          : Promise.resolve({ data: null }),
+        bidId
+          ? supabase.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
       if (cancelled) return;
+
+      const { data: milestones, error: milestonesError } = milestonesRes;
       if (milestonesError) {
         setContract(null);
         setGigInfo(null);
@@ -153,13 +164,10 @@ export function ContractMilestonesCard({
         return;
       }
 
-      // First-milestone 7% deposit advance: show for exclusive (success_based) gigs so both gigger and digger see it
       let exclusive: { bidAmount: number; depositPaid: boolean } | null = null;
-      const { data: gigRow } = await supabase.from("gigs").select("awarded_bid_id").eq("id", gigId).single();
-      const bidId = gigRow?.awarded_bid_id;
-      if (bidId && !cancelled) {
-        const { data: bidRow } = await supabase.from("bids").select("amount, pricing_model").eq("id", bidId).single();
-        const { data: depositRow } = await supabase.from("gigger_deposits").select("id").eq("bid_id", bidId).eq("status", "paid").maybeSingle();
+      if (bidId && exclusiveRes[0]?.data) {
+        const bidRow = exclusiveRes[0].data as { amount?: number; pricing_model?: string } | null;
+        const depositRow = exclusiveRes[1]?.data;
         if (bidRow?.pricing_model === "success_based" && bidRow?.amount != null) {
           exclusive = { bidAmount: bidRow.amount, depositPaid: !!depositRow };
         }
@@ -357,7 +365,6 @@ export function ContractMilestonesCard({
         body: { milestonePaymentId: milestoneId },
       });
       toast({ title: "Submitted", description: "Milestone sent for client approval." });
-      onUpdate?.();
       setContract((c) => {
         if (!c) return c;
         return {
@@ -367,6 +374,7 @@ export function ContractMilestonesCard({
           ),
         };
       });
+      // Don't call onUpdate here—it would remount the card and show full loading. Optimistic update above is enough.
     } catch (e) {
       toast({
         title: "Error",
@@ -380,7 +388,6 @@ export function ContractMilestonesCard({
 
   const handleApproveAndPay = async (milestoneId: string, useCheckout?: boolean) => {
     setPayingId(milestoneId);
-    setShowPayOptions(null);
     try {
       const data = await invokeEdgeFunction<{
         requiresAction?: boolean;
@@ -442,9 +449,13 @@ export function ContractMilestonesCard({
         };
       });
     } catch (e) {
+      const message = e instanceof Error ? e.message : "Something went wrong";
+      const isInsufficientFunds = /insufficient|available balance|balance_insufficient/i.test(message);
       toast({
         title: "Payment failed",
-        description: e instanceof Error ? e.message : "Something went wrong",
+        description: isInsufficientFunds
+          ? "Saved card payment couldn't be completed. Please use \"Pay with new card (Checkout)\" instead—it works reliably."
+          : message,
         variant: "destructive",
       });
     } finally {
@@ -524,9 +535,15 @@ export function ContractMilestonesCard({
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8 flex flex-col items-center justify-center gap-2 text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading payment & milestones…</p>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Payment & milestones
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-4 flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+          <p className="text-sm">Loading…</p>
         </CardContent>
       </Card>
     );
@@ -641,6 +658,9 @@ export function ContractMilestonesCard({
               <span className="block">Approve and pay each milestone when the professional delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%); {exclusiveWithDeposit
                   ? "the professional receives the full milestone amount (8% was from your 15% deposit); first milestone includes 7% deposit advance."
                   : "the professional receives milestone minus 8% platform fee. You're only charged when you click \"Approve & pay\"."}</span>
+              <span className="block text-xs mt-2 text-muted-foreground">
+                <strong className="text-foreground">Checkout (recommended):</strong> Most reliable — professional gets paid every time. You complete payment on the next page. <strong className="text-foreground">Saved card:</strong> One click, no redirect; may fail in some cases (use Checkout if so).
+              </span>
               <span className="block text-xs flex items-center gap-1.5 mt-2">
                 <Shield className="h-3.5 w-3.5 shrink-0" />
                 Payments are secure (Stripe). The professional is paid as soon as you approve.
@@ -652,6 +672,9 @@ export function ContractMilestonesCard({
                 {exclusiveWithDeposit
                   ? "Submit each milestone when that part of the work is done. You receive the full milestone amount when the client approves (8% platform fee was from their 15% deposit). First milestone approval includes 7% deposit advance."
                   : "Submit each milestone when that part of the work is done. You receive the milestone amount minus 8% platform fee when the client approves."}
+              </span>
+              <span className="block text-xs mt-2 text-muted-foreground">
+                <strong className="text-foreground">When the client pays via Checkout</strong> you receive funds most reliably. Saved-card payments can occasionally fail; the client can use Checkout instead.
               </span>
               <span className="block text-xs flex items-center gap-1.5 mt-2">
                 <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -842,73 +865,71 @@ export function ContractMilestonesCard({
                 )}
                 {m.status === "submitted" && isGigger && (
                   <div className="flex flex-wrap items-center gap-2">
-                    {showPayOptions === m.id ? (
-                      <>
-                        {hasPaymentMethod && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveAndPay(m.id, true)}
+                          disabled={!!payingId}
+                          className="bg-primary"
+                        >
+                          {payingId === m.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Approve & pay
+                              <span className="ml-1.5 text-xs opacity-90">(Checkout)</span>
+                            </>
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[260px]">
+                        <p className="font-medium">Recommended</p>
+                        <p className="text-xs mt-0.5">Most reliable — professional gets paid every time. You’ll complete payment on the next page.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    {hasPaymentMethod ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
                             size="sm"
+                            variant="outline"
                             onClick={() => handleApproveAndPay(m.id, false)}
                             disabled={!!payingId}
-                            className="bg-primary"
                           >
                             {payingId === m.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <>
                                 <CreditCard className="h-4 w-4 mr-1" />
-                                Pay with saved card
-                                <span className="ml-1.5 text-xs opacity-90">(Recommended)</span>
+                                Use saved card
                               </>
                             )}
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant={hasPaymentMethod ? "outline" : "default"}
-                          onClick={() => handleApproveAndPay(m.id, true)}
-                          disabled={!!payingId}
-                        >
-                          {payingId === m.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <CreditCard className="h-4 w-4 mr-1" />
-                              {hasPaymentMethod ? "Pay with new card (Checkout)" : "Approve & pay"}
-                            </>
-                          )}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setShowPayOptions(null)}>
-                          Cancel
-                        </Button>
-                      </>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[260px]">
+                          <p className="font-medium">One click, no redirect</p>
+                          <p className="text-xs mt-0.5">May fail in some cases; use Approve & pay (Checkout) if that happens.</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             size="sm"
-                            onClick={() =>
-                            hasPaymentMethod === true
-                              ? setShowPayOptions(m.id)
-                              : handleApproveAndPay(m.id, hasPaymentMethod === false)
-                          }
+                            variant="outline"
+                            onClick={() => setShowConnectPaymentDialog(true)}
                             disabled={!!payingId}
+                            className="text-muted-foreground"
                           >
-                            {payingId === m.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                Approve & pay
-                              </>
-                            )}
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            Connect payment method
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[280px]">
-                          {hasPaymentMethod
-                            ? "Choose to pay with your saved card (recommended) or enter a new card on Checkout."
-                            : exclusiveWithDeposit?.depositPaid && m.milestone_number === 1
-                              ? "Pay via Stripe Checkout (milestone + 3% fee). The professional receives the milestone plus 7% deposit advance."
-                              : "Pay via Stripe Checkout (milestone + 3% fee). The professional receives the milestone minus 8% platform fee."}
+                        <TooltipContent side="left" className="max-w-[260px]">
+                          <p className="font-medium">For quick payments later</p>
+                          <p className="text-xs mt-0.5">Save a card to pay with one click, no redirect. Optional — you can always use Approve & pay (Checkout).</p>
                         </TooltipContent>
                       </Tooltip>
                     )}
@@ -1010,6 +1031,28 @@ export function ContractMilestonesCard({
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConnectPaymentDialog} onOpenChange={setShowConnectPaymentDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Connect payment method
+            </DialogTitle>
+            <DialogDescription>
+              Save a card for quick, one-click payments when you approve milestones—no redirect to a payment page. Optional; you can always use Approve & pay (Checkout) instead.
+            </DialogDescription>
+          </DialogHeader>
+          <PaymentMethodForm
+            onSuccess={() => {
+              setShowConnectPaymentDialog(false);
+              fetchHasPaymentMethod();
+              toast({ title: "Payment method added", description: "You can now use \"Use saved card\" for one-click payments on milestones." });
+            }}
+            onCancel={() => setShowConnectPaymentDialog(false)}
+          />
         </DialogContent>
       </Dialog>
 
