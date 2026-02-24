@@ -83,19 +83,17 @@ serve(async (req) => {
       throw new Error("Lead not found");
     }
 
-    // Calculate price (use stored price or calculate)
+    // Lead price: 8% of budget midpoint, $3–$49 (must match frontend @/lib/leadPrice)
     let priceCents = lead.calculated_price_cents;
-    
-    if (!priceCents && lead.budget_min && lead.budget_max) {
-      // Calculate 8% of average, $49 cap, no minimum
+    if (priceCents != null && priceCents > 0) {
+      priceCents = Math.min(4900, Math.max(300, Math.round(priceCents / 100) * 100));
+    } else if (lead.budget_min != null && lead.budget_max != null) {
       const avgBudget = (lead.budget_min + lead.budget_max) / 2;
-      priceCents = Math.round(avgBudget * 0.08 * 100);
-      priceCents = Math.round(priceCents / 100) * 100; // Round to nearest dollar
-      priceCents = Math.min(4900, Math.max(100, priceCents)); // No minimum, $49 cap
+      const priceDollars = Math.round(avgBudget * 0.08);
+      priceCents = Math.min(4900, Math.max(300, priceDollars * 100));
     }
-
     if (!priceCents) {
-      priceCents = 100; // Default $1 (no minimum)
+      priceCents = 300; // Default $3
     }
 
     console.log(`[create-lead-unlock-checkout] Price: ${priceCents} cents`);
@@ -112,9 +110,10 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    // Create checkout session
+    // Create checkout session — return to gig page after payment/cancel
     const origin = req.headers.get("origin") || "https://digsandgigs.net";
-    
+    const gigUrl = `${origin}/gig/${leadId}`;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -132,8 +131,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/lead/${leadId}/unlock?unlocked=true`,
-      cancel_url: `${origin}/lead/${leadId}/unlock?canceled=true`,
+      success_url: `${gigUrl}?lead_purchased=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${gigUrl}?lead_purchase_cancelled=true`,
       metadata: {
         leadId: leadId,
         diggerId: diggerProfile.id,

@@ -172,7 +172,7 @@ serve(async (req) => {
               }
               if (depositAdvanceCents > 0) {
                 diggerPayout += depositAdvanceCents / 100;
-                logStep('7% deposit advance for first milestone (will transfer separately)', { depositAdvanceCents });
+                logStep('7% deposit advance for first milestone (will transfer from platform)', { depositAdvanceCents });
               }
             }
             if (!bidId) {
@@ -213,23 +213,25 @@ serve(async (req) => {
                 .eq('id', diggerIdMeta)
                 .single();
               if (diggerProfile?.stripe_connect_account_id) {
-                const transfer = await stripe.transfers.create(
-                  {
-                    amount: depositAdvanceCents,
-                    currency: 'usd',
-                    destination: diggerProfile.stripe_connect_account_id,
-                    description: '7% deposit advance (first milestone)',
-                    metadata: {
-                      milestone_payment_id: milestonePaymentId,
-                      escrow_contract_id: escrowContractId,
-                      type: 'milestone_7pct_deposit',
+                try {
+                  const transfer = await stripe.transfers.create(
+                    {
+                      amount: depositAdvanceCents,
+                      currency: 'usd',
+                      destination: diggerProfile.stripe_connect_account_id,
+                      description: '7% deposit advance (first milestone)',
+                      metadata: {
+                        milestone_payment_id: milestonePaymentId,
+                        escrow_contract_id: escrowContractId,
+                        type: 'milestone_7pct_deposit',
+                      },
                     },
-                  },
-                  { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
-                );
-                logStep('7% deposit advance transferred to digger', { transferId: transfer.id, amountCents: depositAdvanceCents });
-              } else {
-                logStep('Digger has no Connect account - 7% deposit advance not transferred', { diggerId: diggerIdMeta });
+                    { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+                  );
+                  logStep('7% deposit advance transferred to digger', { transferId: transfer.id, amountCents: depositAdvanceCents });
+                } catch (e) {
+                  logStep('7% transfer failed (platform balance); retry with retry-7pct-milestone', { error: e instanceof Error ? e.message : String(e) });
+                }
               }
             }
 
@@ -237,6 +239,69 @@ serve(async (req) => {
           }
         } else {
           logStep('Milestone payment metadata incomplete', metadata);
+        }
+      } else if (metadata.type === 'lead_unlock') {
+        // Lead unlock from create-lead-unlock-checkout (Unlock lead button on gig page)
+        const leadId = metadata.leadId;
+        const diggerIdUnlock = metadata.diggerId;
+        const userId = metadata.userId;
+        const priceCents = parseInt(metadata.priceCents || '0', 10);
+        logStep('Processing lead_unlock', { leadId, diggerId: diggerIdUnlock });
+
+        const { error: unlockError } = await supabaseClient
+          .from('lead_unlocks')
+          .insert({
+            lead_id: leadId,
+            digger_id: diggerIdUnlock,
+            user_id: userId,
+            price_paid_cents: priceCents,
+            stripe_payment_intent_id: session.payment_intent as string,
+            stripe_checkout_session_id: session.id,
+            unlocked_at: new Date().toISOString(),
+          });
+        if (unlockError) {
+          if (unlockError.code === '23505') {
+            logStep('Lead already unlocked (duplicate)');
+          } else {
+            logStep('ERROR creating lead_unlock', { error: unlockError });
+            throw unlockError;
+          }
+        } else {
+          logStep('Lead unlock created');
+        }
+
+        const priceDollars = Math.round(priceCents) / 100;
+        const { data: gigRow } = await supabaseClient
+          .from('gigs')
+          .select('consumer_id, purchase_count')
+          .eq('id', leadId)
+          .single();
+        if (gigRow?.consumer_id) {
+          const { error: purchaseErr } = await supabaseClient
+            .from('lead_purchases')
+            .insert({
+              digger_id: diggerIdUnlock,
+              gig_id: leadId,
+              consumer_id: gigRow.consumer_id,
+              purchase_price: priceDollars,
+              amount_paid: priceDollars,
+              status: 'completed',
+              stripe_payment_id: session.payment_intent as string,
+            });
+          if (purchaseErr) {
+            if (purchaseErr.code === '23505') logStep('lead_purchase already exists');
+            else {
+              logStep('ERROR creating lead_purchase', { error: purchaseErr });
+            }
+          } else {
+            logStep('lead_purchase created for contact access');
+          }
+        }
+        if (gigRow) {
+          await supabaseClient
+            .from('gigs')
+            .update({ purchase_count: (gigRow.purchase_count || 0) + 1 })
+            .eq('id', leadId);
         }
       } else if (purchase_type === 'keyword_bulk' && pending_purchase_id) {
         // Handle bulk lead credit purchase
@@ -467,17 +532,28 @@ serve(async (req) => {
             let stripeTransferId = null;
             if (diggerProfile?.stripe_connect_account_id && remainderCents > 0) {
               try {
-                const transfer = await stripe.transfers.create({
-                  amount: remainderCents,
-                  currency: 'usd',
-                  destination: diggerProfile.stripe_connect_account_id,
-                  description: `Milestone - ${(milestone as any).description?.slice(0, 50) || 'Contract milestone'}`,
-                  metadata: { milestone_payment_id: milestonePaymentId, escrow_contract_id: milestone.escrow_contract_id },
-                });
+                const transfer = await stripe.transfers.create(
+                  {
+                    amount: remainderCents,
+                    currency: 'usd',
+                    destination: diggerProfile.stripe_connect_account_id,
+                    description: Number((milestone as any).milestone_number) === 1
+                      ? '7% deposit advance (first milestone)'
+                      : `Milestone - ${(milestone as any).description?.slice(0, 50) || 'Contract milestone'}`,
+                    metadata: { milestone_payment_id: milestonePaymentId, escrow_contract_id: milestone.escrow_contract_id, type: 'milestone_7pct_deposit' },
+                  },
+                  { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+                );
                 stripeTransferId = transfer.id;
-                logStep('Milestone transfer created (remainder only)', { transferId: transfer.id, remainderCents, alreadyTransferredCents });
-              } catch (transferErr) {
-                logStep('Milestone transfer failed', { error: transferErr instanceof Error ? transferErr.message : String(transferErr) });
+                logStep('7% deposit advance (remainder) transferred to digger', { transferId: transfer.id, remainderCents, alreadyTransferredCents });
+              } catch (transferErr: unknown) {
+                const err = transferErr as { message?: string; code?: string; type?: string };
+                logStep('Milestone 7% transfer failed (platform balance may be unavailable; retry with same idempotency key)', {
+                  error: err?.message ?? String(transferErr),
+                  code: err?.code,
+                  remainderCents,
+                  milestonePaymentId,
+                });
               }
             }
             await supabaseClient.from('milestone_payments').update({

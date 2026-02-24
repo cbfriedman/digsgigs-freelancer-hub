@@ -7,12 +7,16 @@ interface Gig {
   budget_max: number | null;
   location: string;
   description: string;
+  /** When set, used for cart total (otherwise 8% of budget midpoint, $3–$49). */
+  calculated_price_cents?: number | null;
 }
 
 interface CartContextType {
   cartItems: Gig[];
   addToCart: (gig: Gig) => void;
   removeFromCart: (gigId: string) => void;
+  /** Remove all cart items that are in the given set of gig IDs (e.g. already purchased). */
+  removePurchasedFromCart: (purchasedGigIds: string[]) => void;
   clearCart: () => void;
   isInCart: (gigId: string) => boolean;
   cartCount: number;
@@ -29,32 +33,10 @@ export const useCart = () => {
   return context;
 };
 
-// Import pricing from centralized config
-import { INDUSTRY_PRICING } from '@/config/pricing';
-
-// Determine industry category based on gig title/description (simplified)
-const determineIndustryCategory = (gig: Gig): 'low-value' | 'mid-value' | 'high-value' => {
-  const searchText = `${gig.title} ${gig.description}`.toLowerCase();
-  
-  // Check each pricing category for keyword matches
-  for (const pricing of INDUSTRY_PRICING) {
-    for (const industry of pricing.industries) {
-      if (searchText.includes(industry.toLowerCase())) {
-        return pricing.category;
-      }
-    }
-  }
-  
-  // Default to mid-value if no match found
-  return 'mid-value';
-};
+import { getLeadPriceDollars } from "@/lib/leadPrice";
 
 const calculateLeadPrice = (gig: Gig): number => {
-  const category = determineIndustryCategory(gig);
-  const pricing = INDUSTRY_PRICING.find(p => p.category === category)!;
-  
-  // All leads are now non-exclusive
-  return pricing.nonExclusive;
+  return getLeadPriceDollars(gig.budget_min, gig.budget_max, gig.calculated_price_cents);
 };
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -90,6 +72,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartItems((prev) => prev.filter((item) => item.id !== gigId));
   };
 
+  const removePurchasedFromCart = (purchasedGigIds: string[]) => {
+    if (purchasedGigIds.length === 0) return;
+    const set = new Set(purchasedGigIds);
+    setCartItems((prev) => prev.filter((item) => !set.has(item.id)));
+  };
+
   const clearCart = () => {
     setCartItems([]);
     localStorage.removeItem("gigCart");
@@ -111,6 +99,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cartItems,
         addToCart,
         removeFromCart,
+        removePurchasedFromCart,
         clearCart,
         isInCart,
         cartCount: cartItems.length,

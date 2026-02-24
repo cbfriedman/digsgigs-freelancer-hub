@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Percent, CreditCard, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, CheckCircle2, Shield } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 
 // Milestone interface
 interface MilestoneItem {
@@ -61,10 +62,7 @@ const bidSchema = z.object({
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN = 99; // $99 minimum (no cap)
-// Non-exclusive pricing for deposit calculation
-const NON_EXCLUSIVE_RATE = 0.02; // 2%
-const NON_EXCLUSIVE_MIN = 3; // $3 minimum
-const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Lead price uses shared 8% of budget $3–$49 (see @/lib/leadPrice)
 // Deposit: higher of (5% + non-exclusive cost) or $249
 const DEPOSIT_BASE_RATE = 0.05; // 5% base
 const DEPOSIT_MIN = 249; // $249 minimum deposit
@@ -94,6 +92,10 @@ interface BidSubmissionTemplateProps {
   onBuyLeadClick?: () => void;
   /** When set, clicking "Exclusive" scrolls to the proposal form (e.g. #bid). */
   onExclusiveClick?: () => void;
+  /** Pass gig budget so "Buy the lead" shows the same price as elsewhere on the site. */
+  leadPriceBudgetMin?: number | null;
+  leadPriceBudgetMax?: number | null;
+  leadPriceCalculatedCents?: number | null;
 }
 
 export const BidSubmissionTemplate = ({ 
@@ -104,6 +106,9 @@ export const BidSubmissionTemplate = ({
   existingBid = null,
   onBuyLeadClick,
   onExclusiveClick,
+  leadPriceBudgetMin,
+  leadPriceBudgetMax,
+  leadPriceCalculatedCents,
 }: BidSubmissionTemplateProps) => {
   const isEditMode = !!existingBid?.id;
   const { toast } = useToast();
@@ -377,16 +382,10 @@ export const BidSubmissionTemplate = ({
                   <span className="font-semibold">Buy the lead</span>
                 </div>
                 <div className="text-base font-semibold text-primary">
-                  {parsedAmount > 0 ? (
-                    <>Lead price: ${Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, Math.round(parsedAmount * NON_EXCLUSIVE_RATE * 100) / 100)).toFixed(2)}</>
-                  ) : (
-                    <>Lead price: $3–$49</>
-                  )}
+                  {getLeadPriceDisplay(leadPriceBudgetMin, leadPriceBudgetMax, leadPriceCalculatedCents).label}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {parsedAmount > 0
-                    ? "2% of your bid amount. Client awards with no upfront deposit. You get paid per milestone when they approve—funds are held by the platform until then."
-                    : "2% of your bid (enter your bid amount below to see your exact price). Client awards with no upfront deposit. You get paid per milestone when they approve."}
+                  {LEAD_PRICE_CAPTION} Client awards with no upfront deposit. You get paid per milestone when they approve—funds are held by the platform until then.
                 </p>
               </button>
               )}

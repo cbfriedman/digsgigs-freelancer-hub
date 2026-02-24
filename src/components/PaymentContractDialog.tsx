@@ -342,7 +342,7 @@ export function PaymentContractDialog({
                   Bid ${bidAmount.toFixed(2)} − 15% deposit (paid at award) = ${milestoneTotal.toFixed(2)}. The total of all milestone amounts must equal this.
                 </p>
                 <p>
-                  <strong>7% of the deposit</strong> is transferred to the Digger when the first milestone is completed (with that milestone payment).
+                  <strong>7% of the deposit</strong> is transferred to the Digger when the first milestone is completed (from the 15% deposit; no extra charge).
                 </p>
               </div>
             ) : (

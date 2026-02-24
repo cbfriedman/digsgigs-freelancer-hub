@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface CartDrawerProps {
@@ -17,10 +17,26 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
-  const { cartItems, removeFromCart, clearCart, getTotalPrice, cartCount } = useCart();
+  const { cartItems, removeFromCart, removePurchasedFromCart, clearCart, getTotalPrice, cartCount } = useCart();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+
+  // Remove any cart items the user has already purchased (so purchased leads don't stay in cart)
+  useEffect(() => {
+    if (!open || cartItems.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || cancelled) return;
+      const { data: profile } = await supabase.from("digger_profiles").select("id").eq("user_id", session.user.id).single();
+      if (!profile || cancelled) return;
+      const { data: purchases } = await supabase.from("lead_purchases").select("gig_id").eq("digger_id", profile.id).eq("status", "completed");
+      if (!purchases?.length || cancelled) return;
+      removePurchasedFromCart(purchases.map((p) => p.gig_id));
+    })();
+    return () => { cancelled = true; };
+  }, [open, cartItems.length, removePurchasedFromCart]);
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;

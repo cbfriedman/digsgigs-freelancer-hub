@@ -138,21 +138,31 @@ serve(async (req) => {
     let stripeTransferId: string | null = null;
     if (diggerProfile?.stripe_connect_account_id && remainderCents > 0) {
       try {
-        const transfer = await stripe.transfers.create({
-          amount: remainderCents,
-          currency: "usd",
-          destination: diggerProfile.stripe_connect_account_id,
-          description: `Milestone - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
-          metadata: {
-            milestone_payment_id: milestonePaymentId,
-            escrow_contract_id: milestone.escrow_contract_id,
+        const transfer = await stripe.transfers.create(
+          {
+            amount: remainderCents,
+            currency: "usd",
+            destination: diggerProfile.stripe_connect_account_id,
+            description: Number((milestone as any).milestone_number) === 1
+              ? "7% deposit advance (first milestone)"
+              : `Milestone - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
+            metadata: {
+              milestone_payment_id: milestonePaymentId,
+              escrow_contract_id: milestone.escrow_contract_id,
+              type: "milestone_7pct_deposit",
+            },
           },
-        });
+          { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+        );
         stripeTransferId = transfer.id;
-        logStep("Transfer created (remainder only)", { transferId: transfer.id, remainderCents, alreadyTransferredCents });
-      } catch (transferErr) {
-        logStep("Transfer failed (e.g. insufficient platform balance for 7% advance)", {
-          error: transferErr instanceof Error ? transferErr.message : String(transferErr),
+        logStep("7% deposit advance (remainder) transferred to digger", { transferId: transfer.id, remainderCents, alreadyTransferredCents });
+      } catch (transferErr: unknown) {
+        const err = transferErr as { message?: string; code?: string };
+        logStep("7% deposit advance transfer failed (platform balance may be unavailable; retry with same idempotency key)", {
+          error: err?.message ?? String(transferErr),
+          code: err?.code,
+          remainderCents,
+          milestonePaymentId,
         });
       }
     } else if (alreadyTransferredCents > 0) {

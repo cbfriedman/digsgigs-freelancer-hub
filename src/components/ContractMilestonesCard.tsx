@@ -655,9 +655,9 @@ export function ContractMilestonesCard({
         <CardDescription className="space-y-1">
           {isGigger ? (
             <>
-              <span className="block">Approve and pay each milestone when the professional delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%); {exclusiveWithDeposit
-                  ? "the professional receives the full milestone amount (8% was from your 15% deposit); first milestone includes 7% deposit advance."
-                  : "the professional receives milestone minus 8% platform fee. You're only charged when you click \"Approve & pay\"."}</span>
+              <span className="block">Approve and pay each milestone when the professional delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%). {exclusiveWithDeposit
+                  ? "The professional receives the full milestone amount (8% was from your 15% deposit); first milestone includes 7% deposit advance (from your deposit, no extra charge)."
+                  : "The professional receives milestone minus 8% platform fee. You're only charged when you click \"Approve & pay\"."}</span>
               <span className="block text-xs mt-2 text-muted-foreground">
                 <strong className="text-foreground">Checkout (recommended):</strong> Most reliable — professional gets paid every time. You complete payment on the next page. <strong className="text-foreground">Saved card:</strong> One click, no redirect; may fail in some cases (use Checkout if so).
               </span>
@@ -819,7 +819,7 @@ export function ContractMilestonesCard({
                 {/* First milestone: one clear line for 7% */}
                 {exclusiveWithDeposit && m.milestone_number === 1 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    7% deposit advance: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} — {isGigger ? "From your 15% deposit, released to the professional when you approve this first milestone." : "From the client's 15% deposit, released to you when they approve this first milestone."}
+                    7% deposit advance: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} — {isGigger ? "From your 15% deposit, released to the professional when you approve this first milestone (no extra charge)." : "From the client's 15% deposit, released to you when they approve this first milestone."}
                   </p>
                 )}
                 {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && m.status === "paid" && (

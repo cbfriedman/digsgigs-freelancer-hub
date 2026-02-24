@@ -96,9 +96,17 @@ serve(async (req) => {
     const baseUrl = Deno.env.get("SITE_URL") || "https://digsandgigs.net";
     const unlockUrl = `${baseUrl}/lead/${gigId}/unlock`;
     const gigViewUrl = `${baseUrl}/gig/${gigId}`;
-    const priceDollars = gig.calculated_price_cents
-      ? (gig.calculated_price_cents / 100).toFixed(0)
-      : "9";
+    // Lead price: 8% of budget midpoint, $3–$49 (match @/lib/leadPrice)
+    let priceDollars: string;
+    if (gig.calculated_price_cents) {
+      priceDollars = (gig.calculated_price_cents / 100).toFixed(0);
+    } else if (gig.budget_min != null && gig.budget_max != null) {
+      const avg = (gig.budget_min + gig.budget_max) / 2;
+      const p = Math.round(avg * 0.08);
+      priceDollars = String(Math.min(49, Math.max(3, p)));
+    } else {
+      priceDollars = "3";
+    }
     const shortDescription = (gig.description?.substring(0, 200) || "") + (gig.description?.length > 200 ? "..." : "");
     const budgetRange = gig.budget_min && gig.budget_max
       ? `$${gig.budget_min.toLocaleString()} - $${gig.budget_max.toLocaleString()}`

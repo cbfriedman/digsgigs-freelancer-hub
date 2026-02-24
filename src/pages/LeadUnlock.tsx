@@ -34,6 +34,7 @@ import {
   parseContactPreferences,
   getContactLink,
 } from "@/config/giggerContactMethods";
+import { getLeadPriceDollars } from "@/lib/leadPrice";
 
 interface Lead {
   id: string;
@@ -169,15 +170,7 @@ export default function LeadUnlock() {
   };
 
   const getLeadPrice = (): number => {
-    if (lead?.calculated_price_cents) {
-      return lead.calculated_price_cents / 100;
-    }
-    // Fallback calculation
-    const min = lead?.budget_min || 0;
-    const max = lead?.budget_max || min;
-    const avg = (min + max) / 2;
-    const price = Math.round(avg * 0.08);
-    return Math.min(49, Math.max(1, price)); // No minimum, $49 cap
+    return getLeadPriceDollars(lead?.budget_min, lead?.budget_max, lead?.calculated_price_cents);
   };
 
   const getEstimatedReferralFee = (): { min: number; max: number; midpoint: number } => {

@@ -70,10 +70,17 @@ serve(async (req) => {
       );
     }
 
-    // Calculate price in dollars
-    const priceDollars = lead.calculated_price_cents 
-      ? (lead.calculated_price_cents / 100).toFixed(0)
-      : "9"; // Default minimum
+    // Lead price: 8% of budget midpoint, $3–$49 (match @/lib/leadPrice)
+    let priceDollars: string;
+    if (lead.calculated_price_cents) {
+      priceDollars = (lead.calculated_price_cents / 100).toFixed(0);
+    } else if (lead.budget_min != null && lead.budget_max != null) {
+      const avg = (lead.budget_min + lead.budget_max) / 2;
+      const p = Math.round(avg * 0.08);
+      priceDollars = String(Math.min(49, Math.max(3, p)));
+    } else {
+      priceDollars = "3";
+    }
 
     console.log(`[blast-lead-to-diggers] Lead price: $${priceDollars}`);
 

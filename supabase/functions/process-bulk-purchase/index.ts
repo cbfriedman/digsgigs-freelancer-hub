@@ -42,9 +42,7 @@ serve(async (req) => {
     });
 
     // Retrieve session to verify payment
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items.data.price.product']
-    });
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
       throw new Error("Payment not completed");
@@ -52,31 +50,64 @@ serve(async (req) => {
     logStep("Payment verified", { status: session.payment_status });
 
     const diggerId = session.metadata?.digger_id;
-    const gigIds = session.metadata?.gig_ids?.split(",") || [];
+    const gigIds = session.metadata?.gig_ids?.split(",")?.filter(Boolean) || [];
 
     if (!diggerId || gigIds.length === 0) {
       throw new Error("Invalid session metadata");
     }
 
+    // Fetch line items with expanded product so we can read gig_id and amount per lead
+    const lineItemsResponse = await stripe.checkout.sessions.listLineItems(sessionId, {
+      expand: ["data.price.product"],
+      limit: 100,
+    });
+    const lineItems = lineItemsResponse.data ?? [];
+
+    const priceByGigId: Record<string, number> = {};
+    for (const item of lineItems) {
+      const amountCents = item.amount_total ?? (item.price && typeof item.price === "object" && "unit_amount" in item.price ? item.price.unit_amount : 0) ?? 0;
+      const amountDollars = Math.round(Number(amountCents)) / 100;
+      const price = item.price;
+      const product = price && typeof price === "object" && price.product && typeof price.product === "object" ? price.product : null;
+      const gigId = product?.metadata?.gig_id ?? null;
+      if (gigId) {
+        priceByGigId[gigId] = amountDollars;
+      }
+    }
+    logStep("Prices from line items", { priceByGigId, lineItemCount: lineItems.length });
+
     // Fetch gig details
     const { data: gigs } = await supabaseClient
       .from("gigs")
-      .select("id, consumer_id, budget_min, budget_max")
+      .select("id, consumer_id, budget_min, budget_max, calculated_price_cents")
       .in("id", gigIds);
 
     if (!gigs) throw new Error("Failed to fetch gigs");
 
-    // Create lead purchase records
+    // Fallback price when line item has no product metadata (e.g. old checkout): 8% of budget, $3–$49
+    const getFallbackPriceDollars = (gig: { budget_min?: number | null; budget_max?: number | null; calculated_price_cents?: number | null }): number => {
+      if (gig.calculated_price_cents != null && gig.calculated_price_cents > 0) {
+        const dollars = Math.round(gig.calculated_price_cents / 100);
+        return Math.min(49, Math.max(3, dollars));
+      }
+      const min = gig.budget_min ?? 0;
+      const max = gig.budget_max ?? min;
+      const avg = (min + max) / 2;
+      if (avg <= 0) return 3;
+      const priceDollars = Math.round(avg * 0.08);
+      return Math.min(49, Math.max(3, priceDollars));
+    };
+
+    // Create lead purchase records with actual amount paid per lead from Stripe
     const purchases = gigs.map(gig => {
-      // Lead price: $60 per lead for all bulk purchases (typically free tier)
-      const leadPrice = 60;
-      
+      const amountPaid = priceByGigId[gig.id] ?? getFallbackPriceDollars(gig);
+
       return {
         digger_id: diggerId,
         gig_id: gig.id,
         consumer_id: gig.consumer_id,
-        purchase_price: leadPrice,
-        amount_paid: leadPrice,
+        purchase_price: amountPaid,
+        amount_paid: amountPaid,
         status: "completed",
         stripe_payment_id: session.payment_intent as string,
       };

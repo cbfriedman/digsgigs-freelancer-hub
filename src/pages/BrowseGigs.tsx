@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter, HandHeart, MapPin } from "lucide-react";
+import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -20,20 +19,18 @@ import { useProfessions } from "@/hooks/useProfessions";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
+import PageLayout from "@/components/layout/PageLayout";
 import { formatSelectionDisplay, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
+import { cn } from "@/lib/utils";
 
-/** Names used when posting gigs (PostGig) – show these first in filters so they match project categories. */
-const PROJECT_CATEGORY_NAMES = [
+/** Canonical gig category names used when posting (PostGig) – only these are assigned to gigs. Match filter to platform. */
+const GIG_CATEGORY_NAMES = [
   "Web Development",
   "Graphic Design",
   "Digital Marketing",
   "Content Writing",
-  "Software & Web Development",
-  "Design & Creative",
-  "Marketing & Growth",
   "AI & Automation",
   "Business Systems & Operations",
-  "Content & Media",
 ];
 
 interface Category {
@@ -42,13 +39,16 @@ interface Category {
   parent_category_id?: string | null;
 }
 
-function sortCategoriesForDisplay<T extends { name: string }>(list: T[]): T[] {
-  return [...list].sort((a, b) => {
-    const aProject = PROJECT_CATEGORY_NAMES.indexOf(a.name);
-    const bProject = PROJECT_CATEGORY_NAMES.indexOf(b.name);
-    if (aProject !== -1 && bProject !== -1) return aProject - bProject;
-    if (aProject !== -1) return -1;
-    if (bProject !== -1) return 1;
+/** Categories that are actually used for gigs on this platform (from DB). Sorted in canonical order. */
+function getGigCategoriesForFilter(allCategories: Category[]): Category[] {
+  const parentCategories = allCategories.filter((c) => !c.parent_category_id);
+  const matched = parentCategories.filter((c) => GIG_CATEGORY_NAMES.includes(c.name));
+  return matched.sort((a, b) => {
+    const ai = GIG_CATEGORY_NAMES.indexOf(a.name);
+    const bi = GIG_CATEGORY_NAMES.indexOf(b.name);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
     return a.name.localeCompare(b.name);
   });
 }
@@ -118,7 +118,6 @@ const BrowseGigs = () => {
   const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [userBids, setUserBids] = useState<Set<string>>(new Set());
   const [userLeadPurchases, setUserLeadPurchases] = useState<Set<string>>(new Set());
@@ -131,8 +130,8 @@ const BrowseGigs = () => {
     postedSince: 'all',
     sortBy: 'newest',
   });
-  const [showEscrowGigs, setShowEscrowGigs] = useState(true);
   const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set());
+  const [showRefinePanel, setShowRefinePanel] = useState(true);
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
 
   const toggleDescription = (gigId: string, e: React.MouseEvent) => {
@@ -171,7 +170,7 @@ const BrowseGigs = () => {
               .select(
                 `
                 id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
-                preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count,
+                preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
                 categories (name),
                 profiles!gigs_consumer_id_fkey (full_name),
                 gig_skills (skills (name))
@@ -196,17 +195,6 @@ const BrowseGigs = () => {
       gigsChannelRef.current = null;
     };
   }, []);
-
-  // Debug: Log digger profile and bids for troubleshooting
-  useEffect(() => {
-    if (diggerProfile) {
-      console.log('[BrowseGigs] Digger profile loaded:', {
-        id: diggerProfile.id,
-        hasProfile: !!diggerProfile
-      });
-    }
-    console.log('[BrowseGigs] User bids:', Array.from(userBids));
-  }, [diggerProfile, userBids]);
 
   const loadDiggerData = async () => {
     try {
@@ -290,13 +278,13 @@ const BrowseGigs = () => {
     }
 
     const allList = categoriesData || [];
-    setAllCategories(sortCategoriesForDisplay(allList));
+    setAllCategories(allList);
 
     let query = (supabase
       .from("gigs") as any)
       .select(`
         id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
-        preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count,
+        preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
         categories (name),
         profiles!gigs_consumer_id_fkey (full_name),
         gig_skills (skills (name))
@@ -377,10 +365,6 @@ const BrowseGigs = () => {
 
     if (!matchesSearch) return false;
 
-    if (diggerProfile && !showEscrowGigs && (gig as any).escrow_requested_by_consumer) {
-      return false;
-    }
-
     if (professionKeywords && professionKeywords.size > 0) {
       const gigText = [
         gig.title,
@@ -440,218 +424,261 @@ const BrowseGigs = () => {
     return "";
   };
 
+  const hasActiveRefine =
+    advancedFilters.budgetRange[0] !== 0 ||
+    advancedFilters.budgetRange[1] !== 50000 ||
+    (advancedFilters.selectedProfessionIds?.length ?? 0) > 0 ||
+    (advancedFilters.selectedKeywords?.length ?? 0) > 0 ||
+    advancedFilters.selectedCategories.length > 0;
+
   return (
-    <div className="min-h-screen bg-background">
+    <PageLayout maxWidth="wide" padded>
       <SEOHead
-        title="Browse Local Service Gigs - Find Projects & Jobs"
-        description="Discover open gigs posted by Giggers. Search by category, location, and budget. Bid or buy leads—get awarded and keep the rest."
-        keywords="service gigs, local jobs, contractor projects, freelance gigs, home service jobs, find work, service opportunities"
+        title="Browse Gigs — Find Projects & Bid or Buy Leads | Digs & Gigs"
+        description="Find open gigs that match your skills. Filter by category, budget, and when posted. Bid free or buy the lead to contact the client directly."
+        keywords="browse gigs, find projects, freelance gigs, bid on gigs, buy leads, Digger jobs"
       />
-      
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Browse Gigs</h1>
-          <p className="text-muted-foreground text-lg">Find projects that match your skills. See budget, location &amp; skills at a glance — bid free or buy the lead to unlock contact.</p>
+      <div className="px-4 pt-1 pb-8 sm:pt-2 sm:pb-10">
+        {/* Header */}
+        <div className="mb-3 sm:mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Browse Gigs</h1>
           {(diggerProfile as any)?.lead_limit_enabled && (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
                 Leads this period: {leadsPurchasedThisPeriod} / {(diggerProfile as any).lead_limit}
               </Badge>
               {limitReached && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Limit reached. Showing older gigs (&gt;24h) at $1 each. New gigs will appear after your period resets or{' '}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto font-normal underline"
-                    onClick={() => navigate('/lead-limits')}
-                  >
-                    increase your limit
-                  </Button>.
-                </p>
+                <span className="text-sm text-muted-foreground">
+                  Limit reached. Older gigs (&gt;24h) at $1.{" "}
+                  <Button variant="link" className="p-0 h-auto font-normal text-sm" onClick={() => navigate("/lead-limits")}>
+                    Increase limit
+                  </Button>
+                </span>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search gigs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {allCategories.filter((c) => !c.parent_category_id).map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={budgetFilter} onValueChange={setBudgetFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Budget" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Budgets</SelectItem>
-              <SelectItem value="under1k">Under $1,000</SelectItem>
-              <SelectItem value="1k-5k">$1,000 - $5,000</SelectItem>
-              <SelectItem value="over5k">Over $5,000</SelectItem>
-            </SelectContent>
-          </Select>
-          {diggerProfile && (
-            <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-md bg-background">
-              <Checkbox
-                id="show-escrow"
-                checked={showEscrowGigs}
-                onCheckedChange={(checked) => setShowEscrowGigs(checked as boolean)}
+        {/* Single top filter bar — find gigs quickly */}
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search by title or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 bg-background"
               />
-              <label
-                htmlFor="show-escrow"
-                className="text-sm font-medium cursor-pointer whitespace-nowrap"
-              >
-                Show Escrow Gigs
-              </label>
             </div>
-          )}
+            <Select value={budgetFilter} onValueChange={setBudgetFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] h-10">
+                <SelectValue placeholder="Budget" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any budget</SelectItem>
+                <SelectItem value="under1k">Under $1k</SelectItem>
+                <SelectItem value="1k-5k">$1k – $5k</SelectItem>
+                <SelectItem value="over5k">$5k+</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={advancedFilters.postedSince}
+              onValueChange={(v: GigFilters["postedSince"]) => setAdvancedFilters({ ...advancedFilters, postedSince: v })}
+            >
+              <SelectTrigger className="w-full sm:w-[140px] h-10">
+                <SelectValue placeholder="Posted" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any time</SelectItem>
+                <SelectItem value="24h">Last 24h</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={advancedFilters.sortBy}
+              onValueChange={(v: GigFilters["sortBy"]) => setAdvancedFilters({ ...advancedFilters, sortBy: v })}
+            >
+              <SelectTrigger className="w-full sm:w-[160px] h-10">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="budget_asc">Budget: low → high</SelectItem>
+                <SelectItem value="budget_desc">Budget: high → low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={showRefinePanel ? "secondary" : "outline"}
+              size="sm"
+              className="h-10 shrink-0 gap-1.5"
+              onClick={() => setShowRefinePanel((p) => !p)}
+            >
+              <Filter className="h-4 w-4" />
+              Refine
+              {hasActiveRefine && <span className="h-2 w-2 rounded-full bg-primary" />}
+              {showRefinePanel ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="md:col-span-1">
-            <GigAdvancedFilters
-              categories={allCategories}
-              categoriesWithProfessions={categoriesWithProfessions}
-              filters={advancedFilters}
-              onFiltersChange={setAdvancedFilters}
-            />
-            <SavedSearchesList 
-              searchType="gigs" 
-              onApplySearch={(appliedFilters) => setAdvancedFilters({
-                budgetRange: [0, 50000],
-                selectedCategories: [],
-                selectedProfessionIds: [],
-                selectedKeywords: [],
-                locationRadius: 50,
-                postedSince: 'all',
-                sortBy: 'newest',
-                ...(appliedFilters as Partial<GigFilters>),
-              })}
-            />
-          </div>
+        <div className={cn("grid gap-6", showRefinePanel ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1")}>
+          {showRefinePanel && (
+            <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+              <GigAdvancedFilters
+                categories={getGigCategoriesForFilter(allCategories)}
+                categoriesWithProfessions={categoriesWithProfessions}
+                filters={advancedFilters}
+                onFiltersChange={setAdvancedFilters}
+              />
+              <SavedSearchesList
+                searchType="gigs"
+                onApplySearch={(appliedFilters) =>
+                  setAdvancedFilters({
+                    budgetRange: [0, 50000],
+                    selectedCategories: [],
+                    selectedProfessionIds: [],
+                    selectedKeywords: [],
+                    locationRadius: 50,
+                    postedSince: "all",
+                    sortBy: "newest",
+                    ...(appliedFilters as Partial<GigFilters>),
+                  })
+                }
+              />
+            </aside>
+          )}
 
-          <div className="md:col-span-3">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')} className="mb-6">
-              <TabsList>
-                <TabsTrigger value="list">
-                  <List className="h-4 w-4 mr-2" />
-                  List View
-                </TabsTrigger>
-                <TabsTrigger value="map">
-                  <Map className="h-4 w-4 mr-2" />
-                  Map View
-                </TabsTrigger>
-              </TabsList>
+          <div className={cn("min-w-0", showRefinePanel && "lg:col-span-1 order-1 lg:order-2")}>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "map")} className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <TabsList>
+                  <TabsTrigger value="list">
+                    <List className="h-4 w-4 mr-2" />
+                    List
+                  </TabsTrigger>
+                  <TabsTrigger value="map">
+                    <Map className="h-4 w-4 mr-2" />
+                    Map
+                  </TabsTrigger>
+                </TabsList>
+                <span className="text-sm text-muted-foreground">
+                  {displayGigs.length} {displayGigs.length === 1 ? "gig" : "gigs"}
+                </span>
+              </div>
 
               <TabsContent value="list">
                 {loading ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">Loading gigs...</p>
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    <p className="text-muted-foreground text-sm">Loading gigs...</p>
                   </div>
                 ) : displayGigs.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <p className="text-muted-foreground">
-                        {limitReached 
-                          ? "No older gigs available. Check back later or increase your lead limit."
-                          : "No gigs found. Try adjusting your filters."}
+                  <Card className="border-dashed">
+                    <CardContent className="py-16 text-center">
+                      <p className="text-muted-foreground mb-2">
+                        {limitReached
+                          ? "No older gigs available right now. Check back later or increase your lead limit."
+                          : "No gigs match your filters."}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Try a different category, broader budget, or clear Refine filters.
                       </p>
                     </CardContent>
                   </Card>
                 ) : (
                   <div className="space-y-4">
-            {displayGigs.map((gig) => {
-              const isOld = isOldGig(gig.created_at);
-              const showSpecialPrice = isOld && limitReached && (diggerProfile as any)?.lead_limit_enabled;
-              const inCart = isInCart(gig.id);
-              
-              return (
-              <Card 
-                key={gig.id} 
-                className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 relative"
-              >
-                <CardContent className="p-6">
-                  <div className="absolute top-6 left-6 z-10" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={inCart}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          addToCart({
-                            id: gig.id,
-                            title: gig.title,
-                            budget_min: gig.budget_min,
-                            budget_max: gig.budget_max,
-                            location: gig.location || "",
-                            description: gig.description,
-                          });
-                          toast.success("Added to cart");
-                        } else {
-                          removeFromCart(gig.id);
-                          toast.success("Removed from cart");
-                        }
-                      }}
-                      className="h-5 w-5 bg-background border-2"
-                    />
-                  </div>
-                  <div 
-                    className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 ml-10 cursor-pointer"
-                    onClick={() => navigate(`/gig/${gig.id}`)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex gap-2 mb-2 flex-wrap items-center">
-                        {gig.status === 'open' && (
-                          <Badge variant="default" className="bg-green-500 text-white">
-                            ✓ Open for Bidding
-                          </Badge>
-                        )}
-                        {inCart && (
-                          <Badge variant="secondary">
-                            In Cart
-                          </Badge>
-                        )}
-                        {(gig as any).escrow_requested_by_consumer && (
-                          <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30">
-                            🔒 Escrow Required
-                          </Badge>
-                        )}
-                      </div>
-                      <h3 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">
-                        {gig.title}
-                      </h3>
-                      <div className="mb-4" onClick={(e) => e.stopPropagation()}>
-                        <p className={`text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap ${expandedDescriptionIds.has(gig.id) ? "" : "line-clamp-3"}`}>
-                          {gig.description}
-                        </p>
-                        {gig.description.length > 120 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto py-1 px-0 mt-1 text-primary hover:text-primary font-medium text-xs"
-                            onClick={(e) => toggleDescription(gig.id, e)}
-                          >
-                            {expandedDescriptionIds.has(gig.id) ? "Show less" : "Read more..."}
-                          </Button>
-                        )}
-                      </div>
-                      {/* At-a-glance: category, budget, location, preferred regions, deadline, skills — easy to scan */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2 border border-transparent">
+                    {displayGigs.map((gig) => {
+                      const isOld = isOldGig(gig.created_at);
+                      const isNew = !isOld;
+                      const showSpecialPrice = isOld && limitReached && (diggerProfile as any)?.lead_limit_enabled;
+                      const inCart = isInCart(gig.id);
+
+                      return (
+                        <Card
+                          key={gig.id}
+                          className={cn(
+                            "relative overflow-hidden transition-all duration-200",
+                            "hover:shadow-md hover:border-primary/20 cursor-pointer"
+                          )}
+                          onClick={() => navigate(`/gig/${gig.id}`)}
+                        >
+                          <CardContent className="p-5 sm:p-6">
+                            <div
+                              className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-md bg-background/95 p-1 shadow-sm ring-1 ring-border/50"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                id={`cart-${gig.id}`}
+                                checked={inCart && !userLeadPurchases.has(gig.id)}
+                                disabled={userLeadPurchases.has(gig.id)}
+                                onCheckedChange={(checked) => {
+                                  if (userLeadPurchases.has(gig.id)) return;
+                                  if (checked) {
+                                    addToCart({
+                                      id: gig.id,
+                                      title: gig.title,
+                                      budget_min: gig.budget_min,
+                                      budget_max: gig.budget_max,
+                                      location: gig.location || "",
+                                      description: gig.description,
+                                      calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
+                                    });
+                                    toast.success("Added to cart");
+                                  } else {
+                                    removeFromCart(gig.id);
+                                    toast.success("Removed from cart");
+                                  }
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <label htmlFor={`cart-${gig.id}`} className="text-xs text-muted-foreground cursor-pointer select-none pr-0.5">Cart</label>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-4 items-start">
+                              <div className="min-w-0 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {isNew && (
+                                    <Badge variant="default" className="bg-primary text-primary-foreground text-xs">
+                                      New
+                                    </Badge>
+                                  )}
+                                  {gig.status === "open" && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Open for bidding
+                                    </Badge>
+                                  )}
+                                  {inCart && (
+                                    <Badge variant="outline" className="text-xs">In cart</Badge>
+                                  )}
+                                  {(gig as any).escrow_requested_by_consumer && (
+                                    <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-700 dark:text-blue-400">
+                                      Escrow
+                                    </Badge>
+                                  )}
+                                </div>
+                                <h3 className="text-lg font-semibold leading-tight hover:text-primary transition-colors line-clamp-2">
+                                  {gig.title}
+                                </h3>
+                                <div className="text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                                  <p className={cn("leading-relaxed whitespace-pre-wrap", !expandedDescriptionIds.has(gig.id) && "line-clamp-3")}>
+                                    {gig.description}
+                                  </p>
+                                  {gig.description.length > 120 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto py-1 px-0 mt-1 text-primary text-xs"
+                                      onClick={(e) => toggleDescription(gig.id, e)}
+                                    >
+                                      {expandedDescriptionIds.has(gig.id) ? "Show less" : "Read more"}
+                                    </Button>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2">
                         {gig.categories && (
                           <div className="flex items-center gap-1">
                             <Tag className="h-4 w-4 shrink-0" />
@@ -723,42 +750,13 @@ const BrowseGigs = () => {
                           </div>
                         ) : null;
                       })()}
-                    </div>
-                    <div className="lg:text-right space-y-2">
-                      {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge 
-                                variant="default" 
-                                className="mb-2 bg-primary text-primary-foreground cursor-help inline-flex items-center gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate("/pricing-strategy");
-                                }}
-                              >
-                                Upfront: Tier cost. Awarded: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
-                                <Info className="h-3 w-3" />
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="font-semibold mb-1">Hourly Pricing Model</p>
-                              <p className="text-sm mb-2">
-                                You pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the gig, pay an additional 1 hour of your rate. No commission on completed work.
-                              </p>
-                              <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
-                                Learn pricing strategies →
-                              </Button>
-                            </TooltipContent>
-                          </Tooltip>
-                      ) : showSpecialPrice ? (
+                              </div>
+                              <div className="min-w-0 sm:text-right space-y-2" onClick={(e) => e.stopPropagation()}>
+                      {showSpecialPrice ? (
                         <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
                           Old Lead - $1
                         </Badge>
                       ) : null}
-                      <Badge variant="secondary" className="mb-2">
-                        <Users className="h-3 w-3 mr-1" />
-                        {gig.purchase_count} {gig.purchase_count === 1 ? 'digger' : 'diggers'} interested
-                      </Badge>
                       <div className="text-sm text-muted-foreground">
                         Posted {formatDistanceToNow(new Date(gig.created_at))} ago
                       </div>
@@ -785,15 +783,20 @@ const BrowseGigs = () => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   if (!inCart) {
-                                    addToCart({
-                                      id: gig.id,
-                                      title: gig.title,
-                                      budget_min: gig.budget_min,
-                                      budget_max: gig.budget_max,
-                                      location: gig.location || "",
-                                      description: gig.description,
-                                    });
-                                    toast.success("Added to cart — checkout when ready");
+                                    if (userLeadPurchases.has(gig.id)) {
+                                      toast.error("You already purchased this lead");
+                                    } else {
+                                      addToCart({
+                                        id: gig.id,
+                                        title: gig.title,
+                                        budget_min: gig.budget_min,
+                                        budget_max: gig.budget_max,
+                                        location: gig.location || "",
+                                        description: gig.description,
+                                        calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
+                                      });
+                                      toast.success("Added to cart — checkout when ready");
+                                    }
                                   }
                                   setCartOpen(true);
                                 }}
@@ -822,15 +825,20 @@ const BrowseGigs = () => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   if (!inCart) {
-                                    addToCart({
-                                      id: gig.id,
-                                      title: gig.title,
-                                      budget_min: gig.budget_min,
-                                      budget_max: gig.budget_max,
-                                      location: gig.location || "",
-                                      description: gig.description,
-                                    });
-                                    toast.success("Added to cart — checkout when ready");
+                                    if (userLeadPurchases.has(gig.id)) {
+                                      toast.error("You already purchased this lead");
+                                    } else {
+                                      addToCart({
+                                        id: gig.id,
+                                        title: gig.title,
+                                        budget_min: gig.budget_min,
+                                        budget_max: gig.budget_max,
+                                        location: gig.location || "",
+                                        description: gig.description,
+                                        calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
+                                      });
+                                      toast.success("Added to cart — checkout when ready");
+                                    }
                                   }
                                   setCartOpen(true);
                                 }}
@@ -870,7 +878,7 @@ const BrowseGigs = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

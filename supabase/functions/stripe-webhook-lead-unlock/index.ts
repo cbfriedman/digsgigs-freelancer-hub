@@ -86,6 +86,36 @@ serve(async (req) => {
         console.log("[stripe-webhook-lead-unlock] Lead unlock created successfully");
       }
 
+      // Create lead_purchase so GigDetail and can_access_gig show contact (same gig, digger, completed)
+      const priceDollars = Math.round(priceCents) / 100;
+      const { data: gigRow } = await supabase
+        .from("gigs")
+        .select("consumer_id")
+        .eq("id", leadId)
+        .single();
+      if (gigRow?.consumer_id) {
+        const { error: purchaseErr } = await supabase
+          .from("lead_purchases")
+          .insert({
+            digger_id: diggerId,
+            gig_id: leadId,
+            consumer_id: gigRow.consumer_id,
+            purchase_price: priceDollars,
+            amount_paid: priceDollars,
+            status: "completed",
+            stripe_payment_id: session.payment_intent as string,
+          });
+        if (purchaseErr) {
+          if (purchaseErr.code === "23505") {
+            console.log("[stripe-webhook-lead-unlock] lead_purchase already exists (duplicate)");
+          } else {
+            console.error("[stripe-webhook-lead-unlock] Error creating lead_purchase:", purchaseErr);
+          }
+        } else {
+          console.log("[stripe-webhook-lead-unlock] lead_purchase created for contact access");
+        }
+      }
+
       // Increment purchase count on the gig
       const { error: updateError } = await supabase
         .from("gigs")

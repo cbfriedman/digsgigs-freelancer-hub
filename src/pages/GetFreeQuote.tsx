@@ -104,28 +104,30 @@ export default function GetFreeQuote() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("store-pewc-consent", {
-        body: {
-          fullName: formData.fullName,
-          phone: normalizePhone(formData.phone),
-          email: formData.email,
-          propertyAddress: formData.propertyAddress,
-          consentText: getConsentText(),
-          consentVersion: CONSENT_VERSION,
-          ipAddress: "captured-server-side",
-          userAgent: navigator.userAgent,
-          pageUrl: window.location.href,
-          utmSource,
-          utmMedium,
-          utmCampaign,
-        },
-      });
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ consentRecordId: string; alreadyVerified?: boolean }>(
+        supabase,
+        "store-pewc-consent",
+        {
+          body: {
+            fullName: formData.fullName,
+            phone: normalizePhone(formData.phone),
+            email: formData.email,
+            propertyAddress: formData.propertyAddress,
+            consentText: getConsentText(),
+            consentVersion: CONSENT_VERSION,
+            ipAddress: "captured-server-side",
+            userAgent: navigator.userAgent,
+            pageUrl: window.location.href,
+            utmSource: utmSource ?? undefined,
+            utmMedium: utmMedium ?? undefined,
+            utmCampaign: utmCampaign ?? undefined,
+          },
+        }
+      );
 
       setConsentRecordId(data.consentRecordId);
       setShowSmsVerification(true);
-      
+
       toast({
         title: "Verification Code Sent",
         description: "Please check your phone for a verification code.",
@@ -134,7 +136,7 @@ export default function GetFreeQuote() {
       console.error("Error submitting consent:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to submit. Please try again.",
+        description: error?.message ?? "Failed to submit. Please try again.",
         variant: "destructive",
       });
     } finally {

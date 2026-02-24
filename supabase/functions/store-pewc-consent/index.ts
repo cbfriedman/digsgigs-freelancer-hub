@@ -12,24 +12,44 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[PEWC] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body = await req.json();
-    const {
-      fullName,
-      phone,
-      email,
-      propertyAddress,
-      consentText,
-      consentVersion,
-      userAgent,
-      pageUrl,
-      utmSource,
-      utmMedium,
-      utmCampaign,
-    } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!body || typeof body !== "object") {
+      return new Response(
+        JSON.stringify({ error: "Missing request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const fullName = body.fullName as string | undefined;
+    const phone = body.phone as string | undefined;
+    const email = body.email as string | undefined;
+    const propertyAddress = body.propertyAddress as string | undefined;
+    const consentText = body.consentText as string | undefined;
+    const consentVersion = body.consentVersion as string | undefined;
+    const userAgent = body.userAgent as string | undefined;
+    const pageUrl = body.pageUrl as string | undefined;
+    const utmSource = body.utmSource as string | undefined;
+    const utmMedium = body.utmMedium as string | undefined;
+    const utmCampaign = body.utmCampaign as string | undefined;
 
     // Validate required fields
     if (!phone || !consentText || !pageUrl) {
@@ -121,7 +141,11 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("[PEWC] Insert error:", insertError);
-      throw new Error("Failed to store consent record");
+      const message = insertError.message || "Failed to store consent record";
+      return new Response(
+        JSON.stringify({ error: message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log(`[PEWC] Consent record created: ${consentRecord.id}`);

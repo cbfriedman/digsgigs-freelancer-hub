@@ -1792,22 +1792,6 @@ const GigDetail = () => {
               </Card>
             );})()}
 
-            {showDiggerContent && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-primary" />
-                    <CardTitle className="text-lg">Bid or buy — no membership</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    When you’re awarded the gig, we charge an <strong>8% referral fee</strong> (from the client's deposit). 
-                    You can also buy the lead upfront to unlock contact. No subscription required.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
           </aside>
         </div>
       </main>

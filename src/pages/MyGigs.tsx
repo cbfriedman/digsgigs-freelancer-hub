@@ -438,7 +438,7 @@ const MyGigs = () => {
             <Button variant="outline" onClick={() => navigate("/transactions")}>
               View Transactions
             </Button>
-            <Button onClick={() => navigate("/post-gig")}>Post New Gig</Button>
+            <Button onClick={() => navigate("/post-gig?quick=1")}>Post a gig</Button>
           </div>
         </div>
 
@@ -446,7 +446,7 @@ const MyGigs = () => {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">Post your first gig. Diggers are waiting to bid.</p>
-              <Button onClick={() => navigate("/post-gig")}>
+              <Button onClick={() => navigate("/post-gig?quick=1")}>
                 Post a gig
               </Button>
             </CardContent>

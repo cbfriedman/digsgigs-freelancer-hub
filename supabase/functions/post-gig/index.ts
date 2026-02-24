@@ -108,6 +108,17 @@ serve(async (req) => {
 
     const consumerId = user.id;
 
+    // Lead price: 8% of budget midpoint, $3–$49 (single source of truth with frontend and create-lead-unlock-checkout)
+    const bMin = budget_min ?? 0;
+    const bMax = budget_max ?? 0;
+    const avgBudget = (bMin + bMax) / 2;
+    let calculatedPriceCents: number | null = null;
+    if (avgBudget > 0) {
+      const priceDollars = Math.round(avgBudget * 0.08);
+      const clamped = Math.min(49, Math.max(3, priceDollars));
+      calculatedPriceCents = clamped * 100;
+    }
+
     const { data: gig, error } = await supabase
       .from("gigs")
       .insert({
@@ -115,8 +126,9 @@ serve(async (req) => {
         title: title.trim(),
         description: description.trim(),
         requirements: requirements?.trim() ?? null,
-        budget_min: budget_min ?? 0,
-        budget_max: budget_max ?? 0,
+        budget_min: bMin,
+        budget_max: bMax,
+        calculated_price_cents: calculatedPriceCents,
         timeline: timeline ?? null,
         location: locationDisplay,
         work_type: ["remote", "hybrid", "onsite", "flexible"].includes(work_type) ? work_type : "remote",

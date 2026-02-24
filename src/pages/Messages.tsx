@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
-  ChevronDown, X, Pin, Star, Trash2, EyeOff, BellOff, Ban, UploadCloud
+  ChevronDown, X, Pin, Star, Trash2, EyeOff, BellOff, Ban, UploadCloud,
+  Award, CircleDollarSign, CheckCircle2, Send
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
@@ -156,6 +157,8 @@ export default function Messages() {
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string } | null>(null);
+  type TimelineEvent = { id: string; type: string; label: string; detail: string; date: string };
+  const [activityTimeline, setActivityTimeline] = useState<TimelineEvent[]>([]);
   const currentUserIdRef = useRef<string | undefined>(undefined);
   const selectedConversationRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
@@ -560,6 +563,110 @@ export default function Messages() {
     return () => { cancelled = true; };
   }, [currentUser?.id, searchParams.get("gig"), searchParams.get("digger")]);
 
+  // Digger who purchased lead opened Messages with ?gig= (no digger param): find or create conversation with gigger
+  useEffect(() => {
+    const gigId = searchParams.get("gig");
+    const diggerParam = searchParams.get("digger");
+    if (!currentUser?.id || !gigId || diggerParam != null) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: gig, error: gigError } = await supabase
+          .from("gigs")
+          .select("id, consumer_id")
+          .eq("id", gigId)
+          .single();
+
+        if (gigError || !gig?.consumer_id) {
+          if (!cancelled) toast({ title: "Project not found", variant: "destructive" });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            return next;
+          });
+          return;
+        }
+        if (gig.consumer_id === currentUser.id) return; // owner uses the other effect with ?digger=
+
+        const { data: diggerProfile } = await supabase
+          .from("digger_profiles")
+          .select("id")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (cancelled || !diggerProfile?.id) return;
+
+        const { data: leadPurchase } = await supabase
+          .from("lead_purchases")
+          .select("id")
+          .eq("gig_id", gigId)
+          .eq("digger_id", diggerProfile.id)
+          .eq("status", "completed")
+          .maybeSingle();
+
+        if (cancelled || !leadPurchase) {
+          if (!cancelled) toast({ title: "Purchase this lead first to message the client", variant: "destructive" });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            return next;
+          });
+          return;
+        }
+
+        const { data: existing } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("gig_id", gigId)
+          .eq("digger_id", diggerProfile.id)
+          .eq("consumer_id", gig.consumer_id)
+          .is("admin_id", null)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (existing?.id) {
+          setSelectedConversation(existing.id);
+          setSearchParams({ conversation: existing.id });
+          await loadConversations();
+          return;
+        }
+
+        const { data: newConv, error: insertError } = await supabase
+          .from("conversations")
+          .insert({
+            gig_id: gigId,
+            digger_id: diggerProfile.id,
+            consumer_id: gig.consumer_id,
+          } as any)
+          .select("id")
+          .single();
+
+        if (cancelled) return;
+        if (insertError) throw insertError;
+        if (newConv?.id) {
+          setSelectedConversation(newConv.id);
+          setSearchParams({ conversation: newConv.id });
+          await loadConversations();
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          toast({
+            title: "Could not start conversation",
+            description: e?.message ?? "Something went wrong",
+            variant: "destructive",
+          });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            return next;
+          });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentUser?.id, searchParams.get("gig"), searchParams.get("digger")]);
+
   // Sync selected conversation from URL (e.g. after clicking a message notification)
   useEffect(() => {
     const q = searchParams.get("conversation");
@@ -637,6 +744,118 @@ export default function Messages() {
     const t = setTimeout(scrollToLatest, 100);
     return () => clearTimeout(t);
   }, [selectedConversation, messages]);
+
+  // Load activity timeline for the selected conversation (gig-linked events for Digger & Gigger)
+  useEffect(() => {
+    let cancelled = false;
+    const conv = conversations.find((c) => c.id === selectedConversation);
+    if (!conv || !currentUser?.id) {
+      setActivityTimeline([]);
+      return () => { cancelled = true; };
+    }
+    const gigId = conv.gig_id;
+    const diggerId = conv.digger_id;
+    const consumerId = conv.consumer_id;
+    const isGigger = consumerId === currentUser.id;
+    const events: TimelineEvent[] = [];
+
+    const push = (id: string, type: string, label: string, detail: string, date: string) => {
+      events.push({ id, type, label, detail, date });
+    };
+
+    push("conv-started", "conversation", "Conversation started", "You can discuss the project here.", conv.created_at);
+    if (gigId) {
+      const gigTitle = conv.gigs?.title || "This gig";
+      push("linked-gig", "linked", "Linked to gig", gigTitle, conv.created_at);
+      setActivityTimeline(events.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+
+      (async () => {
+        try {
+          const [bidRes, contractRes] = await Promise.all([
+            diggerId
+              ? supabase
+                  .from("bids")
+                  .select("id, created_at, awarded, awarded_at, status")
+                  .eq("gig_id", gigId)
+                  .eq("digger_id", diggerId)
+                  .order("created_at", { ascending: true })
+                  .limit(1)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+            supabase
+              .from("escrow_contracts")
+              .select("id, created_at, status, completed_at")
+              .eq("gig_id", gigId)
+              .in("status", ["active", "completed"])
+              .maybeSingle(),
+          ]);
+          if (cancelled) return;
+
+          const bid = bidRes.data as { id: string; created_at: string; awarded?: boolean; awarded_at: string | null; status: string } | null;
+          const contract = contractRes.data as { id: string; created_at: string; status: string; completed_at: string | null } | null;
+
+          if (bid) {
+            push("bid-placed", "bid", "Bid placed", isGigger ? "Professional submitted a proposal." : "Your proposal was sent.", bid.created_at);
+            if (bid.awarded && bid.awarded_at) {
+              push(
+                "bid-awarded",
+                "awarded",
+                "Bid awarded",
+                isGigger ? "You hired the professional for this gig." : "You were awarded this gig.",
+                bid.awarded_at
+              );
+            }
+          }
+          if (contract) {
+            push(
+              "contract-created",
+              "contract",
+              "Payment contract set up",
+              "Milestones and payments are in place.",
+              contract.created_at
+            );
+            const { data: milestones } = await supabase
+              .from("milestone_payments")
+              .select("id, milestone_number, status, released_at, created_at")
+              .eq("escrow_contract_id", contract.id)
+              .order("milestone_number", { ascending: true });
+            if (!cancelled && Array.isArray(milestones)) {
+              milestones.forEach((m: { id: string; milestone_number: number; status: string; released_at: string | null; created_at: string }) => {
+                if (m.status === "submitted") {
+                  push(
+                    `milestone-${m.id}-submitted`,
+                    "milestone-submitted",
+                    `Milestone ${m.milestone_number} submitted`,
+                    "Waiting for client approval.",
+                    m.created_at
+                  );
+                }
+                if (m.released_at) {
+                  push(
+                    `milestone-${m.id}-paid`,
+                    "milestone-paid",
+                    `Milestone ${m.milestone_number} paid`,
+                    "Payment released to professional.",
+                    m.released_at
+                  );
+                }
+              });
+            }
+            if (contract.status === "completed" && contract.completed_at) {
+              push("contract-completed", "completed", "Contract completed", "Work and payments finished. You can leave a review.", contract.completed_at);
+            }
+          }
+          const sorted = events.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          if (!cancelled) setActivityTimeline(sorted);
+        } catch {
+          if (!cancelled) setActivityTimeline(events.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+        }
+      })();
+    } else {
+      setActivityTimeline(events);
+    }
+    return () => { cancelled = true; };
+  }, [selectedConversation, conversations, currentUser?.id]);
 
   // Subscribe to new messages in ANY conversation so we can alert when user is viewing another chat
   useEffect(() => {
@@ -2344,37 +2563,57 @@ export default function Messages() {
                 </Button>
               )}
 
-              {/* Activity timeline */}
+              {/* Activity timeline — clear progress for Digger & Gigger */}
               <div className="border-t border-border/30 pt-4">
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between text-left font-semibold text-sm py-1"
-                >
-                  Activity timeline
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <div className="mt-4 space-y-0 relative pl-5 border-l-2 border-primary/20 ml-0.5">
-                  <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-primary -translate-x-[6px] shadow-sm" />
-                  <div className="pb-4 flex items-start gap-2">
-                    <FileCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Conversation started</p>
-                      <p className="text-xs text-muted-foreground">
-                        {selectedConv && format(new Date(selectedConv.created_at), "MMM d, yyyy")}
-                      </p>
-                    </div>
-                  </div>
-                  {selectedConv?.gig_id && (
+                <h4 className="font-semibold text-sm text-foreground py-1">Activity timeline</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">Key events for this conversation and gig.</p>
+                <div className="mt-4 max-h-[280px] overflow-y-auto overflow-x-hidden space-y-0 relative pl-5 border-l-2 border-primary/20 ml-0.5 pr-1">
+                  {activityTimeline.length === 0 ? (
                     <>
-                      <div className="absolute left-0 top-12 w-2.5 h-2.5 rounded-full bg-muted-foreground/30 -translate-x-[6px]" />
-                      <div className="pb-3 flex items-start gap-2">
-                        <Hourglass className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-primary -translate-x-[6px] shadow-sm" />
+                      <div className="pb-4 flex items-start gap-2">
+                        <FileCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Linked to gig</p>
-                          <p className="text-xs text-muted-foreground">Project discussion</p>
+                          <p className="text-sm font-medium text-foreground">Conversation started</p>
+                          <p className="text-xs text-muted-foreground">
+                            {selectedConv && format(new Date(selectedConv.created_at), "MMM d, yyyy")}
+                          </p>
                         </div>
                       </div>
                     </>
+                  ) : (
+                    activityTimeline.map((evt) => {
+                      const Icon =
+                        evt.type === "conversation"
+                          ? FileCheck
+                          : evt.type === "linked"
+                            ? Briefcase
+                            : evt.type === "bid"
+                              ? MessageSquare
+                              : evt.type === "awarded"
+                                ? Award
+                                : evt.type === "contract"
+                                  ? FileCheck
+                                  : evt.type === "milestone-submitted"
+                                    ? Send
+                                    : evt.type === "milestone-paid"
+                                      ? CircleDollarSign
+                                      : evt.type === "completed"
+                                        ? CheckCircle2
+                                        : Hourglass;
+                      const isPrimary = evt.type === "conversation" || evt.type === "awarded" || evt.type === "milestone-paid" || evt.type === "completed";
+                      return (
+                        <div key={evt.id} className="pb-3 flex items-start gap-2 -ml-[5px]">
+                          <div className={cn("w-2.5 h-2.5 rounded-full border-2 border-background shrink-0 mt-1.5", isPrimary ? "bg-primary shadow-sm" : "bg-muted-foreground/40")} />
+                          <Icon className={cn("h-4 w-4 shrink-0 mt-0.5", isPrimary ? "text-primary" : "text-muted-foreground")} />
+                          <div className="min-w-0 flex-1">
+                            <p className={cn("text-sm", isPrimary ? "font-medium text-foreground" : "text-muted-foreground")}>{evt.label}</p>
+                            <p className="text-xs text-muted-foreground truncate" title={evt.detail}>{evt.detail}</p>
+                            <p className="text-[10px] text-muted-foreground/80 mt-0.5">{format(new Date(evt.date), "MMM d, yyyy · h:mm a")}</p>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>

@@ -209,7 +209,7 @@ serve(async (req) => {
           );
           logStep("7% deposit advance transferred to digger", { transferId: transfer.id });
         } catch (e) {
-          logStep("Failed to create 7% transfer (webhook may do it)", { error: e instanceof Error ? e.message : String(e) });
+          logStep("Failed to create 7% transfer (webhook or retry-7pct-milestone)", { error: e instanceof Error ? e.message : String(e) });
         }
       }
     }

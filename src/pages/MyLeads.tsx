@@ -19,6 +19,7 @@ import {
   parseContactPreferences,
   getContactLink,
 } from "@/config/giggerContactMethods";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 
 export default function MyLeads() {
   const { user } = useAuth();
@@ -32,6 +33,31 @@ export default function MyLeads() {
     if (user) {
       loadProfiles();
     }
+  }, [user]);
+
+  // After bulk checkout success: create lead_purchases from Stripe session then clear URL params
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const bulkSuccess = params.get("bulk_purchase") === "success";
+    const sessionId = params.get("session_id");
+    if (!bulkSuccess || !sessionId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await invokeEdgeFunction<{ success?: boolean }>(supabase, "process-bulk-purchase", {
+          body: { sessionId },
+        });
+        if (cancelled) return;
+        toast.success("Leads unlocked. Contact info is now available.");
+        navigate("/my-leads", { replace: true });
+        if (selectedProfile) loadLeads();
+      } catch (e: any) {
+        if (!cancelled) toast.error(e?.message || "Failed to complete lead purchase");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
@@ -124,19 +150,6 @@ export default function MyLeads() {
             id,
             business_name,
             profile_name
-          ),
-          lead_exclusivity_queue (
-            id,
-            status,
-            exclusivity_starts_at,
-            exclusivity_ends_at,
-            awarded_at,
-            base_price,
-            lead_exclusivity_extensions (
-              extension_number,
-              expires_at,
-              extension_cost
-            )
           )
         `)
         .eq("digger_id", selectedProfile)
@@ -413,8 +426,8 @@ export default function MyLeads() {
                           </div>
                         </div>
 
-                        {/* Consumer Contact Info (only for exclusive/awarded leads) */}
-                        {(isExclusive || lead.awarded_at) && (consumer || gig?.consumer_email || gig?.consumer_phone || (gig?.contact_preferences && parseContactPreferences(gig.contact_preferences).length > 0)) && (
+                        {/* Consumer Contact Info (completed purchase, exclusive, or awarded) */}
+                        {(isExclusive || lead.awarded_at || lead.status === "completed") && (consumer || gig?.consumer_email || gig?.consumer_phone || (gig?.contact_preferences && parseContactPreferences(gig.contact_preferences).length > 0)) && (
                           <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                             <h4 className="font-medium mb-2 text-sm">
                               {isExclusive ? "Contact Information (Exclusive Access)" : "Contact Information"}

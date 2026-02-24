@@ -66,10 +66,10 @@ serve(async (req) => {
     const gigIds = purchases.map((p: any) => p.gigId);
     logStep("Processing gigs", { count: gigIds.length, purchases });
 
-    // Fetch gig details
+    // Fetch gig details (include calculated_price_cents for canonical lead price)
     const { data: gigs, error: gigsError } = await supabaseClient
       .from("gigs")
-      .select("id, title, description, budget_min, budget_max, consumer_id")
+      .select("id, title, description, budget_min, budget_max, consumer_id, calculated_price_cents")
       .in("id", gigIds);
 
     if (gigsError || !gigs || gigs.length === 0) {
@@ -89,76 +89,29 @@ serve(async (req) => {
       throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
     }
 
-    // Import pricing configuration (inline for edge function)
-    interface IndustryPricing {
-      category: 'low-value' | 'mid-value' | 'high-value';
-      industries: string[];
-      nonExclusive: number;
-      semiExclusive: number;
-      exclusive24h: number;
-    }
-    
-    const INDUSTRY_PRICING: IndustryPricing[] = [
-      {
-        category: 'low-value',
-        industries: ['Cleaning', 'Handyman', 'Pet Care', 'Tutoring', 'Moving', 'Delivery'],
-        nonExclusive: 7.50,
-        semiExclusive: 30.00,
-        exclusive24h: 60.00
-      },
-      {
-        category: 'mid-value',
-        industries: ['HVAC', 'Plumbing', 'Electrical', 'Landscaping', 'Roofing', 'Carpentry', 'Painting'],
-        nonExclusive: 14.50,
-        semiExclusive: 58.00,
-        exclusive24h: 125.00
-      },
-      {
-        category: 'high-value',
-        industries: ['Legal', 'Insurance', 'Financial Planning', 'Real Estate', 'Medical', 'Dental', 'Consulting'],
-        nonExclusive: 24.50,
-        semiExclusive: 99.00,
-        exclusive24h: 275.00
+    // Lead price: 8% of budget midpoint, $3–$49 (must match frontend @/lib/leadPrice and cart)
+    const getLeadPriceCents = (gig: { budget_min?: number | null; budget_max?: number | null; calculated_price_cents?: number | null }): number => {
+      if (gig.calculated_price_cents != null && gig.calculated_price_cents > 0) {
+        const dollars = Math.round(gig.calculated_price_cents / 100);
+        const clamped = Math.min(49, Math.max(3, dollars));
+        return clamped * 100;
       }
-    ];
-    
-    // Determine industry category
-    const determineCategory = (gig: any): 'low-value' | 'mid-value' | 'high-value' => {
-      const searchText = `${gig.title} ${gig.description || ''}`.toLowerCase();
-      
-      for (const pricing of INDUSTRY_PRICING) {
-        for (const industry of pricing.industries) {
-          if (searchText.includes(industry.toLowerCase())) {
-            return pricing.category;
-          }
-        }
-      }
-      
-      return 'mid-value'; // Default
-    };
-    
-    // Calculate price based on exclusivity
-    const calculatePrice = (gig: any, exclusivityType: string): number => {
-      const category = determineCategory(gig);
-      const pricing = INDUSTRY_PRICING.find(p => p.category === category)!;
-      
-      switch (exclusivityType) {
-        case 'semi-exclusive':
-          return pricing.semiExclusive;
-        case 'exclusive':
-          return pricing.exclusive24h;
-        default:
-          return pricing.nonExclusive;
-      }
+      const min = gig.budget_min ?? 0;
+      const max = gig.budget_max ?? min;
+      const avg = (min + max) / 2;
+      if (avg <= 0) return 300; // $3 default
+      const priceDollars = Math.round(avg * 0.08);
+      const clamped = Math.min(49, Math.max(3, priceDollars));
+      return clamped * 100;
     };
 
-    // Calculate prices for each lead using exclusivity-based pricing
+    // Calculate prices for each lead (same rule everywhere: 8%, $3–$49)
     const lineItems = purchases.map((purchase: any) => {
       const gig = gigs.find(g => g.id === purchase.gigId);
       if (!gig) throw new Error(`Gig not found: ${purchase.gigId}`);
       
-      const leadCost = calculatePrice(gig, purchase.exclusivityType);
-      const priceInCents = Math.round(leadCost * 100);
+      const priceInCents = getLeadPriceCents(gig);
+      const leadCost = priceInCents / 100;
       
       const exclusivityLabel = purchase.exclusivityType === 'semi-exclusive' 
         ? 'Semi-Exclusive (4 max)' 

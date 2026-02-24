@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,12 +28,15 @@ import {
 } from "@/config/giggerContactMethods";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
+import { getLeadPriceDollars } from "@/lib/leadPrice";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
 
 const PostGig = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isQuickPost = searchParams.get("quick") === "1";
   const { trackEvent, isConfigured } = useFacebookPixel();
   const { user, userRoles, activeRole, switchRole } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -66,6 +70,7 @@ const PostGig = () => {
   const [skillSearchQuery, setSkillSearchQuery] = useState("");
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
   const [workType, setWorkType] = useState<"remote" | "hybrid" | "onsite" | "flexible">("remote");
+  const [quickTitle, setQuickTitle] = useState("");
   const { skillsByCategory, allSkills } = useSkillsByCategory();
 
   // Load gigger's profile: country (for poster_country) and contact (name, email, phone) so we use account data instead of asking again
@@ -121,11 +126,7 @@ const PostGig = () => {
   const calculateLeadPrice = (): number => {
     const min = parseCurrency(budgetMin);
     const max = parseCurrency(budgetMax);
-    if (!min && !max) return 3;
-    const avg = (min + max) / 2;
-    const percentagePrice = avg * 0.02;
-    const price = Math.max(3, Math.round(percentagePrice));
-    return Math.min(49, price);
+    return getLeadPriceDollars(min, max, null);
   };
 
   const validateForm = (): boolean => {
@@ -376,7 +377,182 @@ const PostGig = () => {
     }
   };
 
+  const submitQuickGig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submittingRef.current || loading) return;
+    if (!user?.id) {
+      toast.error("Sign in to post a gig.");
+      return;
+    }
+    if (!quickTitle.trim()) {
+      toast.error("Enter a project title.");
+      return;
+    }
+    if (!description.trim()) {
+      toast.error("Describe what you need.");
+      return;
+    }
+    submittingRef.current = true;
+    setLoading(true);
+    try {
+      const finalClientName = (accountContact?.full_name || user.email?.split("@")[0] || "Client").trim();
+      const finalClientEmail = (accountContact?.email || user.email || "").trim();
+      const finalClientPhone = accountContact?.phone?.trim() || null;
+      const timelineLabel = timeline
+        ? (TIMELINE_OPTIONS.find((t) => t.value === timeline)?.label || timeline)
+        : "Flexible";
+
+      const response = await invokeEdgeFunction<{ data: { id: string; [key: string]: unknown } }>(supabase, "post-gig", {
+        body: {
+          title: quickTitle.trim(),
+          description: description.trim(),
+          requirements: "Quick post",
+          budget_min: parseCurrency(budgetMin) || 0,
+          budget_max: parseCurrency(budgetMax) || 0,
+          timeline: timelineLabel,
+          work_type: "remote",
+          client_name: finalClientName,
+          consumer_email: finalClientEmail,
+          consumer_phone: finalClientPhone,
+          poster_country: posterCountry.trim() || null,
+          category_id: null,
+        },
+      });
+
+      const gigData = response?.data;
+      if (!gigData?.id) throw new Error("Failed to create project");
+
+      supabase.functions.invoke("send-gig-management-email", { body: { gigId: gigData.id } }).catch((err) => console.error("Management email error:", err));
+      supabase.functions.invoke("send-gig-email-by-settings", { body: { gigId: gigData.id } }).catch((err) => console.error("Gig email by settings error:", err));
+
+      toast.success("Your project is live! Diggers can bid now.");
+      navigate(`/gig-confirmed?gigId=${gigData.id}`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to post. Try again.";
+      if (String(msg).includes("Only giggers") || String(msg).includes("gigger")) {
+        toast.error("Post gigs with your Gigger account", { description: "Switch to Gigger mode above." });
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
+    }
+  };
+
   const leadPrice = calculateLeadPrice();
+
+  // Quick post: minimal form (title, description, optional budget/timeline) for fast posting in Gigger mode
+  if (isQuickPost) {
+    return (
+      <PageLayout maxWidth="tight" navProps={{ showBackButton: true, backLabel: "Back" }}>
+        <SEOHead title="Quick post a gig — Digs & Gigs" description="Post a gig in seconds. Get bids from Diggers." />
+        <div className="max-w-xl mx-auto space-y-6 animate-fade-in-up">
+          {showGiggerOnlyAlert && (
+            <div role="alert" className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <UserCircle className="h-7 w-7" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <h3 className="text-lg font-semibold text-foreground">Post gigs with your Gigger account</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    You're in Digger mode. Switch to Gigger to post a gig and get bids.
+                  </p>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    {hasGiggerRole ? (
+                      <Button type="button" onClick={() => switchRole("gigger")} className="rounded-xl bg-primary text-primary-foreground">
+                        Switch to Gigger
+                      </Button>
+                    ) : (
+                      <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")} className="rounded-xl border-primary/30 text-primary">
+                        Get a Gigger account
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <Zap className="h-4 w-4" />
+              Quick post
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Post a gig in seconds</h1>
+            <p className="text-muted-foreground">
+              Add a title and description. You can add more details on the gig page after it’s live.
+            </p>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <form onSubmit={submitQuickGig} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quick-title">Project title *</Label>
+                  <Input
+                    id="quick-title"
+                    value={quickTitle}
+                    onChange={(e) => setQuickTitle(e.target.value)}
+                    placeholder="e.g. Website redesign, Logo design"
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quick-desc">What do you need? *</Label>
+                  <Textarea
+                    id="quick-desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe the project so Diggers can bid accurately."
+                    rows={4}
+                    className="resize-none w-full"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quick-budget-min">Budget min ($)</Label>
+                    <Input
+                      id="quick-budget-min"
+                      value={budgetMin}
+                      onChange={(e) => setBudgetMin(formatCurrency(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quick-budget-max">Budget max ($)</Label>
+                    <Input
+                      id="quick-budget-max"
+                      value={budgetMax}
+                      onChange={(e) => setBudgetMax(formatCurrency(e.target.value))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Timeline</Label>
+                  <Select value={timeline || "flexible"} onValueChange={(v) => setTimeline(v === "flexible" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Flexible" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flexible">Flexible</SelectItem>
+                      {TIMELINE_OPTIONS.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Posting…</> : "Post gig"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  <Link to="/post-gig" className="text-primary hover:underline">Add more details (category, skills, etc.)</Link>
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout maxWidth="tight" navProps={{ showBackButton: true, backLabel: "Back" }}>
@@ -972,13 +1148,8 @@ const PostGig = () => {
                       </div>
                       <div className="text-3xl font-bold text-primary">${leadPrice}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">
-                        2% of average budget
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Maximum: $49
-                      </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      8% of project budget<br />($3–$49)
                     </div>
                   </div>
                 </div>

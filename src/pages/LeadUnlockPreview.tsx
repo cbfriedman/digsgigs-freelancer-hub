@@ -22,6 +22,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { BidSubmissionTemplateDemo } from "@/components/BidSubmissionTemplateDemo";
+import { getLeadPriceDollars } from "@/lib/leadPrice";
 
 type PricingOption = "pay_per_lead" | "success_based";
 
@@ -57,14 +58,7 @@ export default function LeadUnlockPreview() {
   };
 
   const getLeadPrice = (): number => {
-    if (sampleLead.calculated_price_cents) {
-      return sampleLead.calculated_price_cents / 100;
-    }
-    const min = sampleLead.budget_min || 0;
-    const max = sampleLead.budget_max || min;
-    const avg = (min + max) / 2;
-    const price = Math.round(avg * 0.08);
-    return Math.min(49, Math.max(1, price));
+    return getLeadPriceDollars(sampleLead.budget_min, sampleLead.budget_max, sampleLead.calculated_price_cents);
   };
 
   const getEstimatedReferralFee = (): { min: number; max: number; midpoint: number } => {

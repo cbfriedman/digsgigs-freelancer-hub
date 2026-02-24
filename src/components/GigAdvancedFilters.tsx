@@ -136,10 +136,6 @@ export const GigAdvancedFilters = ({
     onFiltersChange({ ...filters, selectedCategories: newCategories });
   };
 
-  const handleLocationRadiusChange = (value: number[]) => {
-    onFiltersChange({ ...filters, locationRadius: value[0] });
-  };
-
   const handleSaveSearch = async () => {
     if (!searchName.trim()) {
       toast.error("Please enter a name for your saved search");
@@ -190,7 +186,6 @@ export const GigAdvancedFilters = ({
     filters.selectedCategories.length > 0 ||
     (filters.selectedProfessionIds?.length ?? 0) > 0 ||
     (filters.selectedKeywords?.length ?? 0) > 0 ||
-    filters.locationRadius !== 50 ||
     filters.postedSince !== "all" ||
     filters.sortBy !== "newest";
 
@@ -287,24 +282,6 @@ export const GigAdvancedFilters = ({
                 className="w-full"
               />
             </div>
-          </div>
-
-          {/* Location radius */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Within {filters.locationRadius} miles
-            </Label>
-            <Slider
-              min={5}
-              max={200}
-              step={5}
-              value={[filters.locationRadius]}
-              onValueChange={handleLocationRadiusChange}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used when a location is set for the gig.
-            </p>
           </div>
 
           {/* Professions & keywords – profession and each keyword selectable */}

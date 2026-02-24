@@ -253,7 +253,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </button>
                 }
               >
-                <DropdownMenuItem onClick={() => navigate("/post-gig")} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate("/post-gig?quick=1")} className="cursor-pointer">
                   Post a gig
                 </DropdownMenuItem>
                 {hasEnoughDiggers && (
@@ -401,6 +401,16 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
+                  {/* Gigger mode: prominent "Post a gig" in front of Messages */}
+                  {user && isGiggerMode && userRoles.includes("gigger") && (
+                    <Button
+                      size="sm"
+                      className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                      onClick={() => navigate("/post-gig?quick=1")}
+                    >
+                      Post a gig
+                    </Button>
+                  )}
                   {/* Messages — only when signed in; hover shows recent messages dropdown */}
                   <HoverCard openDelay={300} closeDelay={150}>
                     <HoverCardTrigger asChild>
@@ -1094,7 +1104,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
                           isActive("/post-gig") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
                         )}
-                        onClick={() => { navigate("/post-gig"); setMobileMenuOpen(false); }}
+                        onClick={() => { navigate("/post-gig?quick=1"); setMobileMenuOpen(false); }}
                       >
                         <span className="font-medium">Post a gig</span>
                       </button>

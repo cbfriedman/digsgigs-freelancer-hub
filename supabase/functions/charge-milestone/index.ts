@@ -82,7 +82,6 @@ serve(async (req) => {
       });
       const amountCents = Math.round(Number(milestone.amount) * 100);
       const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100));
-      const totalChargeCents = amountCents + transactionFeeCents;
       const desc = (milestone as any).description?.slice(0, 50) || "Contract milestone";
 
       const { data: diggerProfile } = await supabaseAdmin
@@ -128,6 +127,8 @@ serve(async (req) => {
           logStep("First milestone: no bid amount for 7%", { gigId: contract.gig_id });
         }
       }
+      // Gigger pays only milestone + 3% fee. 7% to digger comes from 15% deposit (transferred from platform in webhook).
+      const totalChargeCents = amountCents + transactionFeeCents;
       const diggerReceivesDollars = diggerPayoutCents / 100;
       const sevenPercentDisplayDollars = (depositAdvanceCents / 100).toFixed(2);
 
@@ -149,7 +150,7 @@ serve(async (req) => {
       const showSevenPercentOnCheckout = depositAdvanceCents > 0;
       const milestoneAmountDollars = Number(milestone.amount).toFixed(2);
       const mainDescription = showSevenPercentOnCheckout
-        ? `You pay $${(totalChargeCents / 100).toFixed(2)} (milestone + 3% fee). Professional receives: $${milestoneAmountDollars} (milestone) + $${sevenPercentDisplayDollars} (7% deposit) = $${diggerReceivesDollars.toFixed(2)} total.`
+        ? `You pay $${(totalChargeCents / 100).toFixed(2)} (milestone + 3% fee). Professional receives: $${milestoneAmountDollars} (milestone) + $${sevenPercentDisplayDollars} (7% from your deposit) = $${diggerReceivesDollars.toFixed(2)} total.`
         : `You pay $${(totalChargeCents / 100).toFixed(2)} (milestone + 3% fee). Professional receives $${diggerReceivesDollars.toFixed(2)}.`;
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -170,15 +171,14 @@ serve(async (req) => {
             currency: "usd",
             product_data: {
               name: `7% deposit (to professional): $${sevenPercentDisplayDollars}`,
-              description: `Professional receives: $${milestoneAmountDollars} (milestone) + $${sevenPercentDisplayDollars} (7% deposit) = $${diggerReceivesDollars.toFixed(2)} total. From your 15% deposit; no extra charge.`,
+              description: `From your 15% deposit; no extra charge. Released to the professional when you approve this first milestone.`,
             },
             unit_amount: 0,
           },
           quantity: 1,
         });
       }
-      // Stripe rule: transfer_data.amount cannot exceed the session total. Customer pays totalChargeCents (e.g. $1030).
-      // The 7% deposit is from the existing 15% deposit (already on platform); we transfer it separately in the webhook.
+      // 7% comes from platform (deposit); only milestone payout goes via destination charge.
       const transferFromThisPaymentCents = diggerPayoutCents - depositAdvanceCents;
       const session = await stripe.checkout.sessions.create({
         customer: customerId ?? undefined,
@@ -216,7 +216,6 @@ serve(async (req) => {
 
     const amountCents = Math.round(Number(milestone.amount) * 100); // gross
     const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100)); // 3% from Gigger
-    const totalChargeCents = amountCents + transactionFeeCents; // Gigger pays gross + 3%
 
     // Compute digger payout and 7% deposit advance before creating PI so we can use transfer_data (destination charge).
     // Using transfer_data avoids "insufficient available funds" because the transfer happens at capture, not from platform balance.
@@ -257,6 +256,8 @@ serve(async (req) => {
         logStep("Adding 7% deposit advance to first milestone (saved PM)", { depositAdvanceCents, diggerPayoutCents });
       }
     }
+    // Gigger pays only milestone + 3% fee. 7% to digger comes from deposit (transferred from platform).
+    const totalChargeCents = amountCents + transactionFeeCents;
     const transferFromThisPaymentCents = diggerPayoutCents - depositAdvanceCents;
 
     const idempotencyKey = `milestone-${milestonePaymentId}`;
@@ -282,7 +283,7 @@ serve(async (req) => {
         destination: diggerProfile.stripe_connect_account_id,
         amount: transferFromThisPaymentCents,
       };
-      logStep("Using transfer_data (destination charge) to avoid platform balance", { transferFromThisPaymentCents });
+      logStep("Using transfer_data (milestone payout only; 7% from platform)", { transferFromThisPaymentCents });
     }
 
     let paymentIntent: Stripe.PaymentIntent;
@@ -334,34 +335,35 @@ serve(async (req) => {
       );
     }
 
-    // Main transfer was done via transfer_data at capture. Only transfer the 7% deposit advance from platform balance (if any).
+    // Milestone part sent via transfer_data. Transfer 7% from platform (deposit) to digger.
     let stripeTransferId: string | null = null;
     if (diggerProfile?.stripe_connect_account_id && depositAdvanceCents > 0) {
       try {
-        const transfer = await stripe.transfers.create({
-          amount: depositAdvanceCents,
-          currency: "usd",
-          destination: diggerProfile.stripe_connect_account_id,
-          description: `Milestone 7% deposit advance - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
-          metadata: {
-            milestone_payment_id: milestonePaymentId,
-            escrow_contract_id: milestone.escrow_contract_id,
+        const transfer = await stripe.transfers.create(
+          {
+            amount: depositAdvanceCents,
+            currency: "usd",
+            destination: diggerProfile.stripe_connect_account_id,
+            description: `Milestone 7% deposit advance - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
+            metadata: {
+              milestone_payment_id: milestonePaymentId,
+              escrow_contract_id: milestone.escrow_contract_id,
+              type: "milestone_7pct_deposit",
+            },
           },
-        });
+          { idempotencyKey: `milestone-7pct-${milestonePaymentId}` }
+        );
         stripeTransferId = transfer.id;
-        logStep("7% deposit advance transfer created", { transferId: transfer.id });
-      } catch (transferErr) {
-        logStep("7% deposit advance transfer failed (platform may have no available balance)", {
-          error: transferErr instanceof Error ? transferErr.message : String(transferErr),
+        logStep("7% deposit advance transferred from platform to digger", { transferId: transfer.id });
+      } catch (transferErr: unknown) {
+        const err = transferErr as { message?: string; code?: string };
+        logStep("7% transfer failed (platform balance); use retry-7pct-milestone later", {
+          error: err?.message ?? String(transferErr),
+          code: err?.code,
+          milestonePaymentId,
         });
-        // Milestone is still paid; Digger got transferFromThisPaymentCents via transfer_data. 7% can be reconciled later.
       }
-    } else if (diggerProfile?.stripe_connect_account_id && transferFromThisPaymentCents === 0) {
-      logStep("No transfer_data amount (unusual); skipping transfer", { milestonePaymentId });
-    } else if (!diggerProfile?.stripe_connect_account_id) {
-      logStep("Digger has no Connect account - payment taken but transfer skipped", { milestonePaymentId });
     }
-
     await supabaseAdmin
       .from("milestone_payments")
       .update({
