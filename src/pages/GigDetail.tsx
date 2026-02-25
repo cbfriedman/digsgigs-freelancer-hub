@@ -19,9 +19,12 @@ import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { CartDrawer } from "@/components/CartDrawer";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
 import { getLocalTimeForCountry } from "@/pages/DiggerDetail/utils";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
+import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
   Dialog,
@@ -119,6 +122,22 @@ const GigDetail = () => {
   const [declineReason, setDeclineReason] = useState("");
   const [declineLoading, setDeclineLoading] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const { addToCart } = useCart();
+
+  const handleUnlockLead = () => {
+    if (!gig) return;
+    addToCart({
+      id: gig.id,
+      title: gig.title,
+      budget_min: gig.budget_min,
+      budget_max: gig.budget_max,
+      location: gig.location ?? "",
+      description: gig.description ?? "",
+      calculated_price_cents: (gig as { calculated_price_cents?: number | null }).calculated_price_cents ?? undefined,
+    });
+    setCartOpen(true);
+  };
 
   const DESCRIPTION_PREVIEW_LENGTH = 280;
   const descriptionNeedsToggle = (gig?.description?.length ?? 0) > DESCRIPTION_PREVIEW_LENGTH;
@@ -1040,6 +1059,9 @@ const GigDetail = () => {
                 <BidSubmissionTemplate
                   gigId={id!}
                   diggerId={diggerId}
+                  leadPriceBudgetMin={gig.budget_min}
+                  leadPriceBudgetMax={gig.budget_max}
+                  leadPriceCalculatedCents={(gig as { calculated_price_cents?: number | null }).calculated_price_cents}
                   onSuccess={() => {
                     toast({
                       title: "Proposal submitted",
@@ -1051,7 +1073,7 @@ const GigDetail = () => {
                       }, 150);
                     });
                   }}
-                  onBuyLeadClick={() => navigate(`/lead/${id}/unlock`)}
+                  onBuyLeadClick={handleUnlockLead}
                   onExclusiveClick={() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 />
               </div>
@@ -1061,6 +1083,9 @@ const GigDetail = () => {
                 <BidSubmissionTemplate
                   gigId={id!}
                   diggerId={diggerId}
+                  leadPriceBudgetMin={gig.budget_min}
+                  leadPriceBudgetMax={gig.budget_max}
+                  leadPriceCalculatedCents={(gig as { calculated_price_cents?: number | null }).calculated_price_cents}
                   existingBid={{
                     id: existingBid.id,
                     proposal: existingBid.proposal || "",
@@ -1081,7 +1106,7 @@ const GigDetail = () => {
                     toast({ title: "Proposal updated", description: "Your changes have been saved." });
                     setTimeout(() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                   }}
-                  onBuyLeadClick={() => navigate(`/lead/${id}/unlock`)}
+                  onBuyLeadClick={handleUnlockLead}
                   onExclusiveClick={() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 />
                 <Button variant="ghost" size="sm" className="mt-3" onClick={() => setEditingProposal(false)}>
@@ -1411,8 +1436,8 @@ const GigDetail = () => {
 
           {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = Contact client + client info */}
           <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
-            {/* Contact the client now — always in sidebar for non-owners (Diggers) */}
-            {!isOwner && (
+            {/* Contact the client now — in sidebar for non-owners who have not yet purchased the lead */}
+            {!isOwner && !hasLeadPurchase && (
               <Card className="border-primary/30 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1426,17 +1451,15 @@ const GigDetail = () => {
                 <CardContent className="flex flex-col gap-4">
                   <div>
                     <p className="text-2xl font-bold text-primary">
-                      {(() => {
-                        const mid = gig.budget_min != null && gig.budget_max != null
-                          ? (gig.budget_min + gig.budget_max) / 2
-                          : gig.budget_min ?? gig.budget_max ?? 0;
-                        const price = mid > 0 ? Math.min(49, Math.max(3, Math.round(mid * 0.02 * 100) / 100)) : null;
-                        return price != null ? `Lead price: $${price}` : "Lead price: $3–$49";
-                      })()}
+                      {getLeadPriceDisplay(
+                        gig.budget_min,
+                        gig.budget_max,
+                        (gig as { calculated_price_cents?: number | null }).calculated_price_cents
+                      ).label}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">2% of project budget ($3–$49). Bogus leads fully refundable.</p>
+                    <p className="text-sm text-muted-foreground mt-1">{LEAD_PRICE_CAPTION}</p>
                   </div>
-                  <Button onClick={() => navigate(`/lead/${id}/unlock`)} className="gap-2 w-full sm:w-auto shrink-0">
+                  <Button onClick={handleUnlockLead} className="gap-2 w-full sm:w-auto shrink-0">
                     <Unlock className="h-4 w-4" />
                     Unlock lead
                   </Button>
@@ -1796,6 +1819,7 @@ const GigDetail = () => {
         </div>
       </main>
       <Footer />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 };

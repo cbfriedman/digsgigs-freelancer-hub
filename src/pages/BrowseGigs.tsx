@@ -153,11 +153,11 @@ const BrowseGigs = () => {
     loadData();
   }, [selectedCategory, budgetFilter, diggerProfile, advancedFilters]);
 
-  // Real-time: when a new open gig is posted, add it to the list without refresh
+  // Real-time: new open gigs added to list; updates (e.g. status change to awarded/in_progress) reflected
   const gigsChannelRef = useRef<RealtimeChannel | null>(null);
   useEffect(() => {
     const channel = supabase
-      .channel("browse-gigs:new-gigs")
+      .channel("browse-gigs:gigs")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "gigs" },
@@ -182,6 +182,39 @@ const BrowseGigs = () => {
             setGigs((prev: any) => {
               if (prev.some((g: any) => g.id === newGig.id)) return prev;
               return [newGig as Gig, ...prev];
+            });
+          } catch {
+            // ignore
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "gigs" },
+        async (payload) => {
+          const row = payload.new as { id: string; status: string };
+          if (!row?.id) return;
+          try {
+            const { data: updatedGig, error } = await (supabase
+              .from("gigs") as any)
+              .select(
+                `
+                id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+                preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
+                categories (name),
+                profiles!gigs_consumer_id_fkey (full_name),
+                gig_skills (skills (name))
+              `
+              )
+              .eq("id", row.id)
+              .single();
+            if (error || !updatedGig) return;
+            setGigs((prev: any) => {
+              const idx = prev.findIndex((g: any) => g.id === updatedGig.id);
+              if (idx === -1) return prev;
+              const next = [...prev];
+              next[idx] = updatedGig as Gig;
+              return next;
             });
           } catch {
             // ignore
@@ -289,7 +322,7 @@ const BrowseGigs = () => {
         profiles!gigs_consumer_id_fkey (full_name),
         gig_skills (skills (name))
       `)
-      .eq("status", "open")
+      .in("status", ["open", "awarded", "in_progress"])
       .order("bumped_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
@@ -646,11 +679,30 @@ const BrowseGigs = () => {
                                       New
                                     </Badge>
                                   )}
-                                  {gig.status === "open" && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Open for bidding
-                                    </Badge>
-                                  )}
+                                  <Badge
+                                    variant={gig.status === "open" ? "default" : "secondary"}
+                                    className={cn(
+                                      "text-xs",
+                                      gig.status === "awarded" && "border-amber-500/50 text-amber-700 dark:text-amber-400",
+                                      gig.status === "in_progress" && "border-blue-500/50 text-blue-700 dark:text-blue-400",
+                                      gig.status === "completed" && "border-green-600/50 text-green-700 dark:text-green-400",
+                                      gig.status === "cancelled" && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {gig.status === "open"
+                                      ? "Open"
+                                      : gig.status === "awarded"
+                                        ? "Awarded"
+                                        : gig.status === "in_progress"
+                                          ? "In progress"
+                                          : gig.status === "completed"
+                                            ? "Completed"
+                                            : gig.status === "cancelled"
+                                              ? "Cancelled"
+                                              : gig.status === "pending_confirmation"
+                                                ? "Pending"
+                                                : gig.status}
+                                  </Badge>
                                   {inCart && (
                                     <Badge variant="outline" className="text-xs">In cart</Badge>
                                   )}
@@ -760,64 +812,97 @@ const BrowseGigs = () => {
                       <div className="text-sm text-muted-foreground">
                         Posted {formatDistanceToNow(new Date(gig.created_at))} ago
                       </div>
-                      {/* Digger actions: Bid Now + Buy lead side by side */}
-                      {diggerProfile && gig.status === 'open' && (
+                      {/* Digger actions: Bid Now (open only) + Buy lead (open, awarded, in_progress) */}
+                      {diggerProfile && (gig.status === 'open' || gig.status === 'awarded' || gig.status === 'in_progress') && (
                         <div className="flex flex-col gap-2 mt-3">
-                          {!userBids.has(gig.id) ? (
-                            <div className="flex gap-2 flex-wrap">
-                              <Button
-                                className="flex-1 min-w-[120px]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  navigate(`/gig/${gig.id}#bid`);
-                                }}
-                              >
-                                <HandHeart className="h-4 w-4 mr-2 shrink-0" />
-                                Bid Now
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="flex-1 min-w-[120px]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  if (!inCart) {
-                                    if (userLeadPurchases.has(gig.id)) {
-                                      toast.error("You already purchased this lead");
-                                    } else {
-                                      addToCart({
-                                        id: gig.id,
-                                        title: gig.title,
-                                        budget_min: gig.budget_min,
-                                        budget_max: gig.budget_max,
-                                        location: gig.location || "",
-                                        description: gig.description,
-                                        calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
-                                      });
-                                      toast.success("Added to cart — checkout when ready");
+                          {gig.status === 'open' ? (
+                            !userBids.has(gig.id) ? (
+                              <div className="flex gap-2 flex-wrap">
+                                <Button
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    navigate(`/gig/${gig.id}#bid`);
+                                  }}
+                                >
+                                  <HandHeart className="h-4 w-4 mr-2 shrink-0" />
+                                  Bid Now
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (!inCart) {
+                                      if (userLeadPurchases.has(gig.id)) {
+                                        toast.error("You already purchased this lead");
+                                      } else {
+                                        addToCart({
+                                          id: gig.id,
+                                          title: gig.title,
+                                          budget_min: gig.budget_min,
+                                          budget_max: gig.budget_max,
+                                          location: gig.location || "",
+                                          description: gig.description,
+                                          calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
+                                        });
+                                        toast.success("Added to cart — checkout when ready");
+                                      }
                                     }
-                                  }
-                                  setCartOpen(true);
-                                }}
-                              >
-                                <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
-                                Buy lead
-                              </Button>
-                            </div>
+                                    setCartOpen(true);
+                                  }}
+                                >
+                                  <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                  Buy lead
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 flex-wrap">
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    navigate(`/gig/${gig.id}`);
+                                  }}
+                                >
+                                  View Your Bid
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (!inCart) {
+                                      if (userLeadPurchases.has(gig.id)) {
+                                        toast.error("You already purchased this lead");
+                                      } else {
+                                        addToCart({
+                                          id: gig.id,
+                                          title: gig.title,
+                                          budget_min: gig.budget_min,
+                                          budget_max: gig.budget_max,
+                                          location: gig.location || "",
+                                          description: gig.description,
+                                          calculated_price_cents: (gig as any).calculated_price_cents ?? undefined,
+                                        });
+                                        toast.success("Added to cart — checkout when ready");
+                                      }
+                                    }
+                                    setCartOpen(true);
+                                  }}
+                                >
+                                  <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                  Buy lead
+                                </Button>
+                              </div>
+                            )
                           ) : (
                             <div className="flex gap-2 flex-wrap">
-                              <Button
-                                variant="outline"
-                                className="flex-1 min-w-[120px]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  navigate(`/gig/${gig.id}`);
-                                }}
-                              >
-                                View Your Bid
-                              </Button>
                               <Button
                                 variant="outline"
                                 className="flex-1 min-w-[120px]"
@@ -849,7 +934,9 @@ const BrowseGigs = () => {
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground">
-                            Bid free to compete · Buy lead to unlock contact & reach out
+                            {gig.status === 'open'
+                              ? "Bid free to compete · Buy lead to unlock contact & reach out"
+                              : "Buy lead to unlock client contact"}
                           </p>
                         </div>
                       )}

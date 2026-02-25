@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { getLeadPriceDisplay } from "@/lib/leadPrice";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -119,12 +120,15 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-sm truncate">{gig.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1">{gig.location}</p>
-                        {gig.budget_min && (
+                        {gig.budget_min != null && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Budget: ${gig.budget_min.toLocaleString()}
-                            {gig.budget_max ? ` - $${gig.budget_max.toLocaleString()}` : "+"}
+                            {gig.budget_max != null ? ` - $${gig.budget_max.toLocaleString()}` : "+"}
                           </p>
                         )}
+                        <p className="text-xs font-medium text-primary mt-1">
+                          {getLeadPriceDisplay(gig.budget_min, gig.budget_max, gig.calculated_price_cents).label}
+                        </p>
                       </div>
                       <Button
                         variant="ghost"

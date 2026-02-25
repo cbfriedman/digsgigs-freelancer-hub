@@ -357,7 +357,29 @@ const Transactions = () => {
           });
         }
         list.sort((a, b) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime());
+      }
 
+      // Deduplicate by milestone_payment_id so only one card shows per milestone (webhook + confirm-milestone-session can both insert)
+      const byDate = (a: Transaction, b: Transaction) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime();
+      list.sort((a, b) => {
+        if ((a.milestone_payment_id ?? null) !== (b.milestone_payment_id ?? null)) return byDate(a, b);
+        // Same milestone: prefer real transaction row over synthetic (fromMilestone)
+        const aFake = (a as any).fromMilestone ? 1 : 0;
+        const bFake = (b as any).fromMilestone ? 1 : 0;
+        return aFake - bFake || byDate(a, b);
+      });
+      const seenMilestoneIds = new Set<string | null | undefined>();
+      list = list.filter((t: Transaction) => {
+        const key = t.milestone_payment_id ?? null;
+        if (key != null) {
+          if (seenMilestoneIds.has(key)) return false;
+          seenMilestoneIds.add(key);
+        }
+        return true;
+      }) as Transaction[];
+      list.sort((a, b) => byDate(a, b));
+
+      if (type === 'digger' && diggerIdParam) {
         // Enrich milestone-only rows with client (consumer) name
         const missingConsumerIds = [...new Set(
           list

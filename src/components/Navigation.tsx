@@ -195,6 +195,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
   const isActive = (path: string) => location.pathname === path;
 
+  /** Status label for gig badges (capitalize, replace underscore) so "Open" / "In progress" don't get clipped. */
+  const gigStatusLabel = (status: string) =>
+    status ? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ") : status;
+
   const getUserInitials = () => {
     if (userDisplayName) {
       const parts = userDisplayName.trim().split(/\s+/);
@@ -592,8 +596,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
-                          <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
+                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full">
+                          <div className="w-full min-w-0 max-w-full pr-12">
                             {isDiggerMode ? (
                               recentPostedGigsLoading ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
@@ -606,20 +610,20 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     const title = g.title || "Untitled gig";
                                     const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                     return (
-                                      <li key={g.id} className="w-full min-w-0 overflow-hidden border-b-0">
+                                      <li key={g.id} className="w-full min-w-0 border-b-0">
                                         <button
                                           type="button"
-                                          className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
+                                          className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors box-border"
                                           onClick={(e) => {
                                             e.preventDefault();
                                             navigate(`/gig/${g.id}`);
                                           }}
                                         >
-                                          <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                            <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                            <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
+                                          <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
+                                          <div className="w-full flex items-center justify-between gap-2 mt-1">
+                                            <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                            <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                           </div>
-                                          <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                         </button>
                                       </li>
                                     );
@@ -638,17 +642,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                   const title = g.title || "Untitled project";
                                   const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                   return (
-                                    <li key={g.id} className="w-full min-w-0 overflow-hidden border-b-0">
+                                    <li key={g.id} className="w-full min-w-0 border-b-0">
                                       <button
                                         type="button"
-                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
+                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors box-border"
                                         onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}
                                       >
-                                        <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
+                                        <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
+                                        <div className="w-full flex items-center justify-between gap-2 mt-1">
+                                          <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                         </div>
-                                        <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>
                                     </li>
                                   );
@@ -972,20 +976,20 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                   const title = g.title || "Untitled gig";
                                   const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                   return (
-                                    <li key={g.id} className="w-full min-w-0 overflow-hidden">
+                                    <li key={g.id} className="w-full min-w-0">
                                       <button
                                         type="button"
-                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border"
+                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 box-border"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           navigate(`/gig/${g.id}`);
                                         }}
                                       >
-                                        <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
+                                        <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
+                                        <div className="w-full flex items-center justify-between gap-2 mt-1">
+                                          <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                         </div>
-                                        <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>
                                     </li>
                                   );
@@ -1003,13 +1007,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 const title = g.title || "Untitled project";
                                 const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                 return (
-                                  <li key={g.id} className="w-full min-w-0 overflow-hidden">
-                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}>
-                                      <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                        <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                        <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
+                                  <li key={g.id} className="w-full min-w-0">
+                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 box-border" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}>
+                                      <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
+                                      <div className="w-full flex items-center justify-between gap-2 mt-1">
+                                        <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                        <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                       </div>
-                                      <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                     </button>
                                   </li>
                                 );
