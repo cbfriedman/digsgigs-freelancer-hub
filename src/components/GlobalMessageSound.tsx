@@ -32,8 +32,10 @@ export function GlobalMessageSound() {
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages" },
           (payload) => {
-            const msg = payload.new as { conversation_id: string; sender_id: string };
+            const msg = payload.new as { conversation_id: string; sender_id: string; metadata?: { _type?: string } };
             if (msg.sender_id === userIdRef.current) return;
+            // Award events trigger sound via AwardNotificationListener; avoid double-play
+            if (msg.metadata?._type === "award_event") return;
             // Realtime only sends to clients who can SELECT the row (RLS), so we're the recipient — play same sound/volume for both client and freelancer
             playNotificationSound();
           }

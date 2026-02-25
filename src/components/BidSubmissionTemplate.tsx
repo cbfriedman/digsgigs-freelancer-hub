@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Percent, CreditCard, DollarSign, Plus, Trash2, Milestone, Sparkles, CheckCircle2, Shield } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
@@ -451,7 +452,7 @@ export const BidSubmissionTemplate = ({
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  Client pays 15% deposit to award you. You pay an 8% referral fee (${REFERRAL_FEE_MIN} minimum) when awarded—deducted from their deposit. You must accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty.
+                  Client pays 15% deposit to award you. The 8% referral fee (${REFERRAL_FEE_MIN} min) comes from their deposit—not your pocket. You must accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty.
                 </p>
               </button>
             </div>
@@ -545,7 +546,7 @@ export const BidSubmissionTemplate = ({
                     {parsedAmount > 0 && (
                       <p className="text-sm text-muted-foreground">
                         Estimated total: <strong className="text-foreground">${Math.round(parsedAmount).toLocaleString()}</strong>
-                        {pricingModel === "success_based" && ` · Referral fee if selected: $${estimatedFee.toFixed(2)}`}
+                        {pricingModel === "success_based" && ` · 8% referral fee (from client deposit, not you): $${estimatedFee.toFixed(2)}`}
                       </p>
                     )}
                   </div>
@@ -566,7 +567,7 @@ export const BidSubmissionTemplate = ({
                   {fieldErrors.amount && <p className="text-sm text-destructive">{fieldErrors.amount}</p>}
                   {pricingModel === "success_based" && parsedAmount > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Referral fee if selected: ${estimatedFee.toFixed(2)}
+                      8% referral fee (from client deposit, not you): ${estimatedFee.toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -686,9 +687,15 @@ export const BidSubmissionTemplate = ({
             </Button>
 
             {pricingModel === "success_based" && (
-              <p className="text-xs text-center text-muted-foreground">
-                By submitting, you agree to pay an 8% referral fee (${REFERRAL_FEE_MIN} minimum) if you're awarded and accept this job.
-              </p>
+              <Alert className="border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertTitle className="text-green-900 dark:text-green-100">No fee from your pocket</AlertTitle>
+                <AlertDescription>
+                  <span className="block">Gigger awards → Gigger pays a 15% deposit (charged to their card).</span>
+                  <span className="block mt-1">Digger accepts → The 8% referral fee is taken from that deposit: the platform keeps 8%, the rest is released to you. You are not charged anything.</span>
+                  <span className="block mt-1">First milestone approved → 7% is added to you from that deposit when you complete the first milestone (no extra charge to you).</span>
+                </AlertDescription>
+              </Alert>
             )}
           </form>
         </CardContent>

@@ -63,6 +63,7 @@ import {
   EmptyConversation,
   TypingIndicator,
 } from "@/components/messages";
+import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -92,6 +93,8 @@ interface Conversation {
   /** Last message preview (from get_my_conversations) */
   last_message_content?: string | null;
   last_message_sender_id?: string | null;
+  /** Last message metadata (for award events) */
+  last_message_metadata?: { _type?: string; event?: string } | null;
   /** Partner avatar URL (digger profile image or null for consumers) */
   partner_avatar_url?: string | null;
   /** Number of messages in this conversation not read by current user (from get_my_conversations) */
@@ -111,6 +114,7 @@ interface Message {
   created_at: string;
   read_at: string | null;
   attachments?: { name: string; path: string; type: string }[];
+  metadata?: { _type?: string; event?: string; bid_id?: string; gig_id?: string; amount?: number } | null;
 }
 
 interface RawConversation {
@@ -1033,6 +1037,7 @@ export default function Messages() {
         admin_avatar_url?: string | null;
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
+        last_message_metadata?: { _type?: string; event?: string } | null;
         unread_count?: number;
         muted?: boolean;
         is_blocked?: boolean;
@@ -1063,6 +1068,7 @@ export default function Messages() {
           consumer_profile: c.consumer_id != null ? { full_name: c.consumer_full_name ?? null } : null,
           last_message_content: c.last_message_content ?? null,
           last_message_sender_id: c.last_message_sender_id ?? null,
+          last_message_metadata: (c as any).last_message_metadata ?? null,
           partner_avatar_url: partnerAvatarUrl,
           unread_count: typeof c.unread_count === "number" ? c.unread_count : 0,
           muted: c.muted ?? false,
@@ -1931,9 +1937,14 @@ export default function Messages() {
                       const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
                       const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                       const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
-                      const lastSnippet = conv?.last_message_content
-                        ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
-                        : null;
+                      const meta = conv?.last_message_metadata;
+                      const isAwardEvent = meta?._type === "award_event" && meta?.event;
+                      const lastSnippet = isAwardEvent
+                        ? (lastFromMe ? "You: " : `${partnerName}: `) +
+                          (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                        : conv?.last_message_content
+                          ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
+                          : null;
                       const isPinned = pinnedIds.includes(conv.id);
                       const isStarred = starredIds.includes(conv.id);
                       const isMuted = !!conv.muted;
@@ -2151,6 +2162,8 @@ export default function Messages() {
                   showBackButton={isMobile}
                   onBack={handleBackToList}
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
+                  showAwardButton={!!(selectedConv?.gig_id && selectedConv.consumer_id === currentUser?.id)}
+                  onAwardClick={selectedConv?.gig_id ? () => navigate(`/gig/${selectedConv.gig_id}`) : undefined}
                 />
 
                 {/* Messages only - this is the only part that scrolls; input stays fixed in viewport below */}
@@ -2179,21 +2192,41 @@ export default function Messages() {
                           <div key={dateKey}>
                             <DateSeparator date={dateKey} />
                             <div className="space-y-3">
-                              {dayMessages.map((msg) => (
-                                <MessageBubble
-                                  key={msg.id}
-                                  content={msg.content}
-                                  timestamp={msg.created_at}
-                                  isOwn={msg.sender_id === currentUser?.id}
-                                  isRead={!!msg.read_at}
-                                  attachments={msg.attachments}
-                                  messageId={msg.id}
-                                  onReply={handleReplyToMessage}
-                                  onEdit={handleEditMessage}
-                                  onDelete={handleDeleteMessage}
-                                  onCopy={handleCopyMessage}
-                                />
-                              ))}
+                              {dayMessages.map((msg) => {
+                                const meta = msg.metadata as { _type?: string; event?: string; bid_id?: string; gig_id?: string; amount?: number } | undefined;
+                                if (meta?._type === "award_event" && meta?.event) {
+                                  const isDigger = !!selectedConv?.digger_id && selectedConv.consumer_id !== currentUser?.id && !selectedConv.admin_id;
+                                  return (
+                                    <AwardEventBubble
+                                      key={msg.id}
+                                      event={meta.event as "awarded" | "accepted" | "declined"}
+                                      timestamp={msg.created_at}
+                                      bidId={meta.bid_id}
+                                      gigId={meta.gig_id}
+                                      amount={meta.amount}
+                                      isDigger={isDigger}
+                                      diggerId={selectedConv?.digger_id}
+                                      onAccept={() => { loadMessages(selectedConversation!); refreshRecentConversations(); }}
+                                      onDecline={() => { loadMessages(selectedConversation!); refreshRecentConversations(); }}
+                                    />
+                                  );
+                                }
+                                return (
+                                  <MessageBubble
+                                    key={msg.id}
+                                    content={msg.content}
+                                    timestamp={msg.created_at}
+                                    isOwn={msg.sender_id === currentUser?.id}
+                                    isRead={!!msg.read_at}
+                                    attachments={msg.attachments}
+                                    messageId={msg.id}
+                                    onReply={handleReplyToMessage}
+                                    onEdit={handleEditMessage}
+                                    onDelete={handleDeleteMessage}
+                                    onCopy={handleCopyMessage}
+                                  />
+                                );
+                              })}
                             </div>
                           </div>
                         ))
@@ -2339,7 +2372,12 @@ export default function Messages() {
                         const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
                         const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                         const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
-                        const lastSnippet = conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
+                        const meta = conv?.last_message_metadata;
+                        const isAwardEvent = meta?._type === "award_event" && meta?.event;
+                        const lastSnippet = isAwardEvent
+                          ? (lastFromMe ? "You: " : `${partnerName}: `) +
+                            (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                          : conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
                         const isPinned = pinnedIds.includes(conv.id);
                         const isStarred = starredIds.includes(conv.id);
                       const isMuted = !!conv.muted;
@@ -2427,6 +2465,8 @@ export default function Messages() {
                       showBackButton={isMobile}
                       onBack={handleBackToList}
                       onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
+                      showAwardButton={!!(selectedConv?.gig_id && selectedConv.consumer_id === currentUser?.id)}
+                      onAwardClick={selectedConv?.gig_id ? () => navigate(`/gig/${selectedConv.gig_id}`) : undefined}
                     />
                     <div
                       className="relative flex-1 min-h-0 overflow-hidden flex flex-col min-w-0"
@@ -2449,7 +2489,41 @@ export default function Messages() {
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
                             <div key={dateKey}>
                               <DateSeparator date={dateKey} />
-                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} messageId={msg.id} onReply={handleReplyToMessage} onEdit={handleEditMessage} onDelete={handleDeleteMessage} onCopy={handleCopyMessage} />)}</div>
+                              <div className="space-y-3">{dayMessages.map((msg) => {
+                                const meta = msg.metadata as { _type?: string; event?: string; bid_id?: string; gig_id?: string; amount?: number } | undefined;
+                                if (meta?._type === "award_event" && meta?.event) {
+                                  const isDigger = !!selectedConv?.digger_id && selectedConv.consumer_id !== currentUser?.id && !selectedConv.admin_id;
+                                  return (
+                                    <AwardEventBubble
+                                      key={msg.id}
+                                      event={meta.event as "awarded" | "accepted" | "declined"}
+                                      timestamp={msg.created_at}
+                                      bidId={meta.bid_id}
+                                      gigId={meta.gig_id}
+                                      amount={meta.amount}
+                                      isDigger={isDigger}
+                                      diggerId={selectedConv?.digger_id}
+                                      onAccept={() => { loadMessages(selectedConversation!); refreshRecentConversations(); }}
+                                      onDecline={() => { loadMessages(selectedConversation!); refreshRecentConversations(); }}
+                                    />
+                                  );
+                                }
+                                return (
+                                  <MessageBubble
+                                    key={msg.id}
+                                    content={msg.content}
+                                    timestamp={msg.created_at}
+                                    isOwn={msg.sender_id === currentUser?.id}
+                                    isRead={!!msg.read_at}
+                                    attachments={msg.attachments}
+                                    messageId={msg.id}
+                                    onReply={handleReplyToMessage}
+                                    onEdit={handleEditMessage}
+                                    onDelete={handleDeleteMessage}
+                                    onCopy={handleCopyMessage}
+                                  />
+                                );
+                              })}</div>
                             </div>
                           ))}
                           {partnerTypingUntil != null && (

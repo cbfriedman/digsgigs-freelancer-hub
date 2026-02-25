@@ -22,6 +22,7 @@ import {
   X,
   Pencil,
   ArrowRight,
+  Trophy,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
@@ -490,6 +491,7 @@ export function DiggerProposalCard({
                           disabled
                           className="gap-1.5 bg-green-600/70 hover:bg-green-600/70 cursor-not-allowed"
                         >
+                          <Trophy className="h-4 w-4" />
                           Award
                         </Button>
                       </span>
@@ -515,7 +517,10 @@ export function DiggerProposalCard({
                         Awarding...
                       </>
                     ) : (
-                      "Award"
+                      <>
+                        <Trophy className="h-4 w-4" />
+                        Award
+                      </>
                     )}
                   </Button>
                 )

@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Video, Calendar, MoreHorizontal, Phone } from "lucide-react";
+import { ArrowLeft, Video, Calendar, MoreHorizontal, Phone, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
@@ -18,6 +18,9 @@ interface ChatHeaderProps {
   showBackButton?: boolean;
   onBack?: () => void;
   onMoreClick?: () => void;
+  /** When true, show Award button (for Gigger in gig conversation) */
+  showAwardButton?: boolean;
+  onAwardClick?: () => void;
   className?: string;
 }
 
@@ -35,6 +38,8 @@ export function ChatHeader({
   showBackButton = false,
   onBack,
   onMoreClick,
+  showAwardButton = false,
+  onAwardClick,
   className,
 }: ChatHeaderProps) {
   const initial = partnerName[0]?.toUpperCase() || "?";
@@ -126,6 +131,22 @@ export function ChatHeader({
 
       {/* Right section - action buttons */}
       <div className="flex items-center gap-1 shrink-0">
+        {showAwardButton && onAwardClick && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-amber-950"
+                onClick={onAwardClick}
+              >
+                <Trophy className="h-4 w-4" />
+                Award
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Award this gig</TooltipContent>
+          </Tooltip>
+        )}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>

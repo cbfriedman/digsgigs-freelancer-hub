@@ -253,6 +253,39 @@ serve(async (req) => {
         logStep("Notification sent to digger", { userId: diggerProfile.user_id });
       }
 
+      // Insert award system message into chat so Digger sees it
+      try {
+        const { data: bidRow } = await supabaseClient.from("bids").select("amount").eq("id", bidId).single();
+        const amount = bidRow?.amount ?? null;
+        let { data: conv } = await supabaseClient
+          .from("conversations")
+          .select("id")
+          .eq("gig_id", gigId)
+          .eq("digger_id", diggerId)
+          .eq("consumer_id", giggerId)
+          .is("admin_id", null)
+          .maybeSingle();
+        if (!conv?.id) {
+          const { data: newConv } = await supabaseClient
+            .from("conversations")
+            .insert({ gig_id: gigId, digger_id: diggerId, consumer_id: giggerId })
+            .select("id")
+            .single();
+          conv = newConv;
+        }
+        if (conv?.id) {
+          await supabaseClient.from("messages").insert({
+            conversation_id: conv.id,
+            sender_id: giggerId,
+            content: "You've been awarded this gig. Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty.",
+            metadata: { _type: "award_event", event: "awarded", bid_id: bidId, gig_id: gigId, amount },
+          });
+          logStep("Award system message inserted into chat");
+        }
+      } catch (chatErr) {
+        logStep("Failed to insert award chat message (non-blocking)", { error: chatErr instanceof Error ? chatErr.message : String(chatErr) });
+      }
+
       logStep("Lead award completed via deposit webhook (Digger must accept within 24h)");
     }
 

@@ -17,6 +17,7 @@ import { Navigation } from "./components/Navigation";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 import { GlobalMessageSound } from "./components/GlobalMessageSound";
 import { NewGigAlertListener } from "./components/NewGigAlertListener";
+import { AwardNotificationListener } from "./components/AwardNotificationListener";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -138,6 +139,7 @@ const RootLayout = () => {
   return (
     <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
       <NewGigAlertListener />
+      <AwardNotificationListener />
       {!isAdminRoute && (
         <Navigation
           showBackButton={showBackButton}

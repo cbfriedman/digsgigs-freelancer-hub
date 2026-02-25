@@ -232,6 +232,8 @@ interface BidsListProps {
   canMessageClient?: boolean;
   /** Digger viewing own bid: tooltip for Chat button when disabled. */
   messageClientTooltip?: string;
+  /** When set, auto-open award dialog for this digger's bid (e.g. from float chat Award button). */
+  openAwardForDiggerId?: string | null;
 }
 
 export const BidsList = ({
@@ -255,6 +257,7 @@ export const BidsList = ({
   onMessageClient,
   canMessageClient = false,
   messageClientTooltip,
+  openAwardForDiggerId,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
@@ -440,6 +443,23 @@ export const BidsList = ({
     loadBids();
   }, [loadBids]);
 
+  // Auto-open award dialog when openAwardForDiggerId is set (e.g. from float chat Award button)
+  useEffect(() => {
+    if (!openAwardForDiggerId || !isOwner || loading || bids.length === 0) return;
+    const bid = bids.find((b) => (b.digger_profiles?.id ?? (b as any).digger_id) === openAwardForDiggerId);
+    if (!bid || bid.status !== "pending") return;
+    const diggerProf = bid.digger_profiles;
+    const displayName =
+      diggerProf?.handle ? `@${String(diggerProf.handle).replace(/^@/, "")}` : diggerProf?.profiles?.full_name ?? "Digger";
+    setBidToAward({
+      id: bid.id,
+      diggerDisplayName: displayName,
+      diggerId: (bid as any).digger_id ?? diggerProf?.id ?? openAwardForDiggerId,
+      amount: bid.amount ?? 0,
+      pricing_model: (bid as any).pricing_model,
+    });
+  }, [openAwardForDiggerId, isOwner, loading, bids]);
+
   // Fetch which diggers have a conversation for this gig (for "Chatting" / In progress indicator)
   useEffect(() => {
     if (!isOwner || !gigId) {
@@ -566,6 +586,26 @@ export const BidsList = ({
         title: "Bid awarded",
         description: "The professional has been hired and notified. You can set up the payment contract (milestones) next.",
       });
+
+      // Insert award system message into chat so Digger sees it
+      try {
+        const { data: gigData } = await supabase.from("gigs").select("consumer_id").eq("id", gigId).single();
+        const consumerId = (gigData as any)?.consumer_id;
+        if (consumerId && diggerId) {
+          await supabase.functions.invoke("insert-award-system-message", {
+            body: {
+              gigId,
+              diggerId,
+              consumerId,
+              event: "awarded",
+              bidId,
+              amount: (bidData as any)?.amount,
+            },
+          });
+        }
+      } catch (chatErr) {
+        console.error("Failed to insert award chat message:", chatErr);
+      }
 
       loadBids();
       onAwardSuccess?.();

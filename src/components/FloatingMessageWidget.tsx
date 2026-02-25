@@ -29,6 +29,8 @@ import {
   Trash2,
   Copy,
   UploadCloud,
+  Trophy,
+  CheckCircle2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,8 +65,10 @@ import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
 import { OPEN_FLOATING_CHAT_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
+import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
 
@@ -76,6 +80,7 @@ interface Message {
   read_at: string | null;
   conversation_id?: string;
   attachments?: { name: string; path: string; type: string }[];
+  metadata?: { _type?: string; event?: string; bid_id?: string; gig_id?: string; amount?: number } | null;
 }
 
 const MESSAGES_PAGE = "/messages";
@@ -122,6 +127,10 @@ export function FloatingMessageWidget() {
   const [replyingToMap, setReplyingToMap] = useState<Record<string, { id: string; content: string } | null>>({});
   const [floatingInputMaxHeight, setFloatingInputMaxHeight] = useState(220);
   const [dragOverConvMap, setDragOverConvMap] = useState<Record<string, boolean>>({});
+  /** Gig status per conversation (for Award/Cancel/Hired/Accept-Decline in chat top) */
+  const [gigStatusMap, setGigStatusMap] = useState<Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string }>>({});
+  const [cancelAwardLoading, setCancelAwardLoading] = useState<Record<string, boolean>>({});
+  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteChatId;
@@ -170,6 +179,8 @@ export function FloatingMessageWidget() {
   userIdRef.current = user?.id ?? null;
   messagesMapRef.current = messagesMap;
   openChatIdsRef.current = new Set(openChats.map((c) => c.id));
+  const openChatsRef = useRef<RecentConversation[]>([]);
+  openChatsRef.current = openChats;
   const [partnerTypingMap, setPartnerTypingMap] = useState<Record<string, boolean>>({});
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
@@ -375,6 +386,17 @@ export function FloatingMessageWidget() {
         subscribeToMessages(conv.id);
         const hasBufferedMessages = (messagesMapRef.current[conv.id] || []).length > 0;
         loadMessages(conv.id, showLoaderOnInit && !hasBufferedMessages);
+        // Fetch gig status immediately so Award/Cancel/Accept-Decline/Hired appear without delay
+        if (conv.gigId) {
+          supabase
+            .from("gigs")
+            .select("status, awarded_bid_id, awarded_digger_id")
+            .eq("id", conv.gigId)
+            .single()
+            .then(({ data }) => {
+              if (data) setGigStatusMap((prev) => ({ ...prev, [conv.id]: data as { status: string; awarded_bid_id?: string; awarded_digger_id?: string } }));
+            });
+        }
       }
       setCollapsedChats((prev) => ({ ...prev, [conv.id]: false }));
       requestAnimationFrame(() => {
@@ -424,6 +446,77 @@ export function FloatingMessageWidget() {
       // sessionStorage may be unavailable (e.g. private browsing)
     }
   }, [isOpen, openChats, user?.id, hideOnMessagesPage]);
+
+  const refetchGigStatus = useCallback(async (convId: string, gigId: string) => {
+    const { data } = await supabase
+      .from("gigs")
+      .select("status, awarded_bid_id, awarded_digger_id")
+      .eq("id", gigId)
+      .single();
+    if (data) setGigStatusMap((prev) => ({ ...prev, [convId]: data as { status: string; awarded_bid_id?: string; awarded_digger_id?: string } }));
+  }, []);
+
+  // Fetch gig status for open chats with gigId (for Award/Cancel/Hired/Accept-Decline in top bar)
+  useEffect(() => {
+    const withGig = openChats.filter((c) => c.gigId);
+    if (withGig.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string }> = {};
+      for (const c of withGig) {
+        if (!c.gigId) continue;
+        const { data } = await supabase
+          .from("gigs")
+          .select("status, awarded_bid_id, awarded_digger_id")
+          .eq("id", c.gigId)
+          .single();
+        if (cancelled) return;
+        if (data) next[c.id] = data as { status: string; awarded_bid_id?: string; awarded_digger_id?: string };
+      }
+      if (!cancelled) setGigStatusMap((prev) => ({ ...prev, ...next }));
+    })();
+    return () => { cancelled = true; };
+  }, [openChats.map((c) => `${c.id}:${c.gigId}`).join(",")]);
+
+  // Realtime: subscribe to gig changes so buttons update without refresh (e.g. digger accepts, gigger cancels)
+  useEffect(() => {
+    const gigIds = [...new Set(openChats.map((c) => c.gigId).filter(Boolean))] as string[];
+    if (gigIds.length === 0) return;
+    const filter = gigIds.length === 1 ? `id=eq.${gigIds[0]}` : `id=in.(${gigIds.join(",")})`;
+    const channel = supabase
+      .channel("floating-chat-gig-status")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "gigs",
+          filter,
+        },
+        (payload) => {
+          const gig = payload.new as { id: string; status?: string; awarded_bid_id?: string; awarded_digger_id?: string };
+          const gigId = gig.id;
+          const currentOpenChats = openChatsRef.current;
+          setGigStatusMap((prev) => {
+            const next = { ...prev };
+            for (const c of currentOpenChats) {
+              if (c.gigId === gigId) {
+                next[c.id] = {
+                  status: gig.status ?? "open",
+                  awarded_bid_id: gig.awarded_bid_id,
+                  awarded_digger_id: gig.awarded_digger_id,
+                };
+              }
+            }
+            return next;
+          });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [openChats.map((c) => c.gigId).filter(Boolean).sort().join(",")]);
 
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));
@@ -609,6 +702,9 @@ export function FloatingMessageWidget() {
           partnerProfileUrl,
           partnerJobTitle: gig.title ?? null,
           gigId,
+          consumerId: gig.consumer_id ?? null,
+          diggerId,
+          isCurrentUserDigger: !isGigger,
           lastMessageContent: null,
           lastMessageFromMe: false,
           updatedAt,
@@ -1466,6 +1562,151 @@ export function FloatingMessageWidget() {
             onDragLeave={(e) => handleConvDragLeave(conv.id, e)}
             onDrop={(e) => handleConvDrop(conv, e)}
           >
+            {conv.gigId && (() => {
+              const gigStatus = gigStatusMap[conv.id];
+              const status = gigStatus?.status ?? "open";
+              const isGigger = user?.id === conv.consumerId;
+              const isDigger = conv.isCurrentUserDigger;
+              const isAwardedDigger = isDigger && conv.diggerId === gigStatus?.awarded_digger_id;
+              const bidId = gigStatus?.awarded_bid_id;
+
+              // Hired: both see when in_progress and this digger is the awarded one
+              if (status === "in_progress" && (isGigger || (isDigger && isAwardedDigger))) {
+                return (
+                  <div className="shrink-0 flex justify-end items-center py-2 px-3 border-b border-border/40 bg-muted/30">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" aria-hidden />
+                      Hired
+                    </span>
+                  </div>
+                );
+              }
+
+              // Gigger: Award (open) or Cancel award (awarded)
+              if (isGigger) {
+                if (status === "awarded") {
+                  return (
+                    <div className="shrink-0 flex justify-end items-center gap-2 py-2 px-3 border-b border-border/40 bg-muted/30">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={cancelAwardLoading[conv.id]}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!conv.gigId) return;
+                            setCancelAwardLoading((p) => ({ ...p, [conv.id]: true }));
+                            try {
+                              await invokeEdgeFunction(supabase, "gigger-cancel-award", { body: { gigId: conv.gigId } });
+                              toast.success("Award cancelled. The gig is open again.");
+                              refetchGigStatus(conv.id, conv.gigId);
+                              window.dispatchEvent(new Event("recent-conversations-refresh"));
+                            } catch (err: any) {
+                              toast.error(err?.message ?? "Failed to cancel award");
+                            } finally {
+                              setCancelAwardLoading((p) => ({ ...p, [conv.id]: false }));
+                            }
+                          }}
+                          title="Cancel the award and reopen the gig"
+                        >
+                          {cancelAwardLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                          Cancel award
+                        </Button>
+                    </div>
+                  );
+                }
+                if (status === "open") {
+                  return (
+                    <div className="shrink-0 flex justify-end items-center py-2 px-3 border-b border-border/40 bg-muted/30">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const url = conv.diggerId ? `/gig/${conv.gigId}?award=${conv.diggerId}` : `/gig/${conv.gigId}`;
+                            navigate(url);
+                          }}
+                          title="Award this gig"
+                        >
+                          <Trophy className="h-4 w-4" />
+                          Award
+                        </Button>
+                    </div>
+                  );
+                }
+                return null;
+              }
+
+              // Digger: Accept/Decline when awarded and this digger is the awarded one
+              if (isDigger && status === "awarded" && isAwardedDigger && bidId) {
+                return (
+                  <div className="shrink-0 flex justify-end items-center gap-2 py-2 px-3 border-b border-border/40 bg-muted/30">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="gap-1.5 bg-green-600 hover:bg-green-700"
+                          disabled={acceptDeclineLoading[conv.id]}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!conv.gigId || !conv.diggerId) return;
+                            setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: true }));
+                            try {
+                              const data = await invokeEdgeFunction<{ requiresPayment?: boolean; checkoutUrl?: string }>(supabase, "digger-accept-award", {
+                                body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId },
+                              });
+                              if (data?.requiresPayment && data?.checkoutUrl) {
+                                toast.success("Redirecting to payment...");
+                                window.open(data.checkoutUrl, "_blank");
+                              } else {
+                                toast.success("Job accepted! Ready to start.");
+                              }
+                              refetchGigStatus(conv.id, conv.gigId);
+                              window.dispatchEvent(new Event("recent-conversations-refresh"));
+                              loadMessages(conv.id, false);
+                            } catch (err: any) {
+                              toast.error(err?.message ?? "Failed to accept");
+                            } finally {
+                              setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: false }));
+                            }
+                          }}
+                        >
+                          {acceptDeclineLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={acceptDeclineLoading[conv.id]}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!conv.gigId || !conv.diggerId) return;
+                            setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: true }));
+                            try {
+                              await invokeEdgeFunction(supabase, "digger-decline-award", {
+                                body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId, reason: "Declined from chat" },
+                              });
+                              toast.success("Award declined.");
+                              refetchGigStatus(conv.id, conv.gigId);
+                              window.dispatchEvent(new Event("recent-conversations-refresh"));
+                              loadMessages(conv.id, false);
+                            } catch (err: any) {
+                              toast.error(err?.message ?? "Failed to decline");
+                            } finally {
+                              setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: false }));
+                            }
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                          Decline
+                        </Button>
+                      </div>
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
             {dragOverConvMap[conv.id] && (
               <div className="absolute inset-3 z-20 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 backdrop-blur-[1px] pointer-events-none flex items-center justify-center">
                 <div className="rounded-xl border border-primary/30 bg-background/90 px-4 py-3 text-center shadow-xl">
@@ -1490,21 +1731,46 @@ export function FloatingMessageWidget() {
                 <div className="py-3 space-y-2.5">
                   {[...(messagesMap[conv.id] || [])]
                     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                    .map((m) => (
-                      <MessageBubble
-                        key={m.id}
-                        content={m.content}
-                        timestamp={m.created_at}
-                        isOwn={m.sender_id === user.id}
-                        isRead={!!m.read_at}
-                        attachments={m.attachments}
-                        messageId={m.id}
-                        onReply={(id, content) => handleReplyToMessage(conv.id, id, content)}
-                        onEdit={(id) => handleEditMessage(conv.id, id)}
-                        onDelete={(id) => handleDeleteMessage(conv.id, id)}
-                        onCopy={handleCopyMessage}
-                      />
-                    ))}
+                    .map((m) => {
+                      const meta = m.metadata as { _type?: string; event?: string; bid_id?: string; gig_id?: string; amount?: number } | undefined;
+                      if (meta?._type === "award_event" && meta?.event) {
+                        return (
+                          <AwardEventBubble
+                            key={m.id}
+                            event={meta.event as "awarded" | "accepted" | "declined"}
+                            timestamp={m.created_at}
+                            bidId={meta.bid_id}
+                            gigId={meta.gig_id}
+                            amount={meta.amount}
+                            isDigger={conv.isCurrentUserDigger}
+                            diggerId={conv.diggerId}
+                            onAccept={() => {
+                              window.dispatchEvent(new Event("recent-conversations-refresh"));
+                              loadMessages(conv.id, false);
+                            }}
+                            onDecline={() => {
+                              window.dispatchEvent(new Event("recent-conversations-refresh"));
+                              loadMessages(conv.id, false);
+                            }}
+                          />
+                        );
+                      }
+                      return (
+                        <MessageBubble
+                          key={m.id}
+                          content={m.content}
+                          timestamp={m.created_at}
+                          isOwn={m.sender_id === user.id}
+                          isRead={!!m.read_at}
+                          attachments={m.attachments}
+                          messageId={m.id}
+                          onReply={(id, content) => handleReplyToMessage(conv.id, id, content)}
+                          onEdit={(id) => handleEditMessage(conv.id, id)}
+                          onDelete={(id) => handleDeleteMessage(conv.id, id)}
+                          onCopy={handleCopyMessage}
+                        />
+                      );
+                    })}
                   {partnerTypingMap[conv.id] && (
                     <TypingIndicator
                       partnerName={conv.partnerDisplayName}
@@ -1669,8 +1935,12 @@ export function FloatingMessageWidget() {
               ) : (
                 <ul className="py-2 min-w-0 max-w-full overflow-hidden">
                   {filteredConvs.map((c) => {
-                    const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
-                    const display = snippet;
+                    const meta = c.lastMessageMetadata;
+                    const isAwardEvent = meta?._type === "award_event" && meta?.event;
+                    const display = isAwardEvent
+                      ? (c.lastMessageFromMe ? "You: " : "") +
+                        (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                      : (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
                     const isOpenChat = openChats.some((o) => o.id === c.id);
                     const isMuted = mutedChats[c.id] ?? !!c.muted;
                     const isBlocked = blockedChats[c.id] ?? !!c.isBlocked;
@@ -1744,7 +2014,7 @@ export function FloatingMessageWidget() {
                                 </span>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate min-w-0" title={c.lastMessageContent || undefined}>
+                            <p className="text-xs text-muted-foreground truncate min-w-0" title={display}>
                               {display}
                             </p>
                           </div>

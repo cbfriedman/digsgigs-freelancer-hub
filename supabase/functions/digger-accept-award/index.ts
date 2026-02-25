@@ -212,6 +212,37 @@ serve(async (req) => {
         });
     }
 
+    // Insert "accepted" system message into chat
+    try {
+      const bidAmount = bid.amount ?? ((bid.amount_min || 0) + (bid.amount_max || 0)) / 2;
+      let { data: conv } = await supabaseClient
+        .from("conversations")
+        .select("id")
+        .eq("gig_id", gigId)
+        .eq("digger_id", diggerId)
+        .eq("consumer_id", gig.consumer_id)
+        .is("admin_id", null)
+        .maybeSingle();
+      if (!conv?.id) {
+        const { data: newConv } = await supabaseClient
+          .from("conversations")
+          .insert({ gig_id: gigId, digger_id: diggerId, consumer_id: gig.consumer_id })
+          .select("id")
+          .single();
+        conv = newConv;
+      }
+      if (conv?.id) {
+        await supabaseClient.from("messages").insert({
+          conversation_id: conv.id,
+          sender_id: diggerProfile.user_id,
+          content: "Accepted the award. Ready to start!",
+          metadata: { _type: "award_event", event: "accepted", bid_id: bidId, gig_id: gigId, amount: bidAmount },
+        });
+      }
+    } catch (chatErr) {
+      logStep("Failed to insert accepted chat message (non-blocking)", { error: chatErr instanceof Error ? chatErr.message : String(chatErr) });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

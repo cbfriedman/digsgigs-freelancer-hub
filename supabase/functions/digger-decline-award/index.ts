@@ -218,6 +218,37 @@ serve(async (req) => {
         });
     }
 
+    // Insert "declined" system message into chat
+    try {
+      const bidAmount = bid.amount ?? null;
+      let { data: conv } = await supabaseClient
+        .from("conversations")
+        .select("id")
+        .eq("gig_id", gigId)
+        .eq("digger_id", diggerId)
+        .eq("consumer_id", gig.consumer_id)
+        .is("admin_id", null)
+        .maybeSingle();
+      if (!conv?.id) {
+        const { data: newConv } = await supabaseClient
+          .from("conversations")
+          .insert({ gig_id: gigId, digger_id: diggerId, consumer_id: gig.consumer_id })
+          .select("id")
+          .single();
+        conv = newConv;
+      }
+      if (conv?.id) {
+        await supabaseClient.from("messages").insert({
+          conversation_id: conv.id,
+          sender_id: diggerProfile.user_id,
+          content: "Declined the award.",
+          metadata: { _type: "award_event", event: "declined", bid_id: bidId, gig_id: gigId, amount: bidAmount },
+        });
+      }
+    } catch (chatErr) {
+      logStep("Failed to insert declined chat message (non-blocking)", { error: chatErr instanceof Error ? chatErr.message : String(chatErr) });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

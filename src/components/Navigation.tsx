@@ -435,9 +435,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <ul className="py-1">
                             {recentConversations.map((conv) => {
                               const unreadCount = conv.unreadCount ?? 0;
-                              const fullSnippet = conv.lastMessageContent
-                                ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
-                                : "No messages yet";
+                              const meta = conv.lastMessageMetadata;
+                              const isAwardEvent = meta?._type === "award_event" && meta?.event;
+                              const fullSnippet = isAwardEvent
+                                ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined"}`
+                                : conv.lastMessageContent
+                                  ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
+                                  : "No messages yet";
                               const snippet = fullSnippet;
                               const isToday = (d: Date) => {
                                 const today = new Date();
@@ -487,7 +491,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                           <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                         </TooltipTrigger>
                                         <TooltipContent side="top" className="max-w-[320px]">
-                                          <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
+                                          <p className="break-words text-xs">{snippet}</p>
                                         </TooltipContent>
                                       </Tooltip>
                                     </div>
@@ -832,9 +836,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <ul className="py-1">
                           {recentConversations.map((conv) => {
                             const unreadCount = conv.unreadCount ?? 0;
-                            const fullSnippet = conv.lastMessageContent
-                              ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
-                              : "No messages yet";
+                            const meta = conv.lastMessageMetadata;
+                            const isAwardEvent = meta?._type === "award_event" && meta?.event;
+                            const fullSnippet = isAwardEvent
+                              ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined"}`
+                              : conv.lastMessageContent
+                                ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
+                                : "No messages yet";
                             const snippet = fullSnippet;
                             const d = new Date(conv.updatedAt);
                             const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
@@ -873,7 +881,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-[320px]">
-                                        <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
+                                        <p className="break-words text-xs">{snippet}</p>
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>

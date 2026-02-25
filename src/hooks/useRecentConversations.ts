@@ -10,7 +10,15 @@ export interface RecentConversation {
   partnerProfileUrl: string | null;
   partnerJobTitle: string | null;
   gigId: string | null;
+  /** Gig owner (gigger) user id - for showing Award button when current user is gigger */
+  consumerId: string | null;
+  /** Digger profile id - for award flow */
+  diggerId: string | null;
+  /** Current user is the Digger in this conversation */
+  isCurrentUserDigger: boolean;
   lastMessageContent: string | null;
+  /** Last message metadata (for award events: { _type: "award_event", event: "awarded"|"accepted"|"declined" }) */
+  lastMessageMetadata?: { _type?: string; event?: string } | null;
   lastMessageFromMe: boolean;
   updatedAt: string;
   unreadCount: number;
@@ -71,6 +79,7 @@ export function useRecentConversations(currentUser: User | null) {
           admin_avatar_url?: string | null;
           last_message_content?: string | null;
           last_message_sender_id?: string | null;
+          last_message_metadata?: { _type?: string; event?: string } | null;
           unread_count?: number;
           muted?: boolean | null;
           is_blocked?: boolean | null;
@@ -144,7 +153,11 @@ export function useRecentConversations(currentUser: User | null) {
             partnerProfileUrl,
             partnerJobTitle,
             gigId,
+            consumerId: c.consumer_id ?? null,
+            diggerId: c.digger_id ?? null,
+            isCurrentUserDigger: currentUserIsDigger,
             lastMessageContent: c.last_message_content ?? null,
+            lastMessageMetadata: (c as any).last_message_metadata ?? null,
             lastMessageFromMe,
             updatedAt: c.updated_at,
             unreadCount: typeof c.unread_count === "number" ? c.unread_count : Number(c.unread_count) || 0,

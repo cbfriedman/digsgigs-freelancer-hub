@@ -291,6 +291,26 @@ const GigDetail = () => {
     }
   }, [id, loading, gig, isDigger, diggerId, existingBid]);
 
+  // When arriving with ?award=diggerId (from float chat Award button), scroll to bids and clear param after opening
+  useEffect(() => {
+    const awardDiggerId = searchParams.get("award");
+    if (!awardDiggerId || !isOwner || !gig) return;
+    const scrollToBids = () => {
+      const el = document.getElementById("bids");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const t = setTimeout(scrollToBids, 300);
+    const clearParam = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("award");
+      setSearchParams(next, { replace: true });
+    }, 1500);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(clearParam);
+    };
+  }, [searchParams.get("award"), isOwner, gig, searchParams, setSearchParams]);
+
   // Diggers can only message client after the client has sent a message first; stay in sync via realtime + messages sync event
   useEffect(() => {
     if (!id || !diggerId || !gig?.consumer_id) {
@@ -1272,10 +1292,12 @@ const GigDetail = () => {
 
             {/* Bids Section: owner sees full list; digger sees header + stats only (no bid cards) */}
             {(isOwner || showDiggerContent) && (
+              <div id="bids">
               <BidsList
                 gigId={id!}
                 gigTitle={gig.title}
                 isOwner={isOwner}
+                openAwardForDiggerId={searchParams.get("award") || undefined}
                 isFixedPrice={gig.project_type !== "hourly"}
                 currentDiggerId={diggerId}
                 currentUserId={currentUser?.id}
@@ -1300,6 +1322,7 @@ const GigDetail = () => {
                       : "You can reply after the client sends you a message first"
                 }
               />
+              </div>
             )}
           </div>
 
