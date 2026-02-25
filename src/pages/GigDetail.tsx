@@ -113,9 +113,15 @@ const GigDetail = () => {
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
-  const { userRoles, activeRole } = useAuth();
-  /** In gigger mode we hide digger-only content (bid form, etc.); in digger mode or no role we show it for diggers */
+  const { userRoles, activeRole, switchRole } = useAuth();
+  /** Admins can view all project data like owner (bids, payments, status) */
+  const isAdmin = userRoles?.includes("admin") ?? false;
+  /** Owner view (bids, award, filters) only when in Gigger mode; admins always see owner view */
+  const canViewAsOwner = (isOwner && activeRole !== "digger") || isAdmin;
+  /** In digger mode we show digger content (bid form, etc.); in gigger mode we hide it */
   const showDiggerContent = isDigger && (activeRole !== "gigger");
+  /** User has both roles — show mode indicator to avoid confusion */
+  const hasBothRoles = userRoles?.includes("digger") && userRoles?.includes("gigger");
   /** Bids stats for right sidebar (when owner) */
   const [bidStats, setBidStats] = useState<BidStats | null>(null);
   /** Bids filters (when owner) */
@@ -294,7 +300,7 @@ const GigDetail = () => {
   // When arriving with ?award=diggerId (from float chat Award button), scroll to bids and clear param after opening
   useEffect(() => {
     const awardDiggerId = searchParams.get("award");
-    if (!awardDiggerId || !isOwner || !gig) return;
+    if (!awardDiggerId || !canViewAsOwner || !gig) return;
     const scrollToBids = () => {
       const el = document.getElementById("bids");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -309,7 +315,7 @@ const GigDetail = () => {
       clearTimeout(t);
       clearTimeout(clearParam);
     };
-  }, [searchParams.get("award"), isOwner, gig, searchParams, setSearchParams]);
+  }, [searchParams.get("award"), canViewAsOwner, gig, searchParams, setSearchParams]);
 
   // Diggers can only message client after the client has sent a message first; stay in sync via realtime + messages sync event
   useEffect(() => {
@@ -420,13 +426,14 @@ const GigDetail = () => {
     setGig(gigData as Gig);
     const isOwnerUser = session?.user?.id === gigData.consumer_id;
     setIsOwner(isOwnerUser);
+    const userIsAdmin = userRoles?.includes("admin") ?? false;
 
     // Wave 2: Profile, owner contact, and client stats in parallel (only need session + gig)
     const profilePromise = session?.user
       ? supabase.from("profiles").select("user_type").eq("id", session.user.id).single()
       : Promise.resolve({ data: null });
-    const ownerContactPromise = isOwnerUser && session?.user?.id
-      ? supabase.from("gigs").select("client_name, consumer_email, consumer_phone").eq("id", id).eq("consumer_id", session.user.id).single()
+    const ownerContactPromise = (isOwnerUser || userIsAdmin) && gigData.consumer_id
+      ? supabase.from("gigs").select("client_name, consumer_email, consumer_phone").eq("id", id).single()
       : Promise.resolve({ data: null });
     const clientStatsPromise = gigData.consumer_id
       ? supabase.from("gigs").select("id, status, awarded_at").eq("consumer_id", gigData.consumer_id)
@@ -897,7 +904,19 @@ const GigDetail = () => {
           <div className="lg:col-span-7 space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  {hasBothRoles && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        activeRole === "gigger"
+                          ? "border-accent/60 bg-accent/10 text-accent-foreground"
+                          : "border-primary/60 bg-primary/10 text-primary"
+                      }
+                    >
+                      {activeRole === "gigger" ? "📋 Gigger mode" : "🔧 Digger mode"}
+                    </Badge>
+                  )}
                   <Badge
                     variant={
                       gig.status === "completed"
@@ -941,9 +960,12 @@ const GigDetail = () => {
                     This job is completed. Payment & milestones and reviews are below.
                   </p>
                 )}
-                {isOwner && (
+                {canViewAsOwner && (
                   <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t">
-                    {gig.status === "awarded" && (
+                    {isAdmin && (
+                      <Badge variant="outline" className="text-xs">Viewing as admin</Badge>
+                    )}
+                    {isOwner && gig.status === "awarded" && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -956,7 +978,7 @@ const GigDetail = () => {
                         Cancel award
                       </Button>
                     )}
-                    {gig.status === "open" && (
+                    {isOwner && gig.status === "open" && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -968,36 +990,40 @@ const GigDetail = () => {
                         Bump listing
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRepost}
-                      disabled={reposting || !gig.consumer_id}
-                      title="Create a new listing with the same details"
-                    >
-                      {reposting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
-                      Repost
-                    </Button>
-                    {gig.status !== "completed" && (
-                      <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
-                        <Pencil className="h-4 w-4" />
-                        Edit gig
-                      </Button>
+                    {isOwner && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRepost}
+                          disabled={reposting || !gig.consumer_id}
+                          title="Create a new listing with the same details"
+                        >
+                          {reposting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
+                          Repost
+                        </Button>
+                        {gig.status !== "completed" && (
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
+                            <Pencil className="h-4 w-4" />
+                            Edit gig
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => navigate("/my-gigs")}>
+                          Manage in My Gigs
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRemoveGig}
+                          disabled={removing || gig.status !== "open"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Close and remove this gig"
+                        >
+                          {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                          Remove gig
+                        </Button>
+                      </>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/my-gigs")}>
-                      Manage in My Gigs
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemoveGig}
-                      disabled={removing || gig.status !== "open"}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      title="Close and remove this gig"
-                    >
-                      {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
-                      Remove gig
-                    </Button>
                   </div>
                 )}
               </CardHeader>
@@ -1290,13 +1316,13 @@ const GigDetail = () => {
               categories={gig.categories?.name ? [gig.categories.name] : undefined}
             />
 
-            {/* Bids Section: owner sees full list; digger sees header + stats only (no bid cards) */}
-            {(isOwner || showDiggerContent) && (
+            {/* Bids Section: owner/admin sees full list; digger sees header + stats only (no bid cards) */}
+            {(canViewAsOwner || showDiggerContent) && (
               <div id="bids">
               <BidsList
                 gigId={id!}
                 gigTitle={gig.title}
-                isOwner={isOwner}
+                isOwner={canViewAsOwner}
                 openAwardForDiggerId={searchParams.get("award") || undefined}
                 isFixedPrice={gig.project_type !== "hourly"}
                 currentDiggerId={diggerId}
@@ -1304,7 +1330,7 @@ const GigDetail = () => {
                 filterState={bidFilters}
                 onFilterChange={setBidFilters}
                 onStats={setBidStats}
-                statsInSidebar={isOwner}
+                statsInSidebar={canViewAsOwner}
                 sortBy={bidSortBy}
                 onClearFilters={() => setBidFilters(defaultBidFilters)}
                 onAwardSuccess={loadData}
@@ -1329,7 +1355,30 @@ const GigDetail = () => {
           {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = Contact client + client info */}
           <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
             {/* Contact the client now — in sidebar for non-owners who have not yet purchased the lead */}
-            {!isOwner && !hasLeadPurchase && (
+            {isOwner && activeRole === "digger" && (
+              <Card className="border-accent/30 bg-accent/5">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-accent" />
+                    Manage this gig
+                  </CardTitle>
+                  <CardDescription>
+                    You own this gig. Switch to Gigger mode to view bids, award a digger, edit, or manage.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    variant="default"
+                    className="w-full gap-2 bg-accent hover:bg-accent/90"
+                    onClick={() => switchRole("gigger")}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Switch to Gigger mode
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {!canViewAsOwner && !hasLeadPurchase && !isOwner && (
               <Card className="border-primary/30 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1358,7 +1407,7 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {isOwner && (
+            {canViewAsOwner && (
               <>
                 {/* Filters */}
                 <Card className="border-border/60 bg-card">
