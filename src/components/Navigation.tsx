@@ -298,6 +298,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     My bids
                   </DropdownMenuItem>
                 )}
+                {user && (
+                  <DropdownMenuItem onClick={() => navigate("/my-leads")} className="cursor-pointer">
+                    My leads
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/register?mode=signup&type=digger")} className="cursor-pointer">
                   Become a digger
                 </DropdownMenuItem>
@@ -1172,6 +1177,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           onClick={() => { navigate("/my-bids"); setMobileMenuOpen(false); }}
                         >
                           <span className="font-medium">My bids</span>
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/my-leads") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                          )}
+                          onClick={() => { navigate("/my-leads"); setMobileMenuOpen(false); }}
+                        >
+                          <span className="font-medium">My leads</span>
                         </button>
                       )}
                       <button

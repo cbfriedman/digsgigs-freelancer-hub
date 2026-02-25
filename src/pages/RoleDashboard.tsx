@@ -17,10 +17,6 @@ import {
   Users,
   User,
   CheckCircle2,
-  MessageCircle,
-  ShieldCheck,
-  MailCheck,
-  Settings,
   Award
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -469,7 +465,6 @@ export default function RoleDashboard() {
   }
   
   const hasRoles = userRoles.length > 0;
-  const isEmailVerified = Boolean(user?.email_confirmed_at);
   const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
   const hasDiggerProfile = diggerProfilesCount > 0;
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
@@ -888,88 +883,6 @@ export default function RoleDashboard() {
           </Card>
         </div>
 
-        {/* Quick Tips Section (only if user has roles) */}
-        {hasRoles && (
-          <Card className="border-dashed animate-fade-in-up stagger-4">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="p-2.5 rounded-lg bg-primary/10">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Pro Tip</h3>
-                  <p className="text-sm text-muted-foreground">
-                    You can be both a Digger and a Gigger. Switch roles anytime to find gigs or post your own.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Account Health & Trust */}
-        <Card className="animate-fade-in-up stagger-5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Account Health & Trust
-            </CardTitle>
-            <CardDescription>
-              Keep your account complete and communication active for better results.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-lg border bg-card p-4">
-                <p className="text-sm font-medium text-foreground mb-1">Email verification</p>
-                <div className="flex items-center gap-2">
-                  {isEmailVerified ? (
-                    <>
-                      <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0">Verified</Badge>
-                      <span className="text-xs text-muted-foreground">Your account is ready for secure communication.</span>
-                    </>
-                  ) : (
-                    <>
-                      <Badge variant="secondary">Action needed</Badge>
-                      <span className="text-xs text-muted-foreground">Verify email to improve trust and deliverability.</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-card p-4">
-                <p className="text-sm font-medium text-foreground mb-1">Role readiness</p>
-                <p className="text-xs text-muted-foreground">
-                  {hasRoles
-                    ? `You have ${userRoles.length} active ${userRoles.length === 1 ? "role" : "roles"}.`
-                    : "No active roles yet. Add one role to unlock core workflows."}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {userRoles.length > 0 ? (
-                    userRoles.map((role) => (
-                      <Badge key={role} variant="outline" className="capitalize">{role}</Badge>
-                    ))
-                  ) : (
-                    <Badge variant="outline">No roles</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={() => navigate("/account")}>
-                <Settings className="h-4 w-4 mr-2" />
-                Account settings
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/messages")}>
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Messages
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/contact")}>
-                <MailCheck className="h-4 w-4 mr-2" />
-                Contact support
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Welcome modal after registration */}

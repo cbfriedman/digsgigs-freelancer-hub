@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -25,6 +25,7 @@ import GigEmailDeliveryTab from "@/components/admin/GigEmailDeliveryTab";
 import AdminTransactionsDisputesTab from "@/components/admin/AdminTransactionsDisputesTab";
 import AdminChatHistoryTab from "@/components/admin/AdminChatHistoryTab";
 import MilestoneAutoReleaseSettingsTab from "@/components/admin/MilestoneAutoReleaseSettingsTab";
+import AccountDeletionRequestsTab from "@/components/admin/AccountDeletionRequestsTab";
 import {
   Sidebar,
   SidebarContent,
@@ -486,6 +487,16 @@ const AdminDashboard = () => {
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      onClick={() => setActiveTab("account-deletion-requests")}
+                      isActive={activeTab === "account-deletion-requests"}
+                      tooltip="Account deletion requests"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Deletion requests</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
                       onClick={() => setActiveTab("chat-history")}
                       isActive={activeTab === "chat-history"}
                       tooltip="Chat history"
@@ -600,6 +611,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "signup-analytics" && (
                   <SignupAnalyticsDashboard />
+                )}
+
+                {activeTab === "account-deletion-requests" && (
+                  <AccountDeletionRequestsTab />
                 )}
 
                 {activeTab === "support-inbox" && (
