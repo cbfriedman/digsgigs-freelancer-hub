@@ -45,6 +45,7 @@ COMMENT ON FUNCTION public.is_contract_fully_completed(uuid, uuid) IS
 
 -- Ratings: viewer can see row if (1) they are the consumer (author), or (2) there is a gigger_rating for same gig (mutual reveal)
 DROP POLICY IF EXISTS "Anyone can view ratings" ON public.ratings;
+DROP POLICY IF EXISTS "Users can view own rating or after mutual review" ON public.ratings;
 CREATE POLICY "Users can view own rating or after mutual review"
   ON public.ratings FOR SELECT
   TO authenticated
@@ -60,6 +61,7 @@ CREATE POLICY "Users can view own rating or after mutual review"
 
 -- Gigger_ratings: viewer can see if (1) they are the digger (author), or (2) there is a rating for same gig/consumer/digger (mutual reveal)
 DROP POLICY IF EXISTS "Anyone can view gigger ratings" ON public.gigger_ratings;
+DROP POLICY IF EXISTS "Users can view own gigger rating or after mutual review" ON public.gigger_ratings;
 CREATE POLICY "Users can view own gigger rating or after mutual review"
   ON public.gigger_ratings FOR SELECT
   TO authenticated

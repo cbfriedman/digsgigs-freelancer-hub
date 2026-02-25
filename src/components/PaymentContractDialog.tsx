@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
@@ -40,6 +41,9 @@ interface PaymentContractDialogProps {
   pricingModel?: string | null;
   /** Pre-fill from Digger's suggested plan (when gigger accepts). */
   suggestedMilestones?: { description: string; amount: number }[] | null;
+  /** For hourly bids: pre-fill first milestone description as "Estimated total (X hrs @ $Y/hr)". */
+  hourlyRate?: number | null;
+  estimatedHours?: number | null;
   onComplete?: () => void;
 }
 
@@ -52,6 +56,8 @@ export function PaymentContractDialog({
   gigTitle,
   pricingModel,
   suggestedMilestones,
+  hourlyRate,
+  estimatedHours,
   onComplete,
 }: PaymentContractDialogProps) {
   const { toast } = useToast();
@@ -60,6 +66,11 @@ export function PaymentContractDialog({
   const contractAmount = isExclusive
     ? Math.round(bidAmount * (1 - DEPOSIT_RATE) * 100) / 100
     : bidAmount;
+
+  const hourlyDescription =
+    hourlyRate != null && hourlyRate > 0 && estimatedHours != null && estimatedHours > 0
+      ? `Estimated total (${Number(estimatedHours)} hrs @ $${Math.round(hourlyRate)}/hr)`
+      : null;
 
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
@@ -70,9 +81,11 @@ export function PaymentContractDialog({
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   /** Milestone total = contract amount (bid minus 15% deposit for exclusive gigs). */
   const [milestoneTotal, setMilestoneTotal] = useState<number>(contractAmount);
-  const [milestones, setMilestones] = useState<Milestone[]>([
-    { description: "", amount: contractAmount },
-  ]);
+  const [milestones, setMilestones] = useState<Milestone[]>(() =>
+    hourlyDescription && (!suggestedMilestones || suggestedMilestones.length === 0)
+      ? [{ description: hourlyDescription, amount: contractAmount }]
+      : [{ description: "", amount: contractAmount }]
+  );
 
   const fetchEligibility = useCallback(async () => {
     setCheckingEligibility(true);
@@ -116,6 +129,8 @@ export function PaymentContractDialog({
     }
   }, [gigId, bidId, contractAmount, isExclusive, bidAmount, suggestedMilestones]);
 
+  const isHourly = (hourlyRate ?? 0) > 0;
+
   useEffect(() => {
     if (!open) return;
     const suggested = suggestedMilestones && Array.isArray(suggestedMilestones) && suggestedMilestones.length > 0;
@@ -125,10 +140,14 @@ export function PaymentContractDialog({
       setMilestones(suggestedMilestones!.map((m) => ({ description: m.description ?? "", amount: m.amount ?? 0 })));
     } else {
       setMilestoneTotal(contractAmount);
-      setMilestones([{ description: "", amount: contractAmount }]);
+      setMilestones(
+        hourlyDescription
+          ? [{ description: hourlyDescription, amount: contractAmount }]
+          : [{ description: "", amount: contractAmount }]
+      );
     }
     fetchEligibility();
-  }, [open, bidId, contractAmount, fetchEligibility, suggestedMilestones]);
+  }, [open, bidId, contractAmount, fetchEligibility, suggestedMilestones, hourlyDescription]);
 
   const addMilestone = () => {
     const sumExisting = milestones.reduce((s, m) => s + (m.amount || 0), 0);
@@ -220,8 +239,20 @@ export function PaymentContractDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Set up payment contract</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
+            Set up payment contract
+            {isHourly && (
+              <Badge variant="secondary" className="font-normal">
+                Hourly · ${Math.round(hourlyRate ?? 0)}/hr
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription className="space-y-2">
+            {isHourly && (
+              <span className="block text-muted-foreground">
+                Same secure escrow as fixed projects: you approve and pay per time period (e.g. first payment = estimated total; add more periods from the gig page later). You pay only when satisfied.
+              </span>
+            )}
             <span className="block">
               All payments go through our platform—secure and reliable. Funds are held by the platform until you approve each milestone. You pay a <strong>3% transaction fee</strong> per milestone when you approve (Gigger total = milestone + 3%). The Digger receives the milestone amount minus an <strong>8% platform fee</strong> (paid by Digger). No upfront charge; you pay only when you’re satisfied with the work.
             </span>
@@ -334,9 +365,17 @@ export function PaymentContractDialog({
             <Input value={gigTitle} disabled />
           </div>
           <div className="grid gap-2">
-            <Label>Contract amount (milestone budget)</Label>
+            <Label>{isHourly ? "Estimated total (first payment)" : "Contract amount (milestone budget)"}</Label>
             <Input value={`$${milestoneTotal.toFixed(2)}`} disabled />
-            {milestoneTotal !== bidAmount ? (
+            {isHourly && (
+              <p className="text-xs text-muted-foreground">
+                {estimatedHours != null && estimatedHours > 0
+                  ? `${Number(estimatedHours)} hrs × $${Math.round(hourlyRate ?? 0)}/hr = $${milestoneTotal.toFixed(2)}. `
+                  : `Agreed rate $${Math.round(hourlyRate ?? 0)}/hr. `}
+                You can add more time-period milestones from the gig page after creating the contract.
+              </p>
+            )}
+            {!isHourly && milestoneTotal !== bidAmount ? (
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>
                   Bid ${bidAmount.toFixed(2)} − 15% deposit (paid at award) = ${milestoneTotal.toFixed(2)}. The total of all milestone amounts must equal this.
@@ -345,16 +384,21 @@ export function PaymentContractDialog({
                   <strong>7% of the deposit</strong> is transferred to the Digger when the first milestone is completed (from the 15% deposit; no extra charge).
                 </p>
               </div>
-            ) : (
+            ) : !isHourly ? (
               <p className="text-xs text-muted-foreground">
                 The total of all milestone amounts must equal the contract amount.
               </p>
-            )}
+            ) : null}
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Milestones</Label>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <Label>{isHourly ? "First payment (estimated total)" : "Milestones"}</Label>
+                {isHourly && milestones.length <= 1 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">Add more time periods later from the gig page.</p>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"

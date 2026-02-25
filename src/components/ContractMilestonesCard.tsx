@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw, Plus } from "lucide-react";
+import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw, Plus, FileText, Image } from "lucide-react";
 import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
@@ -33,6 +33,40 @@ const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null;
 
+const BUCKET_WORK_LOG = "milestone-work-log-attachments";
+
+function MilestoneWorkLogAttachment({ path }: { path: string }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage
+      .from(BUCKET_WORK_LOG)
+      .createSignedUrl(path, 3600)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [path]);
+  if (!signedUrl) return <span className="text-muted-foreground text-xs">Attachment (loading…)</span>;
+  const isImage = /\.(jpe?g|png|gif|webp)$/i.test(path);
+  return (
+    <div className="mt-1">
+      {isImage ? (
+        <a href={signedUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+          <Image className="h-3.5 w-3.5" />
+          View screenshot
+        </a>
+      ) : (
+        <a href={signedUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+          <FileText className="h-3.5 w-3.5" />
+          View attachment
+        </a>
+      )}
+    </div>
+  );
+}
+
 interface MilestoneRow {
   id: string;
   milestone_number: number;
@@ -41,6 +75,9 @@ interface MilestoneRow {
   status: string;
   stripe_payment_intent_id: string | null;
   released_at: string | null;
+  work_log_hours?: number | null;
+  work_log_note?: string | null;
+  work_log_attachment_path?: string | null;
 }
 
 interface ContractWithMilestones {
@@ -49,6 +86,9 @@ interface ContractWithMilestones {
   digger_id: string;
   total_amount: number;
   status: string;
+  contract_type?: string | null;
+  hourly_rate?: number | null;
+  estimated_hours?: number | null;
   milestone_payments: MilestoneRow[];
 }
 
@@ -99,11 +139,32 @@ export function ContractMilestonesCard({
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
   const [addMilestoneDescription, setAddMilestoneDescription] = useState("");
   const [addMilestoneAmount, setAddMilestoneAmount] = useState("");
+  const [addMilestoneHours, setAddMilestoneHours] = useState("");
   const [addMilestoneSubmitting, setAddMilestoneSubmitting] = useState(false);
+  const [submitWorkLogOpen, setSubmitWorkLogOpen] = useState(false);
+  const [submitWorkLogMilestone, setSubmitWorkLogMilestone] = useState<{ id: string; escrowContractId: string } | null>(null);
+  const [submitWorkLogHours, setSubmitWorkLogHours] = useState("");
+  const [submitWorkLogNote, setSubmitWorkLogNote] = useState("");
+  const [submitWorkLogFile, setSubmitWorkLogFile] = useState<File | null>(null);
+  const [submitWorkLogSubmitting, setSubmitWorkLogSubmitting] = useState(false);
+
+  const isHourlyContract = contract?.contract_type === "hourly" && (contract?.hourly_rate ?? 0) > 0;
+  const contractHourlyRate = (contract?.hourly_rate ?? 0) as number;
+  /** Admin-configured days before auto-release; default 14. */
+  const [autoReleaseDays, setAutoReleaseDays] = useState(14);
   type ReviewDisplay = { rating: number; review_text: string | null; created_at: string };
   const [myReview, setMyReview] = useState<ReviewDisplay | null>(null);
   const [theirReview, setTheirReview] = useState<ReviewDisplay | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("get_milestone_auto_release_days");
+      if (!cancelled && typeof data === "number" && data >= 7 && data <= 60) setAutoReleaseDays(data);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const isGigger = (contract?.consumer_id ?? gigInfo?.consumer_id) === currentUserId;
   const isAwardedDigger = currentDiggerProfileId && (contract?.digger_id === currentDiggerProfileId || gigInfo?.awarded_digger_id === currentDiggerProfileId);
@@ -117,7 +178,7 @@ export function ContractMilestonesCard({
       const [contractRes, gigRes] = await Promise.all([
         supabase
           .from("escrow_contracts")
-          .select("id, consumer_id, digger_id, total_amount, status")
+          .select("id, consumer_id, digger_id, total_amount, status, contract_type, hourly_rate, estimated_hours")
           .eq("gig_id", gigId)
           .in("status", ["active", "completed"])
           .maybeSingle(),
@@ -142,7 +203,7 @@ export function ContractMilestonesCard({
       const [milestonesRes, ...exclusiveRes] = await Promise.all([
         supabase
           .from("milestone_payments")
-          .select("id, milestone_number, description, amount, status, stripe_payment_intent_id, released_at")
+          .select("id, milestone_number, description, amount, status, stripe_payment_intent_id, released_at, work_log_hours, work_log_note, work_log_attachment_path")
           .eq("escrow_contract_id", contractRow.id)
           .order("milestone_number", { ascending: true }),
         bidId
@@ -358,11 +419,14 @@ export function ContractMilestonesCard({
     };
   }, [contract?.status, gigId]);
 
-  const handleSubmitMilestone = async (milestoneId: string) => {
+  const handleSubmitMilestone = async (
+    milestoneId: string,
+    workLog?: { hours?: number; note?: string; attachmentPath?: string }
+  ) => {
     setSubmittingId(milestoneId);
     try {
       await invokeEdgeFunction(supabase, "submit-milestone", {
-        body: { milestonePaymentId: milestoneId },
+        body: { milestonePaymentId: milestoneId, workLog: workLog || undefined },
       });
       toast({ title: "Submitted", description: "Milestone sent for client approval." });
       setContract((c) => {
@@ -370,11 +434,12 @@ export function ContractMilestonesCard({
         return {
           ...c,
           milestone_payments: c.milestone_payments.map((m) =>
-            m.id === milestoneId ? { ...m, status: "submitted" } : m
+            m.id === milestoneId
+              ? { ...m, status: "submitted", work_log_hours: workLog?.hours ?? m.work_log_hours, work_log_note: workLog?.note ?? m.work_log_note, work_log_attachment_path: workLog?.attachmentPath ?? m.work_log_attachment_path }
+              : m
           ),
         };
       });
-      // Don't call onUpdate here—it would remount the card and show full loading. Optimistic update above is enough.
     } catch (e) {
       toast({
         title: "Error",
@@ -382,6 +447,52 @@ export function ContractMilestonesCard({
         variant: "destructive",
       });
     } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const handleOpenSubmitWorkLogDialog = (milestoneId: string) => {
+    if (!contract) return;
+    setSubmitWorkLogMilestone({ id: milestoneId, escrowContractId: contract.id });
+    setSubmitWorkLogHours("");
+    setSubmitWorkLogNote("");
+    setSubmitWorkLogFile(null);
+    setSubmitWorkLogOpen(true);
+  };
+
+  const handleSubmitWorkLogDialog = async () => {
+    if (!submitWorkLogMilestone) return;
+    const { id: milestoneId, escrowContractId } = submitWorkLogMilestone;
+    setSubmitWorkLogSubmitting(true);
+    setSubmittingId(milestoneId);
+    try {
+      let attachmentPath: string | undefined;
+      if (submitWorkLogFile) {
+        const ext = submitWorkLogFile.name.split(".").pop() || "bin";
+        const path = `${escrowContractId}/${milestoneId}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("milestone-work-log-attachments")
+          .upload(path, submitWorkLogFile, { upsert: false });
+        if (uploadError) throw uploadError;
+        attachmentPath = path;
+      }
+      const hours = submitWorkLogHours.trim() ? parseFloat(submitWorkLogHours) : undefined;
+      const note = submitWorkLogNote.trim() || undefined;
+      await handleSubmitMilestone(milestoneId, {
+        hours: hours != null && Number.isFinite(hours) ? hours : undefined,
+        note,
+        attachmentPath,
+      });
+      setSubmitWorkLogOpen(false);
+      setSubmitWorkLogMilestone(null);
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Failed to submit",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitWorkLogSubmitting(false);
       setSubmittingId(null);
     }
   };
@@ -497,15 +608,26 @@ export function ContractMilestonesCard({
   };
 
   const handleAddMilestone = async () => {
-    const desc = addMilestoneDescription.trim();
-    const amount = parseFloat(addMilestoneAmount);
-    if (!desc) {
-      toast({ title: "Description required", variant: "destructive" });
-      return;
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast({ title: "Enter a valid amount greater than 0", variant: "destructive" });
-      return;
+    let desc = addMilestoneDescription.trim();
+    let amount: number;
+    if (isHourlyContract && contractHourlyRate > 0) {
+      const hours = parseFloat(addMilestoneHours);
+      if (!Number.isFinite(hours) || hours <= 0) {
+        toast({ title: "Enter hours worked (e.g. 8)", variant: "destructive" });
+        return;
+      }
+      amount = Math.round(hours * contractHourlyRate * 100) / 100;
+      if (!desc) desc = `${hours} hrs @ $${Math.round(contractHourlyRate)}/hr`;
+    } else {
+      amount = parseFloat(addMilestoneAmount);
+      if (!desc) {
+        toast({ title: "Description required", variant: "destructive" });
+        return;
+      }
+      if (!Number.isFinite(amount) || amount <= 0) {
+        toast({ title: "Enter a valid amount greater than 0", variant: "destructive" });
+        return;
+      }
     }
     setAddMilestoneSubmitting(true);
     try {
@@ -514,11 +636,14 @@ export function ContractMilestonesCard({
       });
       toast({
         title: "Milestone added",
-        description: "The professional can submit it when the work is done; you'll pay when you approve.",
+        description: isHourlyContract
+          ? "The professional can submit it when the time period is done; you'll pay when you approve."
+          : "The professional can submit it when the work is done; you'll pay when you approve.",
       });
       setAddMilestoneOpen(false);
       setAddMilestoneDescription("");
       setAddMilestoneAmount("");
+      setAddMilestoneHours("");
       setReloadKey((k) => k + 1);
       onUpdate?.();
     } catch (e) {
@@ -648,11 +773,21 @@ export function ContractMilestonesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
           <CreditCard className="h-5 w-5" />
           Payment & milestones
+          {isHourlyContract && (
+            <Badge variant="secondary" className="font-normal">
+              Hourly contract · ${Math.round(contractHourlyRate)}/hr
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription className="space-y-1">
+          {isHourlyContract && (
+            <span className="block text-muted-foreground">
+              Pay per time period. Add a milestone for each period (e.g. weekly): enter hours worked; amount is calculated from the agreed rate. Same secure escrow—you approve and pay when the work is verified.
+            </span>
+          )}
           {isGigger ? (
             <>
               <span className="block">Approve and pay each milestone when the professional delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%). {exclusiveWithDeposit
@@ -664,6 +799,9 @@ export function ContractMilestonesCard({
               <span className="block text-xs flex items-center gap-1.5 mt-2">
                 <Shield className="h-3.5 w-3.5 shrink-0" />
                 Payments are secure (Stripe). The professional is paid as soon as you approve.
+              </span>
+              <span className="block text-xs text-muted-foreground mt-1.5">
+                If you don&apos;t approve or dispute within {autoReleaseDays} days, the payment is released to the professional automatically.
               </span>
             </>
           ) : (
@@ -679,6 +817,9 @@ export function ContractMilestonesCard({
               <span className="block text-xs flex items-center gap-1.5 mt-2">
                 <Shield className="h-3.5 w-3.5 shrink-0" />
                 Secure payouts via Stripe. Set up your payout account in Account or My Bids to get paid.
+              </span>
+              <span className="block text-xs text-muted-foreground mt-1.5">
+                If the client doesn&apos;t approve or dispute within {autoReleaseDays} days, the payment is released to you automatically.
               </span>
             </>
           )}
@@ -838,6 +979,21 @@ export function ContractMilestonesCard({
                 )}
                 {/* Gigger: spell out that professional gets milestone + 7% so it’s obvious */}
               </div>
+                {(m.status === "submitted" || m.status === "paid") && (m.work_log_note || (m.work_log_hours != null && m.work_log_hours > 0) || m.work_log_attachment_path) && (
+                  <div className="mt-2 rounded border bg-muted/30 p-2 text-sm">
+                    <p className="font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
+                      <FileText className="h-3.5 w-3.5" />
+                      Work log
+                    </p>
+                    {(m.work_log_hours != null && m.work_log_hours > 0) && (
+                      <p className="text-foreground">Hours: {Number(m.work_log_hours)}</p>
+                    )}
+                    {m.work_log_note && <p className="text-foreground mt-1">{m.work_log_note}</p>}
+                    {m.work_log_attachment_path && (
+                      <MilestoneWorkLogAttachment path={m.work_log_attachment_path} />
+                    )}
+                  </div>
+                )}
               <div className="shrink-0 flex items-center gap-2">
                 {m.status === "pending" && isDigger && (
                   <Tooltip>
@@ -845,7 +1001,7 @@ export function ContractMilestonesCard({
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => handleSubmitMilestone(m.id)}
+                        onClick={() => handleOpenSubmitWorkLogDialog(m.id)}
                         disabled={!!submittingId}
                       >
                         {submittingId === m.id ? (
@@ -956,10 +1112,12 @@ export function ContractMilestonesCard({
               onClick={() => setAddMilestoneOpen(true)}
             >
               <Plus className="h-4 w-4" />
-              Add milestone
+              {isHourlyContract ? "Add time period" : "Add milestone"}
             </Button>
             <p className="text-xs text-muted-foreground mt-1.5">
-              Add an extra deliverable and amount. The professional can submit it when done; you pay when you approve.
+              {isHourlyContract
+                ? "Add a time period (e.g. hours worked this week). Amount is calculated from the agreed rate. The professional submits when done; you approve and pay."
+                : "Add an extra deliverable and amount. The professional can submit it when done; you pay when you approve."}
             </p>
           </div>
         )}
@@ -986,38 +1144,102 @@ export function ContractMilestonesCard({
         )}
       </CardContent>
 
-      <Dialog open={addMilestoneOpen} onOpenChange={setAddMilestoneOpen}>
+      <Dialog
+        open={addMilestoneOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddMilestoneHours("");
+            setAddMilestoneDescription("");
+            setAddMilestoneAmount("");
+          }
+          setAddMilestoneOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add milestone</DialogTitle>
+            <DialogTitle>{isHourlyContract ? "Add time period" : "Add milestone"}</DialogTitle>
             <DialogDescription>
-              Add an extra deliverable to this contract. Enter a description and amount. The professional can submit it when the work is done; you'll be charged (milestone + 3% fee) when you approve. Secure and reliable.
+              {isHourlyContract
+                ? "Enter hours worked for this period. Amount is calculated from the agreed rate. The professional can submit when the time is done; you approve and pay (same secure escrow)."
+                : "Add an extra deliverable to this contract. Enter a description and amount. The professional can submit it when the work is done; you'll be charged (milestone + 3% fee) when you approve. Secure and reliable."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <Label htmlFor="add-milestone-desc">Description</Label>
-              <Textarea
-                id="add-milestone-desc"
-                placeholder="e.g. Phase 2: Revisions and polish"
-                value={addMilestoneDescription}
-                onChange={(e) => setAddMilestoneDescription(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="add-milestone-amount">Amount ($)</Label>
-              <Input
-                id="add-milestone-amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0.00"
-                value={addMilestoneAmount}
-                onChange={(e) => setAddMilestoneAmount(e.target.value)}
-              />
-            </div>
+            {isHourlyContract ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-milestone-hours">Hours worked</Label>
+                  <Input
+                    id="add-milestone-hours"
+                    type="number"
+                    min="0.1"
+                    step="0.5"
+                    placeholder="e.g. 8"
+                    value={addMilestoneHours}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setAddMilestoneHours(v);
+                      const h = parseFloat(v);
+                      if (Number.isFinite(h) && h > 0 && contractHourlyRate > 0) {
+                        const amt = Math.round(h * contractHourlyRate * 100) / 100;
+                        setAddMilestoneAmount(amt.toFixed(2));
+                        setAddMilestoneDescription(`${h} hrs @ $${Math.round(contractHourlyRate)}/hr`);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-1">
+                    <Label className="text-muted-foreground">Rate</Label>
+                    <p className="text-sm font-medium">${Math.round(contractHourlyRate)}/hr</p>
+                  </div>
+                  <div className="grid gap-1">
+                    <Label className="text-muted-foreground">Amount</Label>
+                    <p className="text-sm font-medium">
+                      $
+                      {addMilestoneHours.trim() && parseFloat(addMilestoneHours) > 0 && contractHourlyRate > 0
+                        ? (parseFloat(addMilestoneHours) * contractHourlyRate).toFixed(2)
+                        : "0.00"}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-milestone-desc-hourly">Description (optional)</Label>
+                  <Input
+                    id="add-milestone-desc-hourly"
+                    placeholder="e.g. Week of Feb 17"
+                    value={addMilestoneDescription}
+                    onChange={(e) => setAddMilestoneDescription(e.target.value)}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-milestone-desc">Description</Label>
+                  <Textarea
+                    id="add-milestone-desc"
+                    placeholder="e.g. Phase 2: Revisions and polish"
+                    value={addMilestoneDescription}
+                    onChange={(e) => setAddMilestoneDescription(e.target.value)}
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-milestone-amount">Amount ($)</Label>
+                  <Input
+                    id="add-milestone-amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={addMilestoneAmount}
+                    onChange={(e) => setAddMilestoneAmount(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddMilestoneOpen(false)} disabled={addMilestoneSubmitting}>
@@ -1026,9 +1248,67 @@ export function ContractMilestonesCard({
             <Button onClick={handleAddMilestone} disabled={addMilestoneSubmitting}>
               {addMilestoneSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isHourlyContract ? (
+                "Add time period"
               ) : (
                 "Add milestone"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={submitWorkLogOpen} onOpenChange={(open) => { if (!open) setSubmitWorkLogMilestone(null); setSubmitWorkLogOpen(open); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit milestone for review</DialogTitle>
+            <DialogDescription>
+              Optionally add a work log: hours worked, a short note, or a screenshot. The client will see this when reviewing. All fields are optional.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="work-log-hours">Hours worked (optional)</Label>
+              <Input
+                id="work-log-hours"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="e.g. 8"
+                value={submitWorkLogHours}
+                onChange={(e) => setSubmitWorkLogHours(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="work-log-note">Note (optional)</Label>
+              <Textarea
+                id="work-log-note"
+                placeholder="Short summary of what was done"
+                value={submitWorkLogNote}
+                onChange={(e) => setSubmitWorkLogNote(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Screenshot or proof (optional)</Label>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                onChange={(e) => setSubmitWorkLogFile(e.target.files?.[0] ?? null)}
+              />
+              {submitWorkLogFile && (
+                <p className="text-xs text-muted-foreground">{submitWorkLogFile.name}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitWorkLogOpen(false)} disabled={submitWorkLogSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitWorkLogDialog} disabled={submitWorkLogSubmitting}>
+              {submitWorkLogSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+              Submit for review
             </Button>
           </DialogFooter>
         </DialogContent>

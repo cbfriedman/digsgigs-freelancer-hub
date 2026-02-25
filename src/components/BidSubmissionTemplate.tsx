@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Percent, CreditCard, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, CheckCircle2, Shield } from "lucide-react";
+import { Loader2, Percent, CreditCard, DollarSign, Plus, Trash2, Milestone, Sparkles, CheckCircle2, Shield } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
@@ -40,6 +40,7 @@ interface MilestoneItem {
 const COVER_LETTER_MIN = 50;
 const COVER_LETTER_MAX = 5000;
 const TIMELINE_UNITS = [
+  { value: "hours", label: "Hours" },
   { value: "days", label: "Days" },
   { value: "weeks", label: "Weeks" },
   { value: "months", label: "Months" },
@@ -77,6 +78,8 @@ export interface ExistingBidForEdit {
   timeline: string;
   milestones?: { description: string; amount: number }[] | null;
   pricing_model?: "pay_per_lead" | "success_based" | null;
+  hourly_rate?: number | null;
+  estimated_hours?: number | null;
   /** Not shown in form anymore; kept for API compatibility */
   payment_terms?: string | null;
   accepted_payment_methods?: string[] | null;
@@ -96,6 +99,8 @@ interface BidSubmissionTemplateProps {
   leadPriceBudgetMin?: number | null;
   leadPriceBudgetMax?: number | null;
   leadPriceCalculatedCents?: number | null;
+  /** When "hourly", show hourly rate + estimated hours and store amount = rate * hours. */
+  projectType?: "fixed" | "hourly" | null;
 }
 
 export const BidSubmissionTemplate = ({ 
@@ -109,11 +114,15 @@ export const BidSubmissionTemplate = ({
   leadPriceBudgetMin,
   leadPriceBudgetMax,
   leadPriceCalculatedCents,
+  projectType = "fixed",
 }: BidSubmissionTemplateProps) => {
+  const isHourlyGig = projectType === "hourly";
   const isEditMode = !!existingBid?.id;
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [estimatedHours, setEstimatedHours] = useState("");
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
   const [pricingModel, setPricingModel] = useState<"pay_per_lead" | "success_based">(
@@ -129,14 +138,28 @@ export const BidSubmissionTemplate = ({
   const [timelineUnit, setTimelineUnit] = useState("weeks");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Pre-fill form when editing an existing bid (single amount: use amount or derive from min/max)
+  // Pre-fill form when editing an existing bid (single amount: use amount or derive from min/max; or hourly rate/hours)
   useEffect(() => {
     if (!existingBid?.id) return;
-    const initialAmount = existingBid.amount ?? (existingBid.amount_min != null && existingBid.amount_max != null
-      ? (existingBid.amount_min + existingBid.amount_max) / 2
-      : existingBid.amount_min ?? existingBid.amount_max ?? 0);
-    setAmount(initialAmount ? String(initialAmount) : "");
-    setTimeline(existingBid.timeline || "");
+    const existing = existingBid as ExistingBidForEdit & { hourly_rate?: number | null; estimated_hours?: number | null };
+    if (existing.hourly_rate != null) {
+      setHourlyRate(String(existing.hourly_rate));
+      setEstimatedHours(existing.estimated_hours != null ? String(existing.estimated_hours) : "");
+      setAmount(existing.amount != null ? String(existing.amount) : "");
+    } else {
+      const initialAmount = existingBid.amount ?? (existingBid.amount_min != null && existingBid.amount_max != null
+        ? (existingBid.amount_min + existingBid.amount_max) / 2
+        : existingBid.amount_min ?? existingBid.amount_max ?? 0);
+      setAmount(initialAmount ? String(initialAmount) : "");
+    }
+    const tl = existingBid.timeline || "";
+    setTimeline(tl);
+    const match = tl.match(/^(\d+)\s+(hours?|days?|weeks?|months?)$/i);
+    if (match) {
+      setTimelineNumber(match[1]);
+      const u = match[2].toLowerCase();
+      setTimelineUnit(u === "hour" ? "hours" : u === "day" ? "days" : u === "week" ? "weeks" : u === "month" ? "months" : u);
+    }
     setProposal(existingBid.proposal || "");
     if (existingBid.pricing_model === "success_based" || existingBid.pricing_model === "pay_per_lead") {
       setPricingModel(existingBid.pricing_model);
@@ -159,14 +182,21 @@ export const BidSubmissionTemplate = ({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const timelineValue = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
-    if (!amount || !timelineValue || !proposal) {
+    const timelineValue = (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "") || timeline.trim();
+    if (isHourlyGig) {
+      if (!hourlyRate.trim() || parseFloat(hourlyRate) <= 0 || !timelineValue || !proposal) {
+        toast({ title: "Missing fields", description: "Enter hourly rate, timeline, and proposal.", variant: "destructive" });
+        return;
+      }
+    } else if (!amount || !timelineValue || !proposal) {
       toast({ title: "Missing fields", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const parsedAmount = parseFloat(amount);
+      const parsedAmount = isHourlyGig
+        ? parseFloat(hourlyRate) * (estimatedHours.trim() ? parseFloat(estimatedHours) : 1)
+        : parseFloat(amount);
       const validated = bidSchema.parse({
         amount: parsedAmount,
         timeline: timelineValue,
@@ -190,6 +220,10 @@ export const BidSubmissionTemplate = ({
         milestones: milestonesData.length > 0 ? milestonesData : null,
         updated_at: new Date().toISOString(),
       };
+      if (isHourlyGig) {
+        bidData.hourly_rate = parseFloat(hourlyRate);
+        bidData.estimated_hours = estimatedHours.trim() ? parseFloat(estimatedHours) : null;
+      }
 
       if (isEditMode && existingBid?.id) {
         bidData.pricing_model = pricingModel;
@@ -275,25 +309,31 @@ export const BidSubmissionTemplate = ({
     }
   };
 
-  const parsedAmount = parseFloat(amount) || 0;
+  const effectiveAmount = isHourlyGig
+    ? (parseFloat(hourlyRate) || 0) * (estimatedHours.trim() ? parseFloat(estimatedHours) : 1)
+    : parseFloat(amount) || 0;
+  const parsedAmount = effectiveAmount;
   const estimatedFee = calculateReferralFee(parsedAmount);
 
   // Build timeline string from number + unit for submission
-  const timelineDisplay = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
-  const effectiveTimeline = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : timeline);
+  const timelineDisplay = (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "") || timeline.trim();
+  const effectiveTimeline = (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "") || timeline.trim() || timeline;
 
   // Real-time validation
   const validation = useMemo(() => {
     const err: Record<string, string> = {};
-    if (!amount || parsedAmount <= 0) err.amount = "Enter a valid bid amount";
+    if (isHourlyGig) {
+      const rate = parseFloat(hourlyRate);
+      if (!hourlyRate.trim() || isNaN(rate) || rate <= 0) err.amount = "Enter a valid hourly rate ($/hr)";
+    } else if (!amount || parseFloat(amount) <= 0) err.amount = "Enter a valid bid amount";
     if (proposal.length < COVER_LETTER_MIN) err.proposal = `Cover letter must be at least ${COVER_LETTER_MIN} characters`;
     if (proposal.length > COVER_LETTER_MAX) err.proposal = `Maximum ${COVER_LETTER_MAX} characters`;
-    const hasTimeline = timeline.trim() || (timelineNumber && timelineUnit);
+    const hasTimeline = (timelineNumber && timelineUnit) || timeline.trim();
     if (!hasTimeline) err.timeline = "Select delivery time";
     return err;
-  }, [amount, parsedAmount, proposal.length, timeline, timelineNumber, timelineUnit]);
+  }, [isHourlyGig, amount, hourlyRate, estimatedHours, proposal.length, timeline, timelineNumber, timelineUnit]);
 
-  const isFormValid = Object.keys(validation).length === 0 && proposal.length >= COVER_LETTER_MIN && (timeline.trim() || (timelineNumber && timelineUnit));
+  const isFormValid = Object.keys(validation).length === 0 && proposal.length >= COVER_LETTER_MIN && ((timelineNumber && timelineUnit) || timeline.trim());
 
   const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,13 +400,13 @@ export const BidSubmissionTemplate = ({
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          {/* Digger chooses: when onBuyLeadClick set, only proposal type (Non-exclusive vs Exclusive); otherwise Buy the lead vs Exclusive */}
+          {/* Digger chooses: Buy the lead vs Exclusive (when onBuyLeadClick not set) */}
+          {!onBuyLeadClick && (
           <section className="mb-6 space-y-3" aria-labelledby="pricing-type-heading">
             <h2 id="pricing-type-heading" className="text-lg font-semibold">
-              {onBuyLeadClick ? "Proposal type" : "What would you like to do with this lead?"}
+              What would you like to do with this lead?
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {!onBuyLeadClick && (
               <button
                 type="button"
                 onClick={() => setPricingModel("pay_per_lead")}
@@ -388,7 +428,6 @@ export const BidSubmissionTemplate = ({
                   {LEAD_PRICE_CAPTION} Client awards with no upfront deposit. You get paid per milestone when they approve—funds are held by the platform until then.
                 </p>
               </button>
-              )}
               <button
                 type="button"
                 onClick={() => {
@@ -421,16 +460,9 @@ export const BidSubmissionTemplate = ({
               You&apos;re paid when the client approves each milestone. Funds are held by the platform until then.
             </p>
           </section>
+          )}
 
           <form onSubmit={handleSubmitClick} className="space-y-6 sm:space-y-8 p-4 sm:p-6">
-            {/* Pro tip */}
-            <div className="flex gap-3 p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <Lightbulb className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <p className="text-sm text-foreground/90">
-                <span className="font-semibold">Pro tip:</span> Reference this project in your first line. A short, specific cover letter that shows you read the brief wins more often than a long, generic one.
-              </p>
-            </div>
-
             {/* A. Cover Letter */}
             <section className="space-y-3" aria-labelledby="cover-letter-heading">
               <h2 id="cover-letter-heading" className="text-lg font-semibold flex items-center gap-2">
@@ -482,25 +514,63 @@ export const BidSubmissionTemplate = ({
             {/* B. Bid Details */}
             <section className="space-y-4" aria-labelledby="bid-details-heading">
               <h2 id="bid-details-heading" className="text-lg font-semibold">Bid details</h2>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Your bid amount (USD) <span className="text-destructive">*</span></Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g. 1,500"
-                  value={amount}
-                  onChange={(e) => { setAmount(e.target.value); setFieldErrors((prev) => ({ ...prev, amount: "" })); }}
-                  className={cn("rounded-xl max-w-xs", fieldErrors.amount && "border-destructive")}
-                />
-                {fieldErrors.amount && <p className="text-sm text-destructive">{fieldErrors.amount}</p>}
-                {pricingModel === "success_based" && parsedAmount > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Referral fee if selected: ${estimatedFee.toFixed(2)}
-                  </p>
-                )}
-              </div>
+              {isHourlyGig ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hourlyRate">Hourly rate ($/hr) <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="hourlyRate"
+                      type="number"
+                      step="5"
+                      min="0"
+                      placeholder="e.g. 75"
+                      value={hourlyRate}
+                      onChange={(e) => { setHourlyRate(e.target.value); setFieldErrors((prev) => ({ ...prev, amount: "" })); }}
+                      className={cn("rounded-xl max-w-xs", fieldErrors.amount && "border-destructive")}
+                    />
+                    {fieldErrors.amount && <p className="text-sm text-destructive">{fieldErrors.amount}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="estimatedHours">Estimated hours <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input
+                      id="estimatedHours"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="e.g. 20"
+                      value={estimatedHours}
+                      onChange={(e) => setEstimatedHours(e.target.value)}
+                      className="rounded-xl max-w-xs"
+                    />
+                    {parsedAmount > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Estimated total: <strong className="text-foreground">${Math.round(parsedAmount).toLocaleString()}</strong>
+                        {pricingModel === "success_based" && ` · Referral fee if selected: $${estimatedFee.toFixed(2)}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Your bid amount (USD) <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 1,500"
+                    value={amount}
+                    onChange={(e) => { setAmount(e.target.value); setFieldErrors((prev) => ({ ...prev, amount: "" })); }}
+                    className={cn("rounded-xl max-w-xs", fieldErrors.amount && "border-destructive")}
+                  />
+                  {fieldErrors.amount && <p className="text-sm text-destructive">{fieldErrors.amount}</p>}
+                  {pricingModel === "success_based" && parsedAmount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Referral fee if selected: ${estimatedFee.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Delivery time <span className="text-destructive">*</span></Label>
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
@@ -524,13 +594,6 @@ export const BidSubmissionTemplate = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  <span className="text-sm text-muted-foreground hidden sm:inline">or</span>
-                  <Input
-                    placeholder="e.g. 2-3 weeks"
-                    value={timeline}
-                    onChange={(e) => setTimeline(e.target.value)}
-                    className="w-full sm:flex-1 sm:min-w-[140px] rounded-xl"
-                  />
                 </div>
                 {fieldErrors.timeline && <p className="text-sm text-destructive">{fieldErrors.timeline}</p>}
               </div>

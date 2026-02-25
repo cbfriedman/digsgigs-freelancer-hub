@@ -233,11 +233,10 @@ const MyGigs = () => {
 
     setRepostingId(gig.id);
     const row = gig as Record<string, unknown>;
-    const insertPayload = {
+    const isHourly = row.project_type === "hourly";
+    const insertPayload: Record<string, unknown> = {
       title: row.title,
       description: row.description,
-      budget_min: row.budget_min ?? null,
-      budget_max: row.budget_max ?? null,
       timeline: row.timeline ?? null,
       location: row.location ?? "Remote",
       category_id: row.category_id ?? null,
@@ -250,7 +249,19 @@ const MyGigs = () => {
       consumer_phone: row.consumer_phone ?? null,
       confirmation_status: "confirmed",
       is_confirmed_lead: true,
+      project_type: isHourly ? "hourly" : "fixed",
     };
+    if (isHourly) {
+      insertPayload.budget_min = null;
+      insertPayload.budget_max = null;
+      insertPayload.hourly_rate_min = row.hourly_rate_min ?? null;
+      insertPayload.hourly_rate_max = row.hourly_rate_max ?? null;
+      insertPayload.estimated_hours_min = row.estimated_hours_min ?? null;
+      insertPayload.estimated_hours_max = row.estimated_hours_max ?? null;
+    } else {
+      insertPayload.budget_min = row.budget_min ?? null;
+      insertPayload.budget_max = row.budget_max ?? null;
+    }
 
     const { data: newGig, error } = await supabase
       .from("gigs")
@@ -405,6 +416,17 @@ const MyGigs = () => {
     return "";
   };
 
+  const formatGigPrice = (gig: Gig) => {
+    if ((gig as { project_type?: string }).project_type === "hourly") {
+      const rMin = (gig as { hourly_rate_min?: number | null }).hourly_rate_min ?? 0;
+      const rMax = (gig as { hourly_rate_max?: number | null }).hourly_rate_max ?? rMin;
+      if (!rMin && !rMax) return "Rate not specified";
+      if (rMin && rMax && rMin !== rMax) return `$${Math.round(rMin)}–${Math.round(rMax)}/hr`;
+      return `$${Math.round(rMax || rMin)}/hr`;
+    }
+    return formatBudget(gig.budget_min, gig.budget_max);
+  };
+
   const getIssueTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       mistake: "Posted by Mistake",
@@ -502,7 +524,7 @@ const MyGigs = () => {
                         )}
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <DollarSign className="h-4 w-4" />
-                          <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                          <span>{formatGigPrice(gig)}</span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Calendar className="h-4 w-4" />

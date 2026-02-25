@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { openFloatingChat } from "@/lib/openFloatingChat";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +20,13 @@ import {
   Pin,
   PinOff,
   X,
+  Pencil,
+  ArrowRight,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatRealName, getDiggerProfileUrl } from "@/pages/DiggerDetail/utils";
+import { formatRealName } from "@/pages/DiggerDetail/utils";
 import { getCodeForCountryName } from "@/config/regionOptions";
 import { cn } from "@/lib/utils";
 
@@ -93,7 +96,7 @@ interface DiggerProposalCardProps {
     country?: string | null;
     custom_occupation_title?: string | null;
     profile_name?: string | null;
-    profiles?: { full_name: string | null } | null;
+    profiles?: { full_name: string | null; avatar_url?: string | null } | null;
   };
   referenceCount?: number;
   isOwner: boolean;
@@ -118,6 +121,13 @@ interface DiggerProposalCardProps {
   /** When provided and this bid is awarded waiting response, show Cancel award button (Gigger). */
   onCancelAward?: () => void | Promise<void>;
   cancelAwardLoading?: boolean;
+  /** When true, show digger's own actions: Edit proposal, Chat, View in My Bids (Digger viewing own bid). */
+  showDiggerActions?: boolean;
+  onEditProposal?: () => void;
+  onMessageClient?: () => void;
+  canMessageClient?: boolean;
+  messageClientTooltip?: string;
+  gigStatus?: string;
 }
 
 export function DiggerProposalCard({
@@ -141,6 +151,12 @@ export function DiggerProposalCard({
   isOtherBidHired = false,
   onCancelAward,
   cancelAwardLoading = false,
+  showDiggerActions = false,
+  onEditProposal,
+  onMessageClient,
+  canMessageClient = false,
+  messageClientTooltip,
+  gigStatus,
 }: DiggerProposalCardProps) {
   const navigate = useNavigate();
   const [showFullProposal, setShowFullProposal] = useState(false);
@@ -152,7 +168,8 @@ export function DiggerProposalCard({
   const realName = formatRealName(diggerProfile.profiles?.full_name);
   const handle = diggerProfile.handle ? `@${String(diggerProfile.handle).replace(/^@/, "")}` : "";
   const displayName = realName || diggerProfile.business_name || diggerProfile.profession || "Professional";
-  const diggerProfileUrl = getDiggerProfileUrl({ id: diggerProfile.id, handle: diggerProfile.handle });
+  /** Link to full digger profile page (DiggerDetail), not profile/handle summary. */
+  const diggerProfileUrl = `/digger/${diggerProfile.id}`;
   const professionalHeadline =
     diggerProfile.custom_occupation_title?.trim() ||
     diggerProfile.profile_name?.trim() ||
@@ -177,7 +194,7 @@ export function DiggerProposalCard({
     locationParts.length > 0 ? (countryCode ? `${countryCode} ` : "") + locationParts.join(", ") : null;
 
   const handleChat = () => {
-    navigate(`/messages?gig=${gigId}&digger=${diggerProfile.id}`);
+    openFloatingChat(gigId, diggerProfile.id);
   };
 
   return (
@@ -193,9 +210,9 @@ export function DiggerProposalCard({
           <div className="flex gap-4">
             <div className="relative shrink-0">
               <Avatar className="h-20 w-20 rounded-xl border-2 border-border/50">
-                {diggerProfile.profile_image_url ? (
+                {(diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url) ? (
                   <img
-                    src={diggerProfile.profile_image_url}
+                    src={diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url || ""}
                     alt={displayName}
                     className="h-full w-full object-cover"
                   />
@@ -524,6 +541,35 @@ export function DiggerProposalCard({
                   onComplete={onCompleteWork}
                 />
               )}
+            </div>
+          )}
+          {showDiggerActions && (
+            <div className="flex flex-wrap items-center gap-2">
+              {gigStatus === "open" && onEditProposal && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={onEditProposal}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit proposal
+                </Button>
+              )}
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/my-bids")}>
+                View in My Bids
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+              {onMessageClient && canMessageClient && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => openFloatingChat(gigId, diggerProfile.id)}
+                  title={messageClientTooltip}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Chat
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate("/browse-gigs")}>
+                Browse more gigs
+              </Button>
             </div>
           )}
         </div>

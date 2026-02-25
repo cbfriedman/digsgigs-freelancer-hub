@@ -16,8 +16,6 @@ import {
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
-import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
-
 const benefits = [
   {
     icon: Clock,
@@ -108,32 +106,8 @@ export default function HireAPro() {
         keywords="hire freelancer, hire developer, find designer, tech talent, software development, web design"
       />
 
-      {/* Main Section - Project Details First */}
-      <section className="section-padding pt-6 md:pt-8">
-        <div className="container-wide">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <Badge variant="secondary" className="mb-3 bg-success/10 text-success border-success/20">
-              <Zap className="h-3 w-3 mr-1" />
-              Free to post • No obligations
-            </Badge>
-            <h1 className="text-2xl md:text-3xl font-display font-bold mb-2">
-              Tell Us What You Need
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Describe your project and we'll connect you with qualified freelancers ready to help.
-            </p>
-          </div>
-
-          {/* Form - Full width */}
-          <div className="max-w-3xl mx-auto">
-            <GigLandingForm />
-          </div>
-        </div>
-      </section>
-
       {/* Benefits Grid */}
-      <section className="section-padding">
+      <section className="section-padding pt-6 md:pt-8">
         <div className="container-wide">
           <div className="text-center mb-12">
             <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">

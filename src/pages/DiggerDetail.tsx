@@ -19,6 +19,7 @@ import { generateLocalBusinessSchema } from "@/components/StructuredData";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
+import { useAuth } from "@/contexts/AuthContext";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
@@ -82,6 +83,7 @@ const DiggerDetail = () => {
   const { id: slug } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const viewAsClient = searchParams.get("as") === "client";
+  const { userRoles } = useAuth();
   const [digger, setDigger] = useState<Digger | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [certifications, setCertifications] = useState<DiggerCertification[]>([]);
@@ -170,7 +172,14 @@ const DiggerDetail = () => {
 
   useEffect(() => {
     loadData();
-  }, [slug]);
+  }, [slug, userRoles]);
+
+  // Admins can view all digger profiles without payment
+  useEffect(() => {
+    if (digger && Array.isArray(userRoles) && (userRoles.includes("admin") || userRoles.includes("gigger"))) {
+      setHasViewAccess(true);
+    }
+  }, [digger, userRoles]);
 
   const loadOwnerProfiles = useCallback(async () => {
     if (!currentUser || !isOwnProfile) return;
@@ -237,6 +246,8 @@ const DiggerDetail = () => {
 
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
+    const viewerIsAdmin = Array.isArray(userRoles) && userRoles.includes("admin");
+    const viewerIsGigger = Array.isArray(userRoles) && userRoles.includes("gigger");
 
     // Fetch digger by UUID or username (handle) — anyone with the profile link can view
     const fetchQuery = isUuid(slug)
@@ -302,17 +313,19 @@ const DiggerDetail = () => {
         if (profileViewError && profileViewError.code !== 'PGRST116') {
           logger.error('Error checking profile view access:', profileViewError);
         }
-        setHasViewAccess(!!profileView);
+        setHasViewAccess(!!profileView || viewerIsAdmin || viewerIsGigger);
       } catch (error) {
         // Silently fail - view access check shouldn't block page load
         logger.error('Failed to check profile view access:', error);
-        setHasViewAccess(false);
+        setHasViewAccess(viewerIsAdmin || viewerIsGigger);
       }
+    } else if (viewerIsAdmin || viewerIsGigger) {
+      setHasViewAccess(true);
     }
 
     const isProfileOwner = session?.user?.id === diggerData.user_id;
     const { data: referencesData } = await (supabase as any)
-      .from(isProfileOwner ? "references" : "references_public")
+      .from(isProfileOwner || viewerIsAdmin || viewerIsGigger ? "references" : "references_public")
       .select("*")
       .eq("digger_id", profileId);
 

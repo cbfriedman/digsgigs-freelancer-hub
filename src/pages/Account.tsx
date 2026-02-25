@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
-import { Loader2, Mail, CreditCard, BarChart3, Bell, Wallet } from "lucide-react";
+import { Loader2, Mail, CreditCard, BarChart3, Bell } from "lucide-react";
 
 export default function Account() {
   const navigate = useNavigate();
@@ -48,9 +48,6 @@ export default function Account() {
   }
 
   const settingsLinks = [
-    ...(isDigger
-      ? [{ path: "#payout-account", label: "Payout account", icon: Wallet, description: "Receive milestone payments", scroll: true as const }]
-      : []),
     { path: "/email-preferences", label: "Email preferences", icon: Mail, description: "Manage report frequency and notifications", scroll: false as const },
     { path: "/payment-methods", label: "Payment methods", icon: CreditCard, description: isDigger ? "Pay referral fees when accepting exclusive awards" : "Add or update payment methods", scroll: false as const },
     { path: "/lead-limits", label: "Lead limits", icon: BarChart3, description: "Set lead limits (diggers only)", scroll: false as const },
@@ -72,16 +69,12 @@ export default function Account() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {settingsLinks.map(({ path, label, icon: Icon, description, scroll }) => (
+          {settingsLinks.map(({ path, label, icon: Icon, description }) => (
             <Button
               key={path}
               variant="ghost"
               className="h-auto w-full justify-start gap-3 px-4 py-3 text-left"
-              onClick={() =>
-                scroll
-                  ? document.getElementById("payout-account")?.scrollIntoView({ behavior: "smooth" })
-                  : navigate(path)
-              }
+              onClick={() => navigate(path)}
             >
               <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
               <div className="flex flex-col items-start gap-0.5">

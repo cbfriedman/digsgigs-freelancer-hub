@@ -7,12 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
-import { BidsList, defaultBidFilters, BID_SORT_OPTIONS, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
+import { BidsList, defaultBidFilters, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -20,12 +19,15 @@ import { generateJobPostingSchema } from "@/components/StructuredData";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useStripeConnect } from "@/hooks/useStripeConnect";
+import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { CartDrawer } from "@/components/CartDrawer";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
 import { getLocalTimeForCountry } from "@/pages/DiggerDetail/utils";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,11 @@ interface Gig {
   description: string;
   budget_min: number | null;
   budget_max: number | null;
+  project_type?: "fixed" | "hourly" | null;
+  hourly_rate_min?: number | null;
+  hourly_rate_max?: number | null;
+  estimated_hours_min?: number | null;
+  estimated_hours_max?: number | null;
   deadline: string | null;
   status: string;
   created_at: string;
@@ -105,10 +112,9 @@ const GigDetail = () => {
   const [existingBid, setExistingBid] = useState<any>(null);
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
-  const REFERRAL_FEE_RATE = 0.08;
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   const { userRoles, activeRole } = useAuth();
-  /** In gigger mode we hide digger-only content (bid form, budget analysis, etc.); in digger mode or no role we show it for diggers */
+  /** In gigger mode we hide digger-only content (bid form, etc.); in digger mode or no role we show it for diggers */
   const showDiggerContent = isDigger && (activeRole !== "gigger");
   /** Bids stats for right sidebar (when owner) */
   const [bidStats, setBidStats] = useState<BidStats | null>(null);
@@ -124,6 +130,7 @@ const GigDetail = () => {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { addToCart } = useCart();
+  const { loading: stripeConnectLoading, canReceivePayments } = useStripeConnect();
 
   const handleUnlockLead = () => {
     if (!gig) return;
@@ -284,7 +291,7 @@ const GigDetail = () => {
     }
   }, [id, loading, gig, isDigger, diggerId, existingBid]);
 
-  // Diggers can only message client after the client has sent a message first; stay in sync via realtime
+  // Diggers can only message client after the client has sent a message first; stay in sync via realtime + messages sync event
   useEffect(() => {
     if (!id || !diggerId || !gig?.consumer_id) {
       setHasClientSentMessage(false);
@@ -293,6 +300,22 @@ const GigDetail = () => {
     const consumerId = gig.consumer_id;
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    const convIdRef = { current: null as string | null };
+
+    const onSync = (e: Event) => {
+      const { conversationId, message } = (e as CustomEvent<{ conversationId: string; message?: { sender_id: string } }>).detail ?? {};
+      if (!conversationId || !message || message.sender_id !== consumerId) return;
+      if (convIdRef.current === conversationId) {
+        setHasClientSentMessage(true);
+        return;
+      }
+      if (convIdRef.current === null) {
+        supabase.from("conversations" as any).select("id").eq("id", conversationId).eq("gig_id", id).eq("digger_id", diggerId).eq("consumer_id", consumerId).maybeSingle().then(({ data }) => {
+          if ((data as { id?: string } | null)?.id) setHasClientSentMessage(true);
+        });
+      }
+    };
+    window.addEventListener(MESSAGES_SYNC_EVENT, onSync);
 
     (async () => {
       try {
@@ -308,6 +331,7 @@ const GigDetail = () => {
           return;
         }
         const convId = (conv as any).id;
+        convIdRef.current = convId;
         const { count } = await supabase
           .from("messages" as any)
           .select("id", { count: "exact", head: true })
@@ -340,6 +364,8 @@ const GigDetail = () => {
 
     return () => {
       cancelled = true;
+      convIdRef.current = null;
+      window.removeEventListener(MESSAGES_SYNC_EVENT, onSync);
       if (channel) supabase.removeChannel(channel);
     };
   }, [id, diggerId, gig?.consumer_id]);
@@ -349,7 +375,7 @@ const GigDetail = () => {
 
     // Wave 1: Fetch session and gig in parallel so we can show the page sooner
     const gigSelect = `
-      id, consumer_id, title, description, budget_min, budget_max, timeline, location, work_type, category_id, requirements,
+      id, consumer_id, title, description, budget_min, budget_max, project_type, hourly_rate_min, hourly_rate_max, estimated_hours_min, estimated_hours_max, timeline, location, work_type, category_id, requirements,
       preferred_regions, status, confirmation_status, is_confirmed_lead, confirmed_at, created_at, updated_at,
       purchase_count, calculated_price_cents, bumped_at, deadline, poster_country, skills_required,
       awarded_at, awarded_bid_id, awarded_digger_id,
@@ -523,6 +549,28 @@ const GigDetail = () => {
     return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`;
   };
 
+  const formatGigPrice = (g: Gig): string => {
+    if (g.project_type === "hourly") {
+      const rMin = g.hourly_rate_min ?? 0;
+      const rMax = g.hourly_rate_max ?? rMin;
+      if (!rMin && !rMax) return "Rate not specified";
+      if (rMin && rMax && rMin !== rMax) return `$${Math.round(rMin)}–${Math.round(rMax)}/hr`;
+      return `$${Math.round(rMax || rMin)}/hr`;
+    }
+    return formatBudget(g.budget_min, g.budget_max);
+  };
+
+  /** For lead price display: budget range (fixed) or estimated total range (hourly). */
+  const getLeadPriceBudget = () => {
+    if (gig?.project_type === "hourly") {
+      const r = ((gig.hourly_rate_min ?? 0) + ((gig.hourly_rate_max ?? gig.hourly_rate_min) ?? 0)) / 2;
+      const h = ((gig.estimated_hours_min ?? 1) + ((gig.estimated_hours_max ?? gig.estimated_hours_min) ?? 1)) / 2;
+      const est = r * Math.max(h, 1);
+      return { min: Math.round(est * 0.8), max: Math.round(est * 1.2) };
+    }
+    return { min: gig?.budget_min ?? null, max: gig?.budget_max ?? null };
+  };
+
   /** Format current time in client's timezone for "About the client" card */
   const formatClientLocalTime = (timezone: string | null): string => {
     if (!timezone || !timezone.trim()) return "";
@@ -544,7 +592,6 @@ const GigDetail = () => {
   const [reposting, setReposting] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [cancelAwardLoading, setCancelAwardLoading] = useState(false);
-  const [expandSuccessCoverLetter, setExpandSuccessCoverLetter] = useState(false);
   const [hasClientSentMessage, setHasClientSentMessage] = useState(false);
   const [editingProposal, setEditingProposal] = useState(false);
   const [clientGigStats, setClientGigStats] = useState<ClientGigStats | null>(null);
@@ -552,8 +599,6 @@ const GigDetail = () => {
   const [clientSpentBudget, setClientSpentBudget] = useState<number | null>(null);
   /** Verification from auth (email/social) for About the client when profile columns are not set */
   const [clientVerificationFromAuth, setClientVerificationFromAuth] = useState<{ email_verified: boolean; social_verified: boolean } | null>(null);
-  const PROPOSAL_PREVIEW_LEN = 280;
-
   const handleBump = async () => {
     if (!id || !gig) return;
     setBumping(true);
@@ -859,9 +904,12 @@ const GigDetail = () => {
                 </div>
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <CardTitle className="text-3xl">{gig.title}</CardTitle>
-                  {canSeeBudget && (gig.budget_min != null || gig.budget_max != null) && (
-                    <span className="text-xl font-semibold text-primary shrink-0">
-                      {formatBudget(gig.budget_min, gig.budget_max)}
+                  {canSeeBudget && (gig.project_type === "hourly" ? (gig.hourly_rate_min != null || gig.hourly_rate_max != null) : (gig.budget_min != null || gig.budget_max != null)) && (
+                    <span className="text-xl font-semibold text-primary shrink-0 flex items-center gap-2">
+                      {formatGigPrice(gig)}
+                      {gig.project_type === "hourly" && (
+                        <Badge variant="secondary" className="text-xs">Hourly</Badge>
+                      )}
                     </span>
                   )}
                   {showDiggerContent && !canSeeBudget && (
@@ -990,67 +1038,9 @@ const GigDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Budget Analysis for Diggers (hidden in gigger mode) */}
-            {showDiggerContent && gig.budget_min && (
-              <Card className="bg-accent/5 border-accent/20">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-accent" />
-                    Budget Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {gig.budget_min && gig.budget_max ? (
-                        <>
-                          This gig has a budget range of <strong className="text-foreground">${gig.budget_min.toLocaleString()} - ${gig.budget_max.toLocaleString()}</strong>.
-                          {gig.budget_min < 1000 && " This is a smaller project, great for quick turnaround work."}
-                          {gig.budget_min >= 1000 && gig.budget_min < 5000 && " This is a mid-sized project with good earning potential."}
-                          {gig.budget_min >= 5000 && " This is a substantial project with significant earning potential."}
-                        </>
-                      ) : (
-                        <>
-                          This gig has a minimum budget of <strong className="text-foreground">${gig.budget_min.toLocaleString()}+</strong>.
-                          {gig.budget_min < 1000 && " This is a smaller project, great for quick turnaround work."}
-                          {gig.budget_min >= 1000 && gig.budget_min < 5000 && " This is a mid-sized project with good earning potential."}
-                          {gig.budget_min >= 5000 && " This is a substantial project with significant earning potential."}
-                        </>
-                      )}
-                    </p>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold">When you&apos;re awarded:</p>
-                    {(() => {
-                      const minFee = gig.budget_min * REFERRAL_FEE_RATE;
-                      const maxFee = gig.budget_max ? gig.budget_max * REFERRAL_FEE_RATE : null;
-                      const minPayout = gig.budget_min - minFee;
-                      const maxPayout = gig.budget_max ? gig.budget_max - (maxFee ?? 0) : null;
-                      return (
-                        <div className="bg-background/50 rounded-lg p-3 space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">If you bid ${gig.budget_min.toLocaleString()}:</span>
-                            <span className="font-semibold text-accent">${Math.round(minPayout).toLocaleString()} to you</span>
-                          </div>
-                          {maxPayout != null && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">If you bid ${gig.budget_max!.toLocaleString()}:</span>
-                              <span className="font-semibold text-accent">${Math.round(maxPayout).toLocaleString()} to you</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                            <span>8% referral fee (from Gigger&apos;s deposit)</span>
-                            <span>No membership required</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Payout reminder for Diggers: connect Stripe to receive money when awarded */}
+            {showDiggerContent && diggerId && gig.status === "open" && !stripeConnectLoading && !canReceivePayments && (
+              <StripeConnectBanner />
             )}
 
             {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum) */}
@@ -1059,8 +1049,9 @@ const GigDetail = () => {
                 <BidSubmissionTemplate
                   gigId={id!}
                   diggerId={diggerId}
-                  leadPriceBudgetMin={gig.budget_min}
-                  leadPriceBudgetMax={gig.budget_max}
+                  projectType={gig.project_type ?? "fixed"}
+                  leadPriceBudgetMin={getLeadPriceBudget().min ?? undefined}
+                  leadPriceBudgetMax={getLeadPriceBudget().max ?? undefined}
                   leadPriceCalculatedCents={(gig as { calculated_price_cents?: number | null }).calculated_price_cents}
                   onSuccess={() => {
                     toast({
@@ -1083,8 +1074,9 @@ const GigDetail = () => {
                 <BidSubmissionTemplate
                   gigId={id!}
                   diggerId={diggerId}
-                  leadPriceBudgetMin={gig.budget_min}
-                  leadPriceBudgetMax={gig.budget_max}
+                  projectType={gig.project_type ?? "fixed"}
+                  leadPriceBudgetMin={getLeadPriceBudget().min ?? undefined}
+                  leadPriceBudgetMax={getLeadPriceBudget().max ?? undefined}
                   leadPriceCalculatedCents={(gig as { calculated_price_cents?: number | null }).calculated_price_cents}
                   existingBid={{
                     id: existingBid.id,
@@ -1213,139 +1205,6 @@ const GigDetail = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            {existingBid && showDiggerContent && !editingProposal && (
-              <Card id="bid" className="overflow-hidden rounded-2xl border shadow-sm bg-gradient-to-b from-primary/5 to-background">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <CheckCircle2 className="h-5 w-5" aria-hidden />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-xl">Your proposal</CardTitle>
-                      <CardDescription className="mt-1">
-                        {existingBid.status === "accepted"
-                          ? "You were selected. Check Messages to coordinate next steps."
-                          : existingBid.status === "rejected"
-                            ? "The client went with another proposal. Browse more gigs to find your next opportunity."
-                            : "The client will review your proposal. You’ll be notified if they have questions or when they decide."}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <Badge
-                      variant={
-                        existingBid.status === "accepted"
-                          ? "default"
-                          : existingBid.status === "rejected"
-                            ? "destructive"
-                            : gig?.status === "awarded" && existingBid?.awarded
-                              ? "secondary"
-                              : "secondary"
-                      }
-                      className="capitalize"
-                    >
-                      {existingBid.status === "accepted"
-                        ? "Accepted"
-                        : existingBid.status === "rejected"
-                          ? "Declined"
-                          : gig?.status === "awarded" && existingBid?.awarded
-                            ? "Awarded – accept or decline"
-                            : existingBid.status === "pending"
-                              ? "Under review"
-                              : existingBid.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-5 pt-2">
-                  <div className="grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
-                    <div>
-                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proposed amount</span>
-                      <p className="mt-0.5 font-semibold text-foreground">
-                        {existingBid.amount_min != null && existingBid.amount_max != null
-                          ? `$${Number(existingBid.amount_min).toLocaleString()} – $${Number(existingBid.amount_max).toLocaleString()}`
-                          : `$${Number(existingBid.amount || 0).toLocaleString()}`}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Timeline</span>
-                      <p className="mt-0.5 font-medium text-foreground">{existingBid.timeline || "—"}</p>
-                    </div>
-                  </div>
-                  {existingBid.proposal && (
-                    <div className="rounded-xl border bg-muted/20 p-4">
-                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <FileText className="h-3.5 w-3.5" />
-                        Cover letter
-                      </div>
-                      <p className="mt-2 text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                        {existingBid.proposal.length <= PROPOSAL_PREVIEW_LEN || expandSuccessCoverLetter
-                          ? existingBid.proposal
-                          : existingBid.proposal.slice(0, PROPOSAL_PREVIEW_LEN) + "..."}
-                      </p>
-                      {existingBid.proposal.length > PROPOSAL_PREVIEW_LEN && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandSuccessCoverLetter(!expandSuccessCoverLetter)}
-                          className="mt-2 inline-flex items-center gap-1 text-primary hover:underline font-medium text-sm"
-                        >
-                          {expandSuccessCoverLetter ? (
-                            <>
-                              <ChevronUp className="w-4 h-4" />
-                              View less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-4 h-4" />
-                              View more
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <Separator />
-                  <p className="text-xs text-muted-foreground">
-                    {gig?.awarded_digger_id === diggerId
-                      ? "You can message the client directly from here or from Messages to coordinate."
-                      : "What happens next: The client may message you with questions or to award the gig. You can message them from here or from Messages."}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {gig.status === "open" && (
-                      <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditingProposal(true)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                        Edit proposal
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/my-bids")}>
-                      View in My Bids
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                    {gig?.consumer_id && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="gap-2"
-                        onClick={handleSendMessage}
-                        disabled={!hasClientSentMessage && gig?.awarded_digger_id !== diggerId}
-                        title={
-                          gig?.awarded_digger_id === diggerId
-                            ? "Open conversation with the client"
-                            : hasClientSentMessage
-                              ? "Open conversation with the client"
-                              : "You can reply after the client sends you a message first"
-                        }
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        Message client
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate("/browse-gigs")}>
-                      Browse more gigs
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             {activeRole === 'gigger' && !isOwner && currentUser && gig.status === 'open' && (
               <Card id="bid">
                 <CardContent className="pt-6 space-y-4">
@@ -1417,7 +1276,7 @@ const GigDetail = () => {
                 gigId={id!}
                 gigTitle={gig.title}
                 isOwner={isOwner}
-                isFixedPrice={!!(gig.budget_min && gig.budget_max)}
+                isFixedPrice={gig.project_type !== "hourly"}
                 currentDiggerId={diggerId}
                 currentUserId={currentUser?.id}
                 filterState={bidFilters}
@@ -1430,6 +1289,16 @@ const GigDetail = () => {
                 gigStatus={gig?.status}
                 onCancelAward={handleCancelAward}
                 cancelAwardLoading={cancelAwardLoading}
+                onEditProposal={existingBid && showDiggerContent ? () => setEditingProposal(true) : undefined}
+                onMessageClient={existingBid && showDiggerContent ? handleSendMessage : undefined}
+                canMessageClient={!!(hasClientSentMessage || gig?.awarded_digger_id === diggerId)}
+                messageClientTooltip={
+                  gig?.awarded_digger_id === diggerId
+                    ? "Open conversation with the client"
+                    : hasClientSentMessage
+                      ? "Open conversation with the client"
+                      : "You can reply after the client sends you a message first"
+                }
               />
             )}
           </div>
@@ -1452,8 +1321,8 @@ const GigDetail = () => {
                   <div>
                     <p className="text-2xl font-bold text-primary">
                       {getLeadPriceDisplay(
-                        gig.budget_min,
-                        gig.budget_max,
+                        getLeadPriceBudget().min,
+                        getLeadPriceBudget().max,
                         (gig as { calculated_price_cents?: number | null }).calculated_price_cents
                       ).label}
                     </p>
@@ -1468,88 +1337,6 @@ const GigDetail = () => {
             )}
             {isOwner && (
               <>
-                {/* Showing X of Y + sort */}
-                <div className="flex flex-col gap-2">
-                  {bidStats && (
-                    <p className="text-sm text-muted-foreground">
-                      Showing <span className="font-medium text-foreground">{bidStats.totalBids}</span>
-                      {bidStats.totalUnfiltered != null && bidStats.totalUnfiltered !== bidStats.totalBids && (
-                        <> of <span className="font-medium text-foreground">{bidStats.totalUnfiltered}</span></>
-                      )}
-                      {" "}bid{(bidStats.totalBids === 1 ? "" : "s")}
-                      {hasActiveFilters && (
-                        <span className="ml-1.5 text-xs text-primary">({activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active)</span>
-                      )}
-                    </p>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Sort by</Label>
-                    <Select value={bidSortBy} onValueChange={(v) => setBidSortBy(v as BidSortOption)}>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BID_SORT_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {/* Bids stats */}
-                <Card className="border-border/60 bg-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Bid summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Total bids</span>
-                      <span className="font-semibold tabular-nums">{bidStats?.totalBids ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Avg price</span>
-                      <span className="font-semibold tabular-nums text-primary">
-                        ${(bidStats ? Math.round(bidStats.avgPrice) : 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Lowest</span>
-                      <span className="font-semibold tabular-nums text-green-600">
-                        ${(bidStats?.lowestAmount ?? 0).toLocaleString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Quick filters */}
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    variant={bidFilters.minRating === "4" ? "secondary" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setBidFilters((f) => ({ ...f, minRating: f.minRating === "4" ? "" : "4" }))}
-                  >
-                    4+ stars
-                  </Button>
-                  <Button
-                    variant={bidFilters.verifiedOnly ? "secondary" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setBidFilters((f) => ({ ...f, verifiedOnly: !f.verifiedOnly }))}
-                  >
-                    Verified
-                  </Button>
-                  <Button
-                    variant={bidFilters.priceMax === "5000" ? "secondary" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setBidFilters((f) => ({ ...f, priceMax: f.priceMax === "5000" ? "" : "5000" }))}
-                  >
-                    Under $5k
-                  </Button>
-                </div>
                 {/* Filters */}
                 <Card className="border-border/60 bg-card">
                   <CardHeader className="pb-2">

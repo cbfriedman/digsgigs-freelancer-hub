@@ -14,7 +14,9 @@ import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, Han
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
+import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { GigAdvancedFilters, type GigFilters, type IndustryCategoryWithProfessions } from "@/components/GigAdvancedFilters";
+import { useStripeConnect } from "@/hooks/useStripeConnect";
 import { useProfessions } from "@/hooks/useProfessions";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
@@ -72,6 +74,11 @@ interface Gig {
   description: string;
   budget_min: number | null;
   budget_max: number | null;
+  project_type?: "fixed" | "hourly" | null;
+  hourly_rate_min?: number | null;
+  hourly_rate_max?: number | null;
+  estimated_hours_min?: number | null;
+  estimated_hours_max?: number | null;
   deadline: string | null;
   status: string;
   purchase_count: number;
@@ -114,6 +121,7 @@ const BrowseGigs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string>("all");
   const [diggerProfile, setDiggerProfile] = useState<any>(null);
   const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
@@ -133,6 +141,7 @@ const BrowseGigs = () => {
   const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set());
   const [showRefinePanel, setShowRefinePanel] = useState(true);
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
+  const { loading: stripeConnectLoading, canReceivePayments } = useStripeConnect();
 
   const toggleDescription = (gigId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -151,7 +160,7 @@ const BrowseGigs = () => {
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory, budgetFilter, diggerProfile, advancedFilters]);
+  }, [selectedCategory, budgetFilter, projectTypeFilter, diggerProfile, advancedFilters]);
 
   // Real-time: new open gigs added to list; updates (e.g. status change to awarded/in_progress) reflected
   const gigsChannelRef = useRef<RealtimeChannel | null>(null);
@@ -169,7 +178,7 @@ const BrowseGigs = () => {
               .from("gigs") as any)
               .select(
                 `
-                id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+                id, consumer_id, title, description, budget_min, budget_max, project_type, hourly_rate_min, hourly_rate_max, estimated_hours_min, estimated_hours_max, timeline, location, category_id,
                 preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
                 categories (name),
                 profiles!gigs_consumer_id_fkey (full_name),
@@ -199,7 +208,7 @@ const BrowseGigs = () => {
               .from("gigs") as any)
               .select(
                 `
-                id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+                id, consumer_id, title, description, budget_min, budget_max, project_type, hourly_rate_min, hourly_rate_max, estimated_hours_min, estimated_hours_max, timeline, location, category_id,
                 preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
                 categories (name),
                 profiles!gigs_consumer_id_fkey (full_name),
@@ -316,7 +325,7 @@ const BrowseGigs = () => {
     let query = (supabase
       .from("gigs") as any)
       .select(`
-        id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+        id, consumer_id, title, description, budget_min, budget_max, project_type, hourly_rate_min, hourly_rate_max, estimated_hours_min, estimated_hours_max, timeline, location, category_id,
         preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count, calculated_price_cents,
         categories (name),
         profiles!gigs_consumer_id_fkey (full_name),
@@ -331,6 +340,10 @@ const BrowseGigs = () => {
       query = query.in("category_id", categoryIds);
     }
 
+    if (projectTypeFilter === "fixed" || projectTypeFilter === "hourly") {
+      query = query.eq("project_type", projectTypeFilter);
+    }
+
     if (budgetFilter !== "all") {
       if (budgetFilter === "under1k") {
         query = query.lte("budget_max", 1000);
@@ -341,7 +354,7 @@ const BrowseGigs = () => {
       }
     }
 
-    // Apply advanced filters
+    // Apply advanced filters (budget range only applies to fixed projects in DB; hourly may have null budget)
     if (advancedFilters.budgetRange[0] > 0) {
       query = query.gte("budget_min", advancedFilters.budgetRange[0]);
     }
@@ -457,6 +470,17 @@ const BrowseGigs = () => {
     return "";
   };
 
+  const formatGigPrice = (gig: Gig) => {
+    if (gig.project_type === "hourly") {
+      const rMin = gig.hourly_rate_min ?? 0;
+      const rMax = gig.hourly_rate_max ?? rMin;
+      if (!rMin && !rMax) return "Rate not specified";
+      if (rMin && rMax && rMin !== rMax) return `$${Math.round(rMin)}–${Math.round(rMax)}/hr`;
+      return `$${Math.round(rMax || rMin)}/hr`;
+    }
+    return formatBudget(gig.budget_min, gig.budget_max);
+  };
+
   const hasActiveRefine =
     advancedFilters.budgetRange[0] !== 0 ||
     advancedFilters.budgetRange[1] !== 50000 ||
@@ -494,6 +518,11 @@ const BrowseGigs = () => {
           )}
         </div>
 
+        {/* Remind Diggers to connect payout so they can receive money when awarded */}
+        {diggerProfile && !stripeConnectLoading && !canReceivePayments && (
+          <StripeConnectBanner />
+        )}
+
         {/* Single top filter bar — find gigs quickly */}
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -506,6 +535,16 @@ const BrowseGigs = () => {
                 className="pl-9 h-10 bg-background"
               />
             </div>
+            <Select value={projectTypeFilter} onValueChange={setProjectTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[140px] h-10">
+                <SelectValue placeholder="Project type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="fixed">Fixed project</SelectItem>
+                <SelectItem value="hourly">Hourly project</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={budgetFilter} onValueChange={setBudgetFilter}>
               <SelectTrigger className="w-full sm:w-[160px] h-10">
                 <SelectValue placeholder="Budget" />
@@ -739,7 +778,10 @@ const BrowseGigs = () => {
                         )}
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4 shrink-0" />
-                          <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                          <span>{formatGigPrice(gig)}</span>
+                          {gig.project_type === "hourly" && (
+                            <Badge variant="secondary" className="text-xs ml-1">Hourly</Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4 shrink-0" />

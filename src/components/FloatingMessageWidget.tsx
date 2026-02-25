@@ -62,6 +62,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
+import { OPEN_FLOATING_CHAT_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
@@ -504,6 +506,129 @@ export function FloatingMessageWidget() {
     window.addEventListener(MESSAGES_SYNC_EVENT, handler);
     return () => window.removeEventListener(MESSAGES_SYNC_EVENT, handler);
   }, []);
+
+  // Open floating chat from gig detail (gigger or digger clicks Chat)
+  useEffect(() => {
+    if (!user?.id || hideOnMessagesPage) return;
+    const handler = async (e: Event) => {
+      const { gigId, diggerId } = (e as CustomEvent<OpenFloatingChatDetail>).detail ?? {};
+      if (!gigId || !diggerId) return;
+      try {
+        const { data: gig, error: gigError } = await supabase
+          .from("gigs")
+          .select("id, consumer_id, title")
+          .eq("id", gigId)
+          .single();
+        if (gigError || !gig) {
+          toast({ title: "Project not found", variant: "destructive" });
+          return;
+        }
+        if (!gig.consumer_id) {
+          toast({ title: "This project does not support messaging", variant: "destructive" });
+          return;
+        }
+
+        const isGigger = gig.consumer_id === user.id;
+        let isDigger = false;
+        if (!isGigger) {
+          const { data: diggerProfile } = await supabase
+            .from("digger_profiles")
+            .select("user_id")
+            .eq("id", diggerId)
+            .single();
+          isDigger = diggerProfile?.user_id === user.id;
+        }
+        if (!isGigger && !isDigger) {
+          toast({ title: "You cannot access this conversation", variant: "destructive" });
+          return;
+        }
+
+        let partnerDisplayName: string;
+        let partnerAvatarUrl: string | null;
+        let partnerProfileUrl: string | null;
+        let partnerUserId: string | null;
+
+        if (isGigger) {
+          const { data: digger } = await supabase
+            .from("digger_profiles")
+            .select("id, handle, profile_image_url, user_id")
+            .eq("id", diggerId)
+            .single();
+          partnerDisplayName = (digger?.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "Digger").trim() || "Digger";
+          partnerAvatarUrl = digger?.profile_image_url ?? null;
+          partnerProfileUrl = getCanonicalDiggerProfilePath({ handle: digger?.handle, diggerId });
+          partnerUserId = digger?.user_id ?? null;
+        } else {
+          const { data: consumer } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .eq("id", gig.consumer_id)
+            .single();
+          partnerDisplayName = (consumer?.full_name || "Client").trim() || "Client";
+          partnerAvatarUrl = consumer?.avatar_url ?? null;
+          partnerProfileUrl = `/profile/${gig.consumer_id}`;
+          partnerUserId = gig.consumer_id;
+        }
+
+        const consumerId = gig.consumer_id;
+        const { data: existing } = await supabase
+          .from("conversations")
+          .select("id, created_at")
+          .eq("gig_id", gigId)
+          .eq("digger_id", diggerId)
+          .eq("consumer_id", consumerId)
+          .is("admin_id", null)
+          .maybeSingle();
+
+        let convId: string;
+        let updatedAt: string;
+        if (existing?.id) {
+          convId = existing.id;
+          updatedAt = existing.created_at;
+        } else {
+          const { data: newConv, error: insertError } = await supabase
+            .from("conversations")
+            .insert({
+              gig_id: gigId,
+              digger_id: diggerId,
+              consumer_id: consumerId,
+            } as any)
+            .select("id, created_at")
+            .single();
+          if (insertError) throw insertError;
+          if (!newConv?.id) throw new Error("Failed to create conversation");
+          convId = newConv.id;
+          updatedAt = newConv.created_at;
+          window.dispatchEvent(new Event("recent-conversations-refresh"));
+        }
+
+        const conv: RecentConversation = {
+          id: convId,
+          partnerDisplayName,
+          partnerAvatarUrl,
+          partnerProfileUrl,
+          partnerJobTitle: gig.title ?? null,
+          gigId,
+          lastMessageContent: null,
+          lastMessageFromMe: false,
+          updatedAt,
+          unreadCount: 0,
+          muted: false,
+          isBlocked: false,
+          partnerUserId,
+        };
+        openChatRef.current(conv, true, true);
+      } catch (err: any) {
+        toast({
+          title: "Could not start conversation",
+          description: err?.message ?? "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    };
+    window.addEventListener(OPEN_FLOATING_CHAT_EVENT, handler as EventListener);
+    return () => window.removeEventListener(OPEN_FLOATING_CHAT_EVENT, handler as EventListener);
+  }, [user?.id, hideOnMessagesPage]);
 
   useEffect(() => {
     if (!user?.id || hideOnMessagesPage) return;

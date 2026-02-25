@@ -70,6 +70,11 @@ const PostGig = () => {
   const [skillSearchQuery, setSkillSearchQuery] = useState("");
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
   const [workType, setWorkType] = useState<"remote" | "hybrid" | "onsite" | "flexible">("remote");
+  const [projectType, setProjectType] = useState<"fixed" | "hourly">("fixed");
+  const [hourlyRateMin, setHourlyRateMin] = useState("");
+  const [hourlyRateMax, setHourlyRateMax] = useState("");
+  const [estimatedHoursMin, setEstimatedHoursMin] = useState("");
+  const [estimatedHoursMax, setEstimatedHoursMax] = useState("");
   const [quickTitle, setQuickTitle] = useState("");
   const { skillsByCategory, allSkills } = useSkillsByCategory();
 
@@ -107,7 +112,10 @@ const PostGig = () => {
     if (!selectedProblemId) return 1;
     if (clarifyingAnswers.length === 0) return 1;
     if (!description.trim()) return 2;
-    if (!budgetMin || !budgetMax || !timeline) return 3;
+    const budgetOrHourlyOk = projectType === "fixed"
+      ? !!(budgetMin && budgetMax)
+      : !!(hourlyRateMin.trim() || hourlyRateMax.trim());
+    if (!budgetOrHourlyOk || !timeline) return 3;
     return 4;
   };
 
@@ -123,7 +131,19 @@ const PostGig = () => {
     return parseInt(value.replace(/[^0-9]/g, '')) || 0;
   };
 
+  const parseNum = (s: string): number => (s.trim() ? parseFloat(s.replace(/,/g, "")) : 0) || 0;
+
   const calculateLeadPrice = (): number => {
+    if (projectType === "hourly") {
+      const rMin = parseNum(hourlyRateMin);
+      const rMax = parseNum(hourlyRateMax) || rMin;
+      const hMin = parseNum(estimatedHoursMin) || 1;
+      const hMax = parseNum(estimatedHoursMax) || hMin;
+      const avgRate = (rMin + (rMax || rMin)) / 2;
+      const avgHours = (hMin + (hMax || hMin)) / 2;
+      const est = avgRate * Math.max(avgHours, 1);
+      return getLeadPriceDollars(Math.round(est * 0.8), Math.round(est * 1.2), null);
+    }
     const min = parseCurrency(budgetMin);
     const max = parseCurrency(budgetMax);
     return getLeadPriceDollars(min, max, null);
@@ -142,9 +162,16 @@ const PostGig = () => {
       toast.error("Please describe what you want done");
       return false;
     }
-    if (!budgetMin.trim() || !budgetMax.trim()) {
-      toast.error("Please enter your budget range (min and max)");
-      return false;
+    if (projectType === "fixed") {
+      if (!budgetMin.trim() || !budgetMax.trim()) {
+        toast.error("Please enter your budget range (min and max)");
+        return false;
+      }
+    } else {
+      if (!hourlyRateMin.trim() && !hourlyRateMax.trim()) {
+        toast.error("Please enter at least an hourly rate (min or max $/hr)");
+        return false;
+      }
     }
     if (!timeline) {
       toast.error("Please select a timeline");
@@ -298,25 +325,38 @@ const PostGig = () => {
       const contactPreferencesJson = serializeContactPreferences(contactItems);
 
       // Use edge function so the gig is stored (bypasses RLS) and we get the row back for anon or any user
+      const isHourly = projectType === "hourly";
+      const body: Record<string, unknown> = {
+        title,
+        description: finalDescription.trim(),
+        requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || (customLabel || 'Not specified')}\n${customLabel ? `Custom label: ${customLabel}\n` : ''}Category: ${category?.name || "Not specified"}`,
+        timeline: TIMELINE_OPTIONS.find(t => t.value === finalTimeline)?.label || finalTimeline,
+        work_type: workType,
+        client_name: finalClientName.trim(),
+        consumer_email: finalClientEmail.trim(),
+        consumer_phone: finalClientPhone.trim() || null,
+        poster_country: posterCountry.trim() || null,
+        category_id: categoryId,
+        preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
+        skills_required: skillsRequired.length > 0 ? skillsRequired : null,
+        consumer_id: consumerId,
+        contact_preferences: contactPreferencesJson,
+        project_type: projectType,
+      };
+      if (isHourly) {
+        body.hourly_rate_min = hourlyRateMin.trim() ? parseNum(hourlyRateMin) : null;
+        body.hourly_rate_max = hourlyRateMax.trim() ? parseNum(hourlyRateMax) : null;
+        body.estimated_hours_min = estimatedHoursMin.trim() ? parseNum(estimatedHoursMin) : null;
+        body.estimated_hours_max = estimatedHoursMax.trim() ? parseNum(estimatedHoursMax) : null;
+        body.budget_min = null;
+        body.budget_max = null;
+      } else {
+        body.budget_min = finalBudgetMin;
+        body.budget_max = finalBudgetMax;
+      }
+
       const response = await invokeEdgeFunction<{ data: { id: string; [key: string]: unknown } }>(supabase, "post-gig", {
-        body: {
-          title,
-          description: finalDescription.trim(),
-          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || (customLabel || 'Not specified')}\n${customLabel ? `Custom label: ${customLabel}\n` : ''}Category: ${category?.name || "Not specified"}`,
-          budget_min: finalBudgetMin,
-          budget_max: finalBudgetMax,
-          timeline: TIMELINE_OPTIONS.find(t => t.value === finalTimeline)?.label || finalTimeline,
-          work_type: workType,
-          client_name: finalClientName.trim(),
-          consumer_email: finalClientEmail.trim(),
-          consumer_phone: finalClientPhone.trim() || null,
-          poster_country: posterCountry.trim() || null,
-          category_id: categoryId,
-          preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
-          skills_required: skillsRequired.length > 0 ? skillsRequired : null,
-          consumer_id: consumerId,
-          contact_preferences: contactPreferencesJson,
-        },
+        body,
       });
 
       const gigData = response?.data;
@@ -865,44 +905,157 @@ const PostGig = () => {
                   </h3>
                   <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">Step 4 of 4</span>
                 </div>
+
+                {/* Project type: Fixed vs Hourly */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Project type</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Fixed: one price for the whole project. Hourly: pay by the hour with an optional estimated total.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setProjectType("fixed")}
+                      className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        projectType === "fixed"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                    >
+                      <DollarSign className="h-3.5 w-3.5" />
+                      Fixed project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProjectType("hourly")}
+                      className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        projectType === "hourly"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      Hourly project
+                    </button>
+                  </div>
+                </div>
                 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Budget Range <span className="text-destructive">*</span></Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enter your expected budget range. This helps Diggers tailor their bids.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="budgetMin" className="text-xs text-muted-foreground">Minimum</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-                          <Input
-                            id="budgetMin"
-                            placeholder="1,000"
-                            value={budgetMin}
-                            onChange={(e) => setBudgetMin(formatCurrency(e.target.value))}
-                            className="pl-8 h-12 rounded-xl border-border/50 text-base"
-                            required
-                          />
+                  {projectType === "fixed" ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Budget Range <span className="text-destructive">*</span></Label>
+                      <p className="text-xs text-muted-foreground">
+                        Enter your expected budget range. This helps Diggers tailor their bids.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="budgetMin" className="text-xs text-muted-foreground">Minimum</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                            <Input
+                              id="budgetMin"
+                              placeholder="1,000"
+                              value={budgetMin}
+                              onChange={(e) => setBudgetMin(formatCurrency(e.target.value))}
+                              className="pl-8 h-12 rounded-xl border-border/50 text-base"
+                              required={projectType === "fixed"}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="budgetMax" className="text-xs text-muted-foreground">Maximum</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-                          <Input
-                            id="budgetMax"
-                            placeholder="2,500"
-                            value={budgetMax}
-                            onChange={(e) => setBudgetMax(formatCurrency(e.target.value))}
-                            className="pl-8 h-12 rounded-xl border-border/50 text-base"
-                            required
-                          />
+                        <div className="space-y-1.5">
+                          <Label htmlFor="budgetMax" className="text-xs text-muted-foreground">Maximum</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                            <Input
+                              id="budgetMax"
+                              placeholder="2,500"
+                              value={budgetMax}
+                              onChange={(e) => setBudgetMax(formatCurrency(e.target.value))}
+                              className="pl-8 h-12 rounded-xl border-border/50 text-base"
+                              required={projectType === "fixed"}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Hourly rate range <span className="text-destructive">*</span></Label>
+                        <p className="text-xs text-muted-foreground">
+                          What hourly rate ($/hr) are you comfortable with? Enter min, max, or both. Diggers will propose their rate.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="hourlyRateMin" className="text-xs text-muted-foreground">Min $/hr</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                              <Input
+                                id="hourlyRateMin"
+                                type="number"
+                                min={0}
+                                step={5}
+                                placeholder="50"
+                                value={hourlyRateMin}
+                                onChange={(e) => setHourlyRateMin(e.target.value)}
+                                className="pl-8 h-12 rounded-xl border-border/50 text-base"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="hourlyRateMax" className="text-xs text-muted-foreground">Max $/hr</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                              <Input
+                                id="hourlyRateMax"
+                                type="number"
+                                min={0}
+                                step={5}
+                                placeholder="100"
+                                value={hourlyRateMax}
+                                onChange={(e) => setHourlyRateMax(e.target.value)}
+                                className="pl-8 h-12 rounded-xl border-border/50 text-base"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Estimated hours <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <p className="text-xs text-muted-foreground">
+                          Rough estimate of hours needed. Helps Diggers and lead pricing.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="estimatedHoursMin" className="text-xs text-muted-foreground">Min hours</Label>
+                            <Input
+                              id="estimatedHoursMin"
+                              type="number"
+                              min={0}
+                              step={1}
+                              placeholder="10"
+                              value={estimatedHoursMin}
+                              onChange={(e) => setEstimatedHoursMin(e.target.value)}
+                              className="h-12 rounded-xl border-border/50 text-base"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="estimatedHoursMax" className="text-xs text-muted-foreground">Max hours</Label>
+                            <Input
+                              id="estimatedHoursMax"
+                              type="number"
+                              min={0}
+                              step={1}
+                              placeholder="20"
+                              value={estimatedHoursMax}
+                              onChange={(e) => setEstimatedHoursMax(e.target.value)}
+                              className="h-12 rounded-xl border-border/50 text-base"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="timeline" className="text-sm font-medium flex items-center gap-2">
@@ -1139,7 +1292,7 @@ const PostGig = () => {
               </div>
 
               {/* Lead Price Preview */}
-              {(budgetMin || budgetMax) && (
+              {((projectType === "fixed" && (budgetMin || budgetMax)) || (projectType === "hourly" && (hourlyRateMin || hourlyRateMax))) && (
                 <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl p-5 border border-primary/10">
                   <div className="flex items-center justify-between">
                     <div>

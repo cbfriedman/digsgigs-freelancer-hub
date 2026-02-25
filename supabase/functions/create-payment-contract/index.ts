@@ -51,10 +51,10 @@ serve(async (req) => {
       throw new Error("Missing gigId, bidId, or milestones");
     }
 
-    // Load gig and bid
+    // Load gig and bid (gig.project_type for hourly contracts; bid.hourly_rate, estimated_hours)
     const { data: gig, error: gigError } = await supabaseAdmin
       .from("gigs")
-      .select("id, consumer_id, awarded_digger_id, awarded_bid_id")
+      .select("id, consumer_id, awarded_digger_id, awarded_bid_id, project_type")
       .eq("id", gigId)
       .single();
 
@@ -66,7 +66,7 @@ serve(async (req) => {
 
     const { data: bid } = await supabaseAdmin
       .from("bids")
-      .select("id, amount, digger_id, pricing_model")
+      .select("id, amount, digger_id, pricing_model, hourly_rate, estimated_hours")
       .eq("id", bidId)
       .eq("gig_id", gigId)
       .single();
@@ -148,18 +148,26 @@ serve(async (req) => {
     const platformFeeAmount = isExclusiveWithDeposit ? 0 : totalAmount * (PLATFORM_FEE_PERCENT / 100);
     const platformFeePct = isExclusiveWithDeposit ? 0 : PLATFORM_FEE_PERCENT;
 
+    const isHourlyGig = (gig as { project_type?: string }).project_type === "hourly";
+    const bidHourlyRate = (bid as { hourly_rate?: number | null }).hourly_rate;
+    const bidEstimatedHours = (bid as { estimated_hours?: number | null }).estimated_hours;
+    const contractPayload: Record<string, unknown> = {
+      gig_id: gigId,
+      consumer_id: user.id,
+      digger_id: diggerProfileId,
+      total_amount: totalAmount,
+      platform_fee_percentage: platformFeePct,
+      platform_fee_amount: platformFeeAmount,
+      status: "active",
+      contract_type: isHourlyGig ? "hourly" : "milestone",
+    };
+    if (isHourlyGig && (bidHourlyRate != null || bidEstimatedHours != null)) {
+      contractPayload.hourly_rate = bidHourlyRate ?? null;
+      contractPayload.estimated_hours = bidEstimatedHours ?? null;
+    }
     const { data: contract, error: contractError } = await supabaseAdmin
       .from("escrow_contracts")
-      .insert({
-        gig_id: gigId,
-        consumer_id: user.id,
-        digger_id: diggerProfileId,
-        total_amount: totalAmount,
-        platform_fee_percentage: platformFeePct,
-        platform_fee_amount: platformFeeAmount,
-        status: "active",
-        contract_type: "milestone",
-      })
+      .insert(contractPayload)
       .select("id")
       .single();
 

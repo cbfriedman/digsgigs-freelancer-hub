@@ -2,6 +2,28 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
+async function enrichWithActorAvatars(notifications: Notification[]): Promise<Notification[]> {
+  const actorIds = [...new Set(
+    notifications
+      .map(n => n.metadata?.actor_id)
+      .filter((id): id is string => typeof id === "string")
+  )];
+  if (actorIds.length === 0) return notifications;
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", actorIds);
+
+  const avatarByActorId = new Map<string, string | null>();
+  (profiles || []).forEach(p => avatarByActorId.set(p.id, p.avatar_url ?? null));
+
+  return notifications.map(n => ({
+    ...n,
+    actor_avatar_url: n.metadata?.actor_id ? avatarByActorId.get(n.metadata.actor_id) ?? null : undefined,
+  }));
+}
+
 export interface Notification {
   id: string;
   type: string;
@@ -10,7 +32,9 @@ export interface Notification {
   link: string | null;
   read: boolean;
   created_at: string;
-  metadata: any;
+  metadata: { actor_id?: string; [key: string]: unknown } | null;
+  /** Set by hook from profiles for dropdown avatar */
+  actor_avatar_url?: string | null;
 }
 
 export const useNotifications = () => {
@@ -44,8 +68,10 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount((data || []).filter(n => !n.read).length);
+      const list = (data || []) as Notification[];
+      const enriched = await enrichWithActorAvatars(list);
+      setNotifications(enriched);
+      setUnreadCount(enriched.filter(n => !n.read).length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
@@ -67,12 +93,13 @@ export const useNotifications = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('New notification received:', payload);
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          const raw = payload.new as Notification;
+          const [enriched] = await enrichWithActorAvatars([raw]);
+          setNotifications(prev => [enriched, ...prev]);
           setUnreadCount(prev => prev + 1);
-          window.dispatchEvent(new CustomEvent('app:new-notification', { detail: newNotification }));
+          window.dispatchEvent(new CustomEvent('app:new-notification', { detail: enriched }));
         }
       )
       .on(
@@ -87,7 +114,7 @@ export const useNotifications = () => {
           console.log('Notification updated:', payload);
           const updatedNotification = payload.new as Notification;
           setNotifications(prev =>
-            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            prev.map(n => n.id === updatedNotification.id ? { ...updatedNotification, actor_avatar_url: n.actor_avatar_url } : n)
           );
           
           // Recalculate unread count

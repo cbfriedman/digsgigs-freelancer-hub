@@ -207,6 +207,7 @@ serve(async (req) => {
             gig_id: gigId,
             bid_id: bidId,
             digger_id: diggerId,
+            actor_id: diggerProfile.user_id,
           },
         });
     }

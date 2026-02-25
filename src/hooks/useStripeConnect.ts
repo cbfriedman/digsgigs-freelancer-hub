@@ -9,6 +9,7 @@ export const useStripeConnect = () => {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [canReceivePayments, setCanReceivePayments] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     checkConnectStatus();
@@ -33,6 +34,43 @@ export const useStripeConnect = () => {
       console.error("Error checking Connect status:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /** Sync Connect account status from Stripe to the platform (confirm payout account). */
+  const syncWithStripe = async () => {
+    setSyncing(true);
+    try {
+      const data = await invokeEdgeFunction<{ synced?: boolean; error?: string; message?: string }>(
+        supabase,
+        "sync-connect-status"
+      );
+      if (data?.error === "no_connect_account") {
+        toast({
+          title: "No payout account",
+          description: data?.message ?? "Connect your payout account first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (data?.synced) {
+        await checkConnectStatus();
+        toast({
+          title: "Payout status updated",
+          description: "Your payout account status has been synced with the platform.",
+        });
+      } else if (data?.error) {
+        toast({
+          title: "Could not confirm",
+          description: data.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      const msg = error?.message ?? "Failed to confirm payout status";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -85,7 +123,9 @@ export const useStripeConnect = () => {
     isOnboarded,
     canReceivePayments,
     creating,
+    syncing,
     createConnectAccount,
     checkConnectStatus,
+    syncWithStripe,
   };
 };

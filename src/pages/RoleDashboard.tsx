@@ -692,20 +692,37 @@ export default function RoleDashboard() {
                   
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-3 pt-2">
-                    <Button 
-                      size="lg"
-                      className="w-full justify-between group/btn"
-                      onClick={() => {
-                        handleSwitchRole('digger');
-                        navigate('/my-leads');
-                      }}
-                    >
-                      <span className="flex items-center">
-                        <TrendingUp className="h-4 w-4 mr-2" />
-                        View My Leads
-                      </span>
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
-                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        size="lg"
+                        className="w-full justify-between group/btn"
+                        onClick={() => {
+                          handleSwitchRole('digger');
+                          navigate('/my-leads');
+                        }}
+                      >
+                        <span className="flex items-center truncate">
+                          <TrendingUp className="h-4 w-4 mr-2 shrink-0" />
+                          View My Leads
+                        </span>
+                        <ArrowRight className="h-4 w-4 transition-transform shrink-0 group-hover/btn:translate-x-1" />
+                      </Button>
+                      <Button 
+                        size="lg"
+                        variant="outline"
+                        className="w-full justify-between group/btn"
+                        onClick={() => {
+                          handleSwitchRole('digger');
+                          navigate('/my-bids');
+                        }}
+                      >
+                        <span className="flex items-center truncate">
+                          <FileText className="h-4 w-4 mr-2 shrink-0" />
+                          View My Bids
+                        </span>
+                        <ArrowRight className="h-4 w-4 transition-transform shrink-0 group-hover/btn:translate-x-1" />
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <Button 
                         variant="outline"

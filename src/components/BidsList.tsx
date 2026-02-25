@@ -12,7 +12,7 @@ import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
-import { TrendingUp, DollarSign, FileText, X, CreditCard, Loader2 } from "lucide-react";
+import { X, CreditCard, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -117,6 +117,7 @@ interface Bid {
     business_name?: string;
     profession: string;
     profile_image_url: string | null;
+    profiles?: { full_name: string | null; avatar_url?: string | null } | null;
     average_rating: number | null;
     total_ratings: number | null;
     years_experience?: number;
@@ -223,6 +224,14 @@ interface BidsListProps {
   onCancelAward?: () => void | Promise<void>;
   /** When true, show loading state on Cancel award button (e.g. while parent is calling edge function). */
   cancelAwardLoading?: boolean;
+  /** Digger viewing own bid: callback to switch to edit mode. */
+  onEditProposal?: () => void;
+  /** Digger viewing own bid: callback to open message with client. */
+  onMessageClient?: () => void;
+  /** Digger viewing own bid: whether they can message (client messaged first or digger is awarded). */
+  canMessageClient?: boolean;
+  /** Digger viewing own bid: tooltip for Chat button when disabled. */
+  messageClientTooltip?: string;
 }
 
 export const BidsList = ({
@@ -242,6 +251,10 @@ export const BidsList = ({
   gigStatus,
   onCancelAward,
   cancelAwardLoading = false,
+  onEditProposal,
+  onMessageClient,
+  canMessageClient = false,
+  messageClientTooltip,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
@@ -380,7 +393,7 @@ export const BidsList = ({
             custom_occupation_title,
             profile_name,
             offers_free_estimates,
-            profiles:profiles!digger_profiles_user_id_fkey ( full_name )
+            profiles:profiles!digger_profiles_user_id_fkey ( full_name, avatar_url )
           )
         `)
         .eq('gig_id', gigId)
@@ -652,52 +665,8 @@ export const BidsList = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
-        <div>
-          <h3 className="text-xl font-semibold">
-            Bids {totalBids > 0 && <span className="text-muted-foreground font-normal">({totalBids})</span>}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isOwner
-              ? "Review bids below. New bids appear in real time."
-              : "Bids are anonymous until you award or unlock contact info."}
-          </p>
-        </div>
-        {totalBids > 0 && !statsInSidebar && (
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Total bids</span>
-              <span className="font-semibold tabular-nums">{totalBids}</span>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
-              <DollarSign className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Avg</span>
-              <span className="font-semibold tabular-nums">
-                $
-                {Math.round(
-                  displayedBids.reduce((sum, b) => {
-                    if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
-                    return sum + (b.amount_min ?? b.amount_max ?? b.amount);
-                  }, 0) / totalBids
-                ).toLocaleString()}
-              </span>
-            </div>
-            {displayedBids[0] && (
-              <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Lowest</span>
-                <span className="font-semibold tabular-nums text-green-600">
-                  ${(displayedBids[0].amount_min ?? displayedBids[0].amount).toLocaleString()}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Payment contract & milestones: show when user is owner or awarded digger */}
-      {(isOwner || currentDiggerId) && currentUserId && (
+      {/* Payment contract & milestones: show only after gig is awarded (not when status is "open") */}
+      {(isOwner || currentDiggerId) && currentUserId && gigStatus && gigStatus !== "open" && (
         <ContractMilestonesCard
           key={contractCardKey}
           gigId={gigId}
@@ -718,7 +687,7 @@ export const BidsList = ({
             })()
           }
           onSetupContractClick={
-            isOwner && isFixedPrice
+            isOwner
               ? () => {
                   const accepted = bids.find((b) => b.status === "accepted");
                   if (accepted) {
@@ -752,6 +721,28 @@ export const BidsList = ({
           </CardContent>
         </Card>
       )}
+      {/* Digger viewing own bid: use same card style as gigger sees. */}
+      {!isOwner && currentDiggerId && !loading && displayedBids.length > 0 && displayedBids.map((bid) => (
+        <DiggerProposalCard
+          key={bid.id}
+          bid={bid}
+          gigTitle={gigTitle}
+          gigId={gigId}
+          diggerProfile={bid.digger_profiles}
+          referenceCount={bid.reference_count}
+          isOwner={false}
+          isFixedPrice={isFixedPrice}
+          isOnline={onlineDiggers.has(bid.digger_profiles.id)}
+          hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
+          isAwardedWaitingResponse={!!(bid.awarded && bid.status !== "accepted")}
+          showDiggerActions={!!(onEditProposal || onMessageClient)}
+          onEditProposal={onEditProposal}
+          onMessageClient={onMessageClient}
+          canMessageClient={canMessageClient}
+          messageClientTooltip={messageClientTooltip}
+          gigStatus={gigStatus ?? undefined}
+        />
+      ))}
       {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only. When loading, only this section shows loading. */}
       {isOwner && (
         <>
@@ -968,6 +959,8 @@ export const BidsList = ({
             gigTitle={gigTitle}
             pricingModel={selectedBid.pricing_model}
             suggestedMilestones={(selectedBid as any).suggested_milestones}
+            hourlyRate={(selectedBid as any).hourly_rate ?? null}
+            estimatedHours={(selectedBid as any).estimated_hours ?? null}
             onComplete={() => {
               loadBids();
               setContractCardKey((k) => k + 1);

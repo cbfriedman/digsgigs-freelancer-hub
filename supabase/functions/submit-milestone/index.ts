@@ -32,7 +32,11 @@ serve(async (req) => {
     } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { milestonePaymentId } = (await req.json()) as { milestonePaymentId: string };
+    const body = (await req.json()) as {
+      milestonePaymentId: string;
+      workLog?: { hours?: number; note?: string; attachmentPath?: string };
+    };
+    const { milestonePaymentId, workLog } = body;
     if (!milestonePaymentId) throw new Error("Missing milestonePaymentId");
 
     // Use service role so we can read the row; then verify the user is the contract's Digger
@@ -61,9 +65,24 @@ serve(async (req) => {
       throw new Error(`Milestone cannot be submitted (current status: ${milestone.status})`);
     }
 
+    const updatePayload: Record<string, unknown> = {
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+    };
+    if (workLog) {
+      if (typeof workLog.hours === "number" && Number.isFinite(workLog.hours) && workLog.hours >= 0) {
+        updatePayload.work_log_hours = workLog.hours;
+      }
+      if (typeof workLog.note === "string" && workLog.note.trim()) {
+        updatePayload.work_log_note = workLog.note.trim().slice(0, 2000);
+      }
+      if (typeof workLog.attachmentPath === "string" && workLog.attachmentPath.trim()) {
+        updatePayload.work_log_attachment_path = workLog.attachmentPath.trim().slice(0, 500);
+      }
+    }
     const { error: updateError } = await supabaseAdmin
       .from("milestone_payments")
-      .update({ status: "submitted" })
+      .update(updatePayload)
       .eq("id", milestonePaymentId)
       .eq("status", "pending");
 

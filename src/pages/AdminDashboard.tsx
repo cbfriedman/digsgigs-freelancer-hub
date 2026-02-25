@@ -24,6 +24,7 @@ import ManageGigsTab from "@/components/admin/ManageGigsTab";
 import GigEmailDeliveryTab from "@/components/admin/GigEmailDeliveryTab";
 import AdminTransactionsDisputesTab from "@/components/admin/AdminTransactionsDisputesTab";
 import AdminChatHistoryTab from "@/components/admin/AdminChatHistoryTab";
+import MilestoneAutoReleaseSettingsTab from "@/components/admin/MilestoneAutoReleaseSettingsTab";
 import {
   Sidebar,
   SidebarContent,
@@ -371,6 +372,7 @@ const AdminDashboard = () => {
     { id: "giveaway", label: "Giveaway Report", icon: Crown },
     { id: "manage-gigs", label: "Manage gigs", icon: Briefcase },
     { id: "transactions-disputes", label: "Transactions & Disputes", icon: Receipt },
+    { id: "milestone-auto-release", label: "Milestone auto-release", icon: Clock },
     { id: "gig-email-delivery", label: "Gig email delivery", icon: Mail },
     { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
@@ -614,6 +616,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "transactions-disputes" && (
                   <AdminTransactionsDisputesTab />
+                )}
+
+                {activeTab === "milestone-auto-release" && (
+                  <MilestoneAutoReleaseSettingsTab />
                 )}
 
                 {activeTab === "chat-history" && (

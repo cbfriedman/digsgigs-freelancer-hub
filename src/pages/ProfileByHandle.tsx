@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, User, Briefcase, ArrowRight, MapPin, Star, Clock3 } from "lucide-react";
+import { Loader2, User, Briefcase, ArrowRight, Clock3 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
-import { GiggerRatingsList } from "@/components/GiggerRatingsList";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 
@@ -72,17 +72,38 @@ interface GiggerGigData {
   created_at: string;
 }
 
+interface DiggerBidData {
+  id: string;
+  gig_id: string;
+  status: string;
+  created_at: string;
+  gigs?: {
+    id: string;
+    title: string | null;
+    status: string | null;
+    budget_min: number | null;
+    budget_max: number | null;
+    location: string | null;
+    created_at: string;
+  } | null;
+}
+
 const isUuid = (s: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
 export default function ProfileByHandle() {
   const { handle = "", role } = useParams<{ handle: string; role?: string }>();
   const navigate = useNavigate();
+  const { userRoles } = useAuth();
+  const isAdmin = Array.isArray(userRoles) && userRoles.includes("admin");
   const [loading, setLoading] = useState(true);
   const [resolved, setResolved] = useState<ResolveRow | null>(null);
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [digger, setDigger] = useState<DiggerCardData | null>(null);
   const [recentGigs, setRecentGigs] = useState<GiggerGigData[]>([]);
+  const [gigsToShow, setGigsToShow] = useState(4);
+  const [recentBids, setRecentBids] = useState<DiggerBidData[]>([]);
+  const [bidsToShow, setBidsToShow] = useState(4);
   const [isOwner, setIsOwner] = useState(false);
   const [diggerPortfolioCount, setDiggerPortfolioCount] = useState(0);
   const [diggerExperienceCount, setDiggerExperienceCount] = useState(0);
@@ -184,6 +205,42 @@ export default function ProfileByHandle() {
           const diggerData = dData as DiggerCardData | null;
           setDigger(diggerData || null);
           setRecentGigs((gData as GiggerGigData[]) || []);
+          if (diggerData?.id) {
+            supabase
+              .from("bids")
+              .select(`
+                id,
+                gig_id,
+                status,
+                created_at,
+                gigs!gig_id (
+                  id,
+                  title,
+                  status,
+                  budget_min,
+                  budget_max,
+                  location,
+                  created_at
+                )
+              `)
+              .eq("digger_id", diggerData.id)
+              .order("created_at", { ascending: false })
+              .limit(50)
+              .then(({ data: bidData }) => {
+                if (!cancelled) {
+                  const bids = (bidData || []).map((b: any) => ({
+                    ...b,
+                    gigs: b.gigs ?? (b.gig_id ? { id: b.gig_id, title: null, status: null, budget_min: null, budget_max: null, location: null, created_at: "" } : null),
+                  })) as DiggerBidData[];
+                  setRecentBids(bids);
+                  setBidsToShow(4);
+                }
+              })
+              .catch(() => { setRecentBids([]); setBidsToShow(4); });
+          } else {
+            setRecentBids([]);
+            setBidsToShow(4);
+          }
           if (owner && diggerData?.id) {
             Promise.all([
               (supabase.from("digger_portfolio_items" as any)).select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
@@ -227,8 +284,10 @@ export default function ProfileByHandle() {
   };
   const openGigCount = recentGigs.filter((g) => g.status === "open").length;
   const closedGigCount = recentGigs.filter((g) => g.status && g.status !== "open").length;
-  const canShowDiggerRole = isOwner ? resolved?.has_digger : !!(resolved?.has_digger && (digger?.is_public || safeRole === "digger"));
-  const canShowGiggerRole = isOwner ? resolved?.has_gigger : !!(resolved?.has_gigger && profile?.gigger_public);
+  const pendingBidCount = recentBids.filter((b) => b.status === "pending").length;
+  const awardedBidCount = recentBids.filter((b) => b.status === "accepted").length;
+  const canShowDiggerRole = isOwner || isAdmin ? !!resolved?.has_digger : !!(resolved?.has_digger && (digger?.is_public || safeRole === "digger"));
+  const canShowGiggerRole = isOwner || isAdmin ? !!resolved?.has_gigger : !!(resolved?.has_gigger && profile?.gigger_public);
 
   const profileCompletion = useMemo(() => {
     if (!isOwner || !digger) return null;
@@ -286,7 +345,7 @@ export default function ProfileByHandle() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <Avatar className="h-16 w-16 ring-1 ring-border/50">
               <AvatarImage src={avatar} alt={displayName} />
               <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">{initials}</AvatarFallback>
@@ -299,6 +358,12 @@ export default function ProfileByHandle() {
                 <span className="text-sm text-muted-foreground truncate">@{canonicalHandle}</span>
               </div>
             </div>
+            {isOwner && profileCompletion && (
+              <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm shrink-0">
+                <span className="font-medium text-muted-foreground">Profile completion</span>
+                <span className="font-semibold tabular-nums text-foreground ml-2">{profileCompletion.score}%</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -327,77 +392,92 @@ export default function ProfileByHandle() {
       <div className="grid gap-4 md:grid-cols-2">
         {showDigger && resolved.has_digger && digger && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Digger Profile</CardTitle>
-              <CardDescription>{digger.profession || "Professional services"}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {isOwner && profileCompletion && (
-                <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm mb-2">
-                  <span className="font-medium text-muted-foreground">Profile completion</span>
-                  <span className="font-semibold tabular-nums text-foreground">{profileCompletion.score}%</span>
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">{digger.tagline || digger.bio || "No digger bio yet."}</p>
-              <div className="flex flex-wrap gap-2">
-                {digger.location && (
-                  <Badge variant="outline" className="gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {digger.location}
-                  </Badge>
-                )}
-                {digger.years_experience != null && (
-                  <Badge variant="outline">{digger.years_experience}+ years exp</Badge>
-                )}
-                {digger.availability && (
-                  <Badge variant="secondary" className="capitalize">{digger.availability}</Badge>
-                )}
-              </div>
-              <div className="text-sm flex items-center gap-1">
-                <Star className="h-4 w-4 fill-primary text-primary" />
-                <span className="font-medium">{(digger.average_rating || 0).toFixed(1)}</span>
-                <span className="text-muted-foreground">({digger.total_ratings || 0} ratings)</span>
-              </div>
-              <div className="text-sm">
-                {digger.hourly_rate != null
-                  ? `Hourly rate: $${Math.round(digger.hourly_rate)}`
-                  : digger.hourly_rate_min != null || digger.hourly_rate_max != null
-                    ? `Rate range: $${Math.round(digger.hourly_rate_min || 0)} - $${Math.round(digger.hourly_rate_max || 0)}`
-                    : "Rate not specified"}
-              </div>
-              {(() => {
-                const skillNames = (digger.digger_skills || []).map((ds: { skills?: { name: string } | null }) => ds.skills?.name).filter(Boolean);
-                const names = skillNames.length > 0 ? skillNames : (digger.skills || []);
-                return !!names.length ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {names.slice(0, 8).map((skill: string) => (
-                    <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
-                  ))}
-                </div>
-                ) : null;
-              })()}
               <Button
                 variant="outline"
-                className="mt-2"
+                size="sm"
+                className="shrink-0"
                 onClick={() => navigate(`/digger/${digger.id}`)}
               >
                 Open Full Digger Profile
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">Recent bids: {recentBids.length}</Badge>
+                <Badge variant="outline">Pending: {pendingBidCount}</Badge>
+                <Badge variant="outline">Awarded: {awardedBidCount}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {digger.years_experience != null && (
+                  <Badge variant="outline">{digger.years_experience}+ years exp</Badge>
+                )}
+              </div>
+              <div className="space-y-2">
+                {recentBids.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No recent bids yet.</p>
+                ) : (
+                  recentBids.slice(0, bidsToShow).map((bid) => {
+                    const gig = bid.gigs;
+                    const title = gig?.title || "Project";
+                    return (
+                      <button
+                        type="button"
+                        key={bid.id}
+                        className="w-full rounded-lg border p-3 text-left hover:bg-muted/50 transition-colors"
+                        onClick={() => navigate(`/gig/${bid.gig_id}`)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-sm line-clamp-1">{title}</p>
+                          <Badge variant={bid.status === "accepted" ? "secondary" : "outline"} className="capitalize shrink-0">
+                            {bid.status}
+                          </Badge>
+                        </div>
+                        {gig && (gig.budget_min != null || gig.budget_max != null) && (
+                          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Clock3 className="h-3 w-3" />
+                              {bid.created_at ? new Date(bid.created_at).toLocaleDateString() : ""}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+                {recentBids.length > bidsToShow && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-muted-foreground"
+                    onClick={() => setBidsToShow((prev) => Math.min(prev + 4, recentBids.length))}
+                  >
+                    Load more ({recentBids.length - bidsToShow} more)
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
 
         {showGigger && resolved.has_gigger && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="flex items-center gap-2"><User className="h-4 w-4" /> Gigger Profile</CardTitle>
-              <CardDescription>Client / project owner profile</CardDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => navigate(getCanonicalGiggerProfilePath(resolved.user_id))}
+              >
+                Open Full Gigger Profile
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {profile.about_me?.trim() || "No public gigger bio yet."}
-              </p>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">Recent gigs: {recentGigs.length}</Badge>
                 <Badge variant="outline">Open: {openGigCount}</Badge>
@@ -407,7 +487,7 @@ export default function ProfileByHandle() {
                 {recentGigs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No recent gigs posted yet.</p>
                 ) : (
-                  recentGigs.map((gig) => (
+                  recentGigs.slice(0, gigsToShow).map((gig) => (
                     <button
                       type="button"
                       key={gig.id}
@@ -431,25 +511,21 @@ export default function ProfileByHandle() {
                     </button>
                   ))
                 )}
+                {recentGigs.length > gigsToShow && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-muted-foreground"
+                    onClick={() => setGigsToShow((prev) => Math.min(prev + 4, recentGigs.length))}
+                  >
+                    Load more ({recentGigs.length - gigsToShow} more)
+                  </Button>
+                )}
               </div>
-              <Button
-                variant="outline"
-                className="mt-4 w-full sm:w-auto"
-                onClick={() => navigate(getCanonicalGiggerProfilePath(resolved.user_id))}
-              >
-                Open Full Gigger Profile
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
             </CardContent>
           </Card>
         )}
 
-        {showGigger && resolved.has_gigger && resolved.user_id && (
-          <GiggerRatingsList
-            consumerId={resolved.user_id}
-            title="Reviews from professionals"
-          />
-        )}
       </div>
     </div>
   );

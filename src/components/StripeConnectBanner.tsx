@@ -8,7 +8,7 @@ import { useStripeConnect } from "@/hooks/useStripeConnect";
 
 export const StripeConnectBanner = () => {
   const [searchParams] = useSearchParams();
-  const { loading, isOnboarded, canReceivePayments, creating, createConnectAccount, checkConnectStatus } = useStripeConnect();
+  const { loading, isOnboarded, canReceivePayments, creating, syncing, createConnectAccount, checkConnectStatus, syncWithStripe } = useStripeConnect();
 
   // After return from Stripe Connect, refetch status (webhook may have a short delay)
   useEffect(() => {
@@ -30,7 +30,7 @@ export const StripeConnectBanner = () => {
     );
   }
 
-  // Connected and ready: show status + Reconnect option
+  // Connected and ready: Stripe has fully verified the account
   if (canReceivePayments) {
     return (
       <Card className="mb-6 border-green-500/30 bg-green-500/5">
@@ -39,32 +39,45 @@ export const StripeConnectBanner = () => {
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             Payout account connected
           </CardTitle>
-          <CardDescription>
-            You can receive milestone payments. Need to update bank or details? Use Reconnect to open Stripe.
+          <CardDescription className="space-y-1.5">
+            <span className="inline-block font-medium text-green-700 dark:text-green-400">Stripe verification: Complete</span>
+            <span className="block">Your account is fully verified by Stripe and ready to receive milestone payments from Giggers.</span>
+            <span className="block text-muted-foreground">Need to update bank or details? Use Reconnect. Use Confirm to refresh your status from Stripe.</span>
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={createConnectAccount} disabled={creating}>
             {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Reconnect payout account
+          </Button>
+          <Button variant="outline" size="sm" onClick={syncWithStripe} disabled={syncing}>
+            {syncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Confirm payout account
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  // Onboarded but not yet verified: show pending + Reconnect
+  // Onboarded but not yet verified: Stripe still verifying
   if (isOnboarded) {
     return (
       <Alert className="mb-6 border-amber-500/30 bg-amber-500/10">
         <AlertCircle className="h-4 w-4 text-amber-600" />
         <AlertTitle>Payout account pending verification</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
-          <p>Stripe is verifying your account. You’ll be able to receive payments once verification is done. If it’s taking long, try Reconnect to complete any missing steps.</p>
-          <Button variant="outline" size="sm" onClick={createConnectAccount} disabled={creating}>
-            {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reconnect payout account
-          </Button>
+          <p><span className="font-medium text-amber-700 dark:text-amber-400">Stripe verification: Pending</span></p>
+          <p>Complete identity and bank details in Stripe (use Reconnect to open the form). Once Stripe finishes verifying, you can receive payments. Click <strong>Confirm payout account</strong> to refresh and check if verification is complete.</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={createConnectAccount} disabled={creating}>
+              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Reconnect payout account
+            </Button>
+            <Button size="sm" onClick={syncWithStripe} disabled={syncing}>
+              {syncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirm payout account
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     );

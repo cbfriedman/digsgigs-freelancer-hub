@@ -276,9 +276,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     My gigs
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => navigate("/pricing")} className="cursor-pointer">
-                  Pricing
-                </DropdownMenuItem>
               </NavDropdown>
               )}
 
@@ -299,11 +296,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 {user && (
                   <DropdownMenuItem onClick={() => navigate("/my-bids")} className="cursor-pointer">
                     My bids
-                  </DropdownMenuItem>
-                )}
-                {user && (
-                  <DropdownMenuItem onClick={() => navigate("/transactions")} className="cursor-pointer">
-                    Transactions & earnings
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate("/register?mode=signup&type=digger")} className="cursor-pointer">
@@ -336,21 +328,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/compare")} className="cursor-pointer">
                   Compare
-                </DropdownMenuItem>
-              </NavDropdown>
-
-              {/* What's new */}
-              <NavDropdown
-                id="whatsnew"
-                trigger={
-                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    What&apos;s new
-                    <ChevronDown className="h-4 w-4 opacity-70" />
-                  </button>
-                }
-              >
-                <DropdownMenuItem onClick={() => navigate("/blog")} className="cursor-pointer">
-                  Blog
                 </DropdownMenuItem>
               </NavDropdown>
 
@@ -433,7 +410,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">Recent Messages</span>
                         <button
@@ -478,13 +455,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <div className="min-w-0 flex-1 overflow-hidden pr-1">
-                                      <div className="flex items-center justify-between gap-3 min-w-0">
+                                    <div className="min-w-0 flex-1 overflow-hidden pr-1 min-w-[180px]">
+                                      <div className="flex items-center justify-between gap-2 min-w-0">
                                         <Tooltip delayDuration={400}>
                                           <TooltipTrigger asChild>
                                             <span className="font-medium text-sm truncate min-w-0 block">{conv.partnerDisplayName}</span>
                                           </TooltipTrigger>
-                                          <TooltipContent side="top" className="max-w-[240px]">
+                                          <TooltipContent side="top" className="max-w-[280px]">
                                             <p className="break-words">{conv.partnerDisplayName}</p>
                                           </TooltipContent>
                                         </Tooltip>
@@ -497,14 +474,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                               {unreadCount > 99 ? "99+" : unreadCount}
                                             </span>
                                           )}
-                                          <span className="text-xs text-muted-foreground min-w-[4rem] text-right">{timeLabel}</span>
+                                          <span className="text-xs text-muted-foreground shrink-0 text-right tabular-nums">{timeLabel}</span>
                                         </div>
                                       </div>
                                       <Tooltip delayDuration={400}>
                                         <TooltipTrigger asChild>
-                                          <p className="text-xs text-muted-foreground line-clamp-2 break-words mt-0.5 cursor-default">{snippet}</p>
+                                          <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" className="max-w-[280px]">
+                                        <TooltipContent side="top" className="max-w-[320px]">
                                           <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
                                         </TooltipContent>
                                       </Tooltip>
@@ -558,11 +535,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors", !n.read && "bg-primary/5")}
                                     onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}
                                   >
-                                    <div className="flex items-center justify-between w-full gap-2">
-                                      <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
-                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    <div className="w-full min-w-0 flex flex-col items-start gap-0.5">
+                                      <div className="flex items-center justify-between w-full gap-2">
+                                        <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
                                   </button>
                                 </li>
                               );
@@ -591,37 +570,38 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <span className="font-semibold text-sm">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full">
-                          <div className="w-full min-w-0 max-w-full pr-12">
+                      <ScrollArea className="h-[320px]">
                             {isDiggerMode ? (
                               recentPostedGigsLoading ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                               ) : recentPostedGigs.length === 0 ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                               ) : (
-                                <ul className="py-1 w-full min-w-0 list-none">
+                                <ul className="py-1">
                                   {recentPostedGigs.map((g) => {
                                     const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
                                     const title = g.title || "Untitled gig";
                                     const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                     return (
-                                      <li key={g.id} className="w-full min-w-0 border-b-0">
+                                      <li key={g.id}>
                                         <button
                                           type="button"
-                                          className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors box-border"
+                                          className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
                                           onClick={(e) => {
                                             e.preventDefault();
                                             navigate(`/gig/${g.id}`);
                                           }}
                                         >
-                                          <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
-                                          <div className="w-full flex items-center justify-between gap-2 mt-1">
-                                            <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                          <div className="flex items-center justify-between w-full gap-2">
+                                            <span className="font-medium text-sm truncate flex-1" title={title}>{displayTitle}</span>
+                                            <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                          </div>
+                                          <div className="w-full flex items-center justify-end mt-0.5">
                                             <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                           </div>
                                         </button>
@@ -635,22 +615,24 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             ) : recentGigs.length === 0 ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                             ) : (
-                              <ul className="py-1 w-full min-w-0 list-none">
+                              <ul className="py-1">
                                 {recentGigs.map((g) => {
                                   const d = new Date(g.created_at);
                                   const timeLabel = format(d, "MMM d, yyyy");
                                   const title = g.title || "Untitled project";
                                   const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                   return (
-                                    <li key={g.id} className="w-full min-w-0 border-b-0">
+                                    <li key={g.id}>
                                       <button
                                         type="button"
-                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors box-border"
-                                        onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}
+                                        className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                        onClick={(e) => { e.preventDefault(); navigate(`/gig/${g.id}`); }}
                                       >
-                                        <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
-                                        <div className="w-full flex items-center justify-between gap-2 mt-1">
-                                          <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                        <div className="flex items-center justify-between w-full gap-2">
+                                          <span className="font-medium text-sm truncate flex-1" title={title}>{displayTitle}</span>
+                                          <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                        </div>
+                                        <div className="w-full flex items-center justify-end mt-0.5">
                                           <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                         </div>
                                       </button>
@@ -659,7 +641,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 })}
                               </ul>
                             )}
-                          </div>
                         </ScrollArea>
                     </HoverCardContent>
                   </HoverCard>
@@ -679,6 +660,15 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             {getUserInitials()}
                           </AvatarFallback>
                         </Avatar>
+                        {/* Show current mode when user has both Digger and Gigger so they're never confused */}
+                        {user && userRoles.includes("digger") && userRoles.includes("gigger") && (
+                          <span className={cn(
+                            "hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border",
+                            activeRole === "digger" ? "bg-primary/10 text-primary border-primary/30" : "bg-accent/50 text-accent-foreground border-accent/50"
+                          )}>
+                            {activeRole === "digger" ? "🔧 Digger" : "📋 Gigger"}
+                          </span>
+                        )}
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -711,7 +701,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate('/transactions')} className="cursor-pointer">
                         <Receipt className="h-4 w-4 mr-2" />
-                        Transaction history
+                        Transaction
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {/* Dark Mode - prevent close on toggle */}
@@ -719,39 +709,45 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <ThemeToggle className="w-full" />
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {/* Role selection */}
+                      {/* Role selection: make Digger vs Gigger mode unmistakable */}
                       {userRoles.length > 0 && (
                         <>
-                          <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role</DropdownMenuLabel>
-                          {userRoles.map((role) => (
-                            <DropdownMenuItem
-                              key={role}
-                              onClick={async () => {
-                                await switchRole(role);
-                                if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
-                                  navigate(getCanonicalGiggerProfilePath(user.id));
-                                } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
-                                  navigate("/my-profile");
-                                }
-                              }}
-                              className={cn(
-                                "cursor-pointer transition-colors",
-                                activeRole === role && "bg-accent/50"
-                              )}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center gap-2">
-                                  <span>{roleConfig[role].emoji}</span>
-                                  <span>{roleConfig[role].label}</span>
-                                </div>
-                                {activeRole === role && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                    Active
-                                  </Badge>
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">
+                            Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.label}
+                          </DropdownMenuLabel>
+                          {userRoles.map((role) => {
+                            const isActive = activeRole === role;
+                            return (
+                              <DropdownMenuItem
+                                key={role}
+                                onClick={isActive ? undefined : async () => {
+                                  await switchRole(role);
+                                  if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
+                                    navigate(getCanonicalGiggerProfilePath(user.id));
+                                  } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
+                                    navigate("/my-profile");
+                                  }
+                                }}
+                                className={cn(
+                                  isActive ? "cursor-default bg-accent/50 opacity-100" : "cursor-pointer transition-colors",
+                                  "transition-colors"
                                 )}
-                              </div>
-                            </DropdownMenuItem>
-                          ))}
+                                disabled={isActive}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center gap-2">
+                                    <span>{roleConfig[role].emoji}</span>
+                                    <span>{isActive ? `Current: ${roleConfig[role].label}` : `Switch to ${roleConfig[role].label}`}</span>
+                                  </div>
+                                  {isActive && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                                      Active
+                                    </Badge>
+                                  )}
+                                </div>
+                              </DropdownMenuItem>
+                            );
+                          })}
                           <DropdownMenuSeparator />
                         </>
                       )}
@@ -817,7 +813,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-sm">Recent Messages</span>
                       <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -845,13 +841,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" className="object-cover" />
                                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">{conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}</AvatarFallback>
                                   </Avatar>
-                                  <div className="min-w-0 flex-1 overflow-hidden pr-1">
-                                    <div className="flex items-center justify-between gap-3 min-w-0">
+                                  <div className="min-w-0 flex-1 overflow-hidden pr-1 min-w-[180px]">
+                                    <div className="flex items-center justify-between gap-2 min-w-0">
                                       <Tooltip delayDuration={400}>
                                         <TooltipTrigger asChild>
                                           <span className="font-medium text-sm truncate min-w-0 block">{conv.partnerDisplayName}</span>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" className="max-w-[240px]">
+                                        <TooltipContent side="top" className="max-w-[280px]">
                                           <p className="break-words">{conv.partnerDisplayName}</p>
                                         </TooltipContent>
                                       </Tooltip>
@@ -864,14 +860,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                             {unreadCount > 99 ? "99+" : unreadCount}
                                           </span>
                                         )}
-                                        <span className="text-xs text-muted-foreground min-w-[4rem] text-right">{timeLabel}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0 text-right tabular-nums">{timeLabel}</span>
                                       </div>
                                     </div>
                                     <Tooltip delayDuration={400}>
                                       <TooltipTrigger asChild>
-                                        <p className="text-xs text-muted-foreground line-clamp-2 break-words mt-0.5 cursor-default">{snippet}</p>
+                                        <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                       </TooltipTrigger>
-                                      <TooltipContent side="top" className="max-w-[280px]">
+                                      <TooltipContent side="top" className="max-w-[320px]">
                                         <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
                                       </TooltipContent>
                                     </Tooltip>
@@ -922,12 +918,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             const msg = (n.message || "").length > 50 ? (n.message || "").slice(0, 50) + "…" : (n.message || "—");
                             return (
                               <li key={n.id}>
-                                <button type="button" className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60", !n.read && "bg-primary/5")} onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}>
-                                  <div className="flex items-center justify-between w-full gap-2">
-                                    <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
-                                    <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                <button type="button" className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors", !n.read && "bg-primary/5")} onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}>
+                                  <div className="w-full min-w-0 flex flex-col items-start gap-0.5">
+                                    <div className="flex items-center justify-between w-full gap-2">
+                                      <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
                                   </div>
-                                  <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
                                 </button>
                               </li>
                             );
@@ -957,37 +955,38 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <span className="font-semibold text-sm">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
-                        <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
+                      <ScrollArea className="h-[320px]">
                           {isDiggerMode ? (
                             recentPostedGigsLoading ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                             ) : recentPostedGigs.length === 0 ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                             ) : (
-                              <ul className="py-1 w-full min-w-0 list-none">
+                              <ul className="py-1">
                                 {recentPostedGigs.map((g) => {
                                   const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
                                   const title = g.title || "Untitled gig";
                                   const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                   return (
-                                    <li key={g.id} className="w-full min-w-0">
+                                    <li key={g.id}>
                                       <button
                                         type="button"
-                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 box-border"
+                                        className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           navigate(`/gig/${g.id}`);
                                         }}
                                       >
-                                        <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
-                                        <div className="w-full flex items-center justify-between gap-2 mt-1">
-                                          <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                        <div className="flex items-center justify-between w-full gap-2">
+                                          <span className="font-medium text-sm truncate flex-1" title={title}>{displayTitle}</span>
+                                          <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                        </div>
+                                        <div className="w-full flex items-center justify-end mt-0.5">
                                           <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                         </div>
                                       </button>
@@ -1001,17 +1000,19 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           ) : recentGigs.length === 0 ? (
                             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                           ) : (
-                            <ul className="py-1 w-full min-w-0 list-none">
+                            <ul className="py-1">
                               {recentGigs.map((g) => {
                                 const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
                                 const title = g.title || "Untitled project";
                                 const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                 return (
-                                  <li key={g.id} className="w-full min-w-0">
-                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 box-border" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}>
-                                      <span className="font-medium text-sm truncate block w-full min-w-0" title={title}>{displayTitle}</span>
-                                      <div className="w-full flex items-center justify-between gap-2 mt-1">
-                                        <p className="text-xs text-muted-foreground truncate min-w-0">{timeLabel}</p>
+                                  <li key={g.id}>
+                                    <button type="button" className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors" onClick={(e) => { e.preventDefault(); navigate(`/gig/${g.id}`); }}>
+                                      <div className="flex items-center justify-between w-full gap-2">
+                                        <span className="font-medium text-sm truncate flex-1" title={title}>{displayTitle}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                      </div>
+                                      <div className="w-full flex items-center justify-end mt-0.5">
                                         <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap justify-center", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{gigStatusLabel(g.status)}</Badge>
                                       </div>
                                     </button>
@@ -1020,7 +1021,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               })}
                             </ul>
                           )}
-                        </div>
                       </ScrollArea>
                   </HoverCardContent>
                 </HoverCard>
@@ -1073,6 +1073,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                            {/* Show current mode when user has both roles so they're never confused */}
+                            {userRoles.includes("digger") && userRoles.includes("gigger") && (
+                              <p className="text-xs font-medium mt-1.5 text-foreground/80">
+                                Viewing as: {activeRole === "digger" ? "🔧 Digger" : "📋 Gigger"}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1141,15 +1147,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <span className="font-medium">Hire a pro</span>
                       </button>
-                      <button
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                          isActive("/pricing") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-                        )}
-                        onClick={() => { navigate("/pricing"); setMobileMenuOpen(false); }}
-                      >
-                        <span className="font-medium">Pricing</span>
-                      </button>
                       </>
                       )}
 
@@ -1175,17 +1172,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           onClick={() => { navigate("/my-bids"); setMobileMenuOpen(false); }}
                         >
                           <span className="font-medium">My bids</span>
-                        </button>
-                      )}
-                      {user && (
-                        <button
-                          className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                            isActive("/transactions") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-                          )}
-                          onClick={() => { navigate("/transactions"); setMobileMenuOpen(false); }}
-                        >
-                          <span className="font-medium">Transactions & earnings</span>
                         </button>
                       )}
                       <button
@@ -1246,18 +1232,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         onClick={() => { navigate("/compare"); setMobileMenuOpen(false); }}
                       >
                         <span className="font-medium">Compare</span>
-                      </button>
-
-                      {/* What's new */}
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">What&apos;s new</p>
-                      <button
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                          isActive("/blog") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-                        )}
-                        onClick={() => { navigate("/blog"); setMobileMenuOpen(false); }}
-                      >
-                        <span className="font-medium">Blog</span>
                       </button>
 
                       {user && (
@@ -1371,42 +1345,47 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         </button>
                       )}
 
-                      {/* Role Switcher */}
+                      {/* Role Switcher: make Digger vs Gigger mode unmistakable */}
                       {user && userRoles.length > 0 && (
                         <>
                           <div className="pt-4 pb-2">
                             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Switch Role
+                              Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.label}
                             </p>
                           </div>
-                          {userRoles.map((role) => (
-                            <button
-                              key={role}
-                              className={cn(
-                                "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors",
-                                activeRole === role 
-                                  ? "bg-primary/10 text-primary" 
-                                  : "hover:bg-muted/50"
-                              )}
-                              onClick={async () => {
-                                await switchRole(role);
-                                if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
-                                  navigate(getCanonicalGiggerProfilePath(user.id));
-                                } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
-                                  navigate("/my-profile");
-                                }
-                                setMobileMenuOpen(false);
-                              }}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span>{roleConfig[role].emoji}</span>
-                                <span className="font-medium">{roleConfig[role].label}</span>
-                              </div>
-                              {activeRole === role && (
-                                <Badge variant="secondary" className="text-[10px]">Active</Badge>
-                              )}
-                            </button>
-                          ))}
+                          {userRoles.map((role) => {
+                            const isActive = activeRole === role;
+                            return (
+                              <button
+                                key={role}
+                                type="button"
+                                disabled={isActive}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors",
+                                  isActive
+                                    ? "bg-primary/10 text-primary cursor-default opacity-100"
+                                    : "hover:bg-muted/50 active:bg-muted"
+                                )}
+                                onClick={isActive ? undefined : async () => {
+                                  await switchRole(role);
+                                  if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
+                                    navigate(getCanonicalGiggerProfilePath(user.id));
+                                  } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
+                                    navigate("/my-profile");
+                                  }
+                                  setMobileMenuOpen(false);
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span>{roleConfig[role].emoji}</span>
+                                  <span className="font-medium">{isActive ? `Current: ${roleConfig[role].label}` : `Switch to ${roleConfig[role].label}`}</span>
+                                </div>
+                                {isActive && (
+                                  <Badge variant="secondary" className="text-[10px] shrink-0">Active</Badge>
+                                )}
+                              </button>
+                            );
+                          })}
                         </>
                       )}
 
