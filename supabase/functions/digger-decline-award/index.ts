@@ -241,7 +241,7 @@ serve(async (req) => {
         await supabaseClient.from("messages").insert({
           conversation_id: conv.id,
           sender_id: diggerProfile.user_id,
-          content: "Declined the award.",
+          content: "The professional declined the award.",
           metadata: { _type: "award_event", event: "declined", bid_id: bidId, gig_id: gigId, amount: bidAmount },
         });
       }

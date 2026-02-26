@@ -278,6 +278,8 @@ export const BidsList = ({
   } | null>(null);
   /** Whether Gigger has a saved payment method (for exclusive award options). */
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  /** Which award payment flow is in progress: only that button shows loading. */
+  const [awardPaymentMode, setAwardPaymentMode] = useState<"saved_card" | "checkout" | null>(null);
   /** Show add-payment dialog inside Award flow (when no PM). */
   const [showAddPaymentInAward, setShowAddPaymentInAward] = useState(false);
   /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
@@ -628,6 +630,7 @@ export const BidsList = ({
     const isExclusive = pricing_model === "success_based";
 
     if (isExclusive) {
+      setAwardPaymentMode(useCheckout ? "checkout" : "saved_card");
       setAccepting(id);
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -651,6 +654,7 @@ export const BidsList = ({
 
         if (data?.requiresPayment && data?.checkoutUrl) {
           setBidToAward(null);
+          setAwardPaymentMode(null);
           setAccepting(null);
           toast({
             title: "Redirecting to payment",
@@ -671,6 +675,7 @@ export const BidsList = ({
           setBidToAward(null);
           loadBids();
           onAwardSuccess?.();
+          setAwardPaymentMode(null);
           setAccepting(null);
           return;
         }
@@ -690,6 +695,7 @@ export const BidsList = ({
           variant: "destructive",
         });
       } finally {
+        setAwardPaymentMode(null);
         setAccepting(null);
         setBidToAward(null);
       }
@@ -867,7 +873,7 @@ export const BidsList = ({
                 <>
                   {bidToAward.pricing_model === "success_based" ? (
                     <>
-                      You&apos;ll be charged <strong>15% (${((bidToAward.amount * 0.15)).toFixed(0)})</strong> to award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They must accept within 24 hours or the award expires (you get a full refund; they may be charged a $100 penalty). If they decline, you get a full refund and they&apos;re charged a $100 penalty.
+                      You&apos;ll be charged <strong>15% (${((bidToAward.amount * 0.15)).toFixed(0)})</strong> to award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They must accept within 24 hours or the award expires. If they decline or don&apos;t accept in time, you get a full refund and they may be charged a $100 penalty.
                     </>
                   ) : (
                     <>
@@ -881,7 +887,12 @@ export const BidsList = ({
           <AlertDialogFooter className="flex-wrap gap-2">
             <AlertDialogCancel disabled={!!accepting}>Cancel</AlertDialogCancel>
             {bidToAward?.pricing_model === "success_based" ? (
-              hasPaymentMethod === false ? (
+              hasPaymentMethod === null ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking payment methods…
+                </div>
+              ) : hasPaymentMethod === false ? (
                 <div className="flex flex-col gap-3 w-full">
                   <p className="text-sm text-muted-foreground">
                     Add a payment method below to pay directly, or pay via Stripe Checkout.
@@ -895,7 +906,7 @@ export const BidsList = ({
                       disabled={!!accepting}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      {accepting ? (
+                      {awardPaymentMode === "checkout" ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : (
                         <CreditCard className="h-4 w-4 mr-2" />
@@ -945,7 +956,7 @@ export const BidsList = ({
                       disabled={!!accepting}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      {accepting ? (
+                      {awardPaymentMode === "saved_card" ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : (
                         <CreditCard className="h-4 w-4 mr-2" />
@@ -963,7 +974,7 @@ export const BidsList = ({
                     disabled={!!accepting}
                     className={!hasPaymentMethod ? "bg-green-600 hover:bg-green-700" : ""}
                   >
-                    {accepting ? (
+                    {awardPaymentMode === "checkout" ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <CreditCard className="h-4 w-4 mr-2" />

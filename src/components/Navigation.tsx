@@ -438,7 +438,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               const meta = conv.lastMessageMetadata;
                               const isAwardEvent = meta?._type === "award_event" && meta?.event;
                               const fullSnippet = isAwardEvent
-                                ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined"}`
+                                ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined"}`
                                 : conv.lastMessageContent
                                   ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
                                   : "No messages yet";
@@ -839,7 +839,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             const meta = conv.lastMessageMetadata;
                             const isAwardEvent = meta?._type === "award_event" && meta?.event;
                             const fullSnippet = isAwardEvent
-                              ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined"}`
+                              ? `${conv.lastMessageFromMe ? "You: " : ""}${meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined"}`
                               : conv.lastMessageContent
                                 ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
                                 : "No messages yet";

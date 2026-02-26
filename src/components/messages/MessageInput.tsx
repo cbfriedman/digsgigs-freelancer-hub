@@ -22,6 +22,9 @@ interface MessageInputProps {
   onInputFocus?: () => void;
   /** Max auto-grow height for textarea in pixels. */
   maxAutoHeight?: number;
+  /** Optional client-side pre-check warning - when true, show policy warning below input */
+  showPreCheckWarning?: boolean;
+  preCheckWarningMessage?: string;
 }
 
 export function MessageInput({
@@ -36,6 +39,8 @@ export function MessageInput({
   inputRef: inputRefProp,
   onInputFocus,
   maxAutoHeight = 200,
+  showPreCheckWarning = false,
+  preCheckWarningMessage,
 }: MessageInputProps) {
   const handleInputInteract = useCallback(() => {
     onInputFocus?.();
@@ -262,6 +267,14 @@ export function MessageInput({
           <Send className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Pre-check policy warning */}
+      {showPreCheckWarning && (value.trim().length > 0) && (
+        <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
+          <span className="shrink-0">⚠</span>
+          {preCheckWarningMessage ?? "Your message may violate our contact policy. Please review before sending."}
+        </p>
+      )}
 
       {/* Character count */}
       {value.length > maxLength * 0.8 && (

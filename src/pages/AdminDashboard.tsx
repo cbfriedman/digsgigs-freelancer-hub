@@ -17,7 +17,7 @@ import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
-import { MessageViolationsDashboard } from "@/components/admin/MessageViolationsDashboard";
+import { MessageModerationDashboard } from "@/components/admin/MessageModerationDashboard";
 import SupportInboxTab from "@/components/admin/SupportInboxTab";
 import MessageNotificationSettingsTab from "@/components/admin/MessageNotificationSettingsTab";
 import ManageGigsTab from "@/components/admin/ManageGigsTab";
@@ -801,6 +801,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "cold-outreach" && (
                   <ColdOutreachTab />
+                )}
+
+                {activeTab === "message-violations" && (
+                  <MessageModerationDashboard />
                 )}
 
                 {activeTab === "keywords" && (

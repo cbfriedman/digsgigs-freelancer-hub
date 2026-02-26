@@ -800,9 +800,6 @@ export function ContractMilestonesCard({
                 <Shield className="h-3.5 w-3.5 shrink-0" />
                 Payments are secure (Stripe). The professional is paid as soon as you approve.
               </span>
-              <span className="block text-xs text-muted-foreground mt-1.5">
-                If you don&apos;t approve or dispute within {autoReleaseDays} days, the payment is released to the professional automatically.
-              </span>
             </>
           ) : (
             <>

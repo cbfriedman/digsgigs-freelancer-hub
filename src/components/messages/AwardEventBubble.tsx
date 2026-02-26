@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Trophy, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Trophy, CheckCircle, XCircle, Loader2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
@@ -8,14 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 
 export interface AwardEventMetadata {
   _type: "award_event";
-  event: "awarded" | "accepted" | "declined";
+  event: "awarded" | "accepted" | "declined" | "cancelled";
   bid_id?: string | null;
   gig_id?: string | null;
   amount?: number | null;
 }
 
 interface AwardEventBubbleProps {
-  event: "awarded" | "accepted" | "declined";
+  event: "awarded" | "accepted" | "declined" | "cancelled";
   timestamp: string;
   bidId?: string | null;
   gigId?: string | null;
@@ -43,6 +43,7 @@ export function AwardEventBubble({
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [requiresAcceptance, setRequiresAcceptance] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
 
   useEffect(() => {
     if (event !== "awarded" || !isDigger || !bidId) return;
@@ -55,9 +56,10 @@ export function AwardEventBubble({
         .single();
       if (cancelled) return;
       const bid = data as { status?: string; pricing_model?: string } | null;
-      const alreadyAccepted = bid?.status === "accepted";
+      const accepted = bid?.status === "accepted";
       const isExclusive = bid?.pricing_model === "success_based";
-      setRequiresAcceptance(!alreadyAccepted && !!isExclusive);
+      setAlreadyAccepted(!!accepted);
+      setRequiresAcceptance(!!isExclusive);
     })();
     return () => { cancelled = true; };
   }, [event, isDigger, bidId]);
@@ -95,6 +97,10 @@ export function AwardEventBubble({
 
   const handleDecline = async () => {
     if (!bidId || !gigId) return;
+    if (alreadyAccepted) {
+      toast({ title: "Already accepted", description: "You cannot decline after accepting this award.", variant: "destructive" });
+      return;
+    }
     const diggerId = diggerIdProp ?? (await getDiggerIdFromBid(bidId));
     if (!diggerId) {
       toast({ title: "Error", description: "Could not find bid", variant: "destructive" });
@@ -123,13 +129,15 @@ export function AwardEventBubble({
           {event === "awarded" && <Trophy className="h-5 w-5 shrink-0" aria-label="Awarded" />}
           {event === "accepted" && <CheckCircle className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400" aria-label="Accepted" />}
           {event === "declined" && <XCircle className="h-5 w-5 shrink-0 text-muted-foreground" aria-label="Declined" />}
+          {event === "cancelled" && <Ban className="h-5 w-5 shrink-0 text-muted-foreground" aria-label="Cancelled" />}
           <span className="text-sm font-medium">
             {event === "awarded" && (isDigger ? "You're awarded!" : "You awarded this gig")}
-            {event === "accepted" && (isDigger ? "You accepted the award" : "Digger accepted the award")}
-            {event === "declined" && (isDigger ? "You declined the award" : "Digger declined the award")}
+            {event === "accepted" && (isDigger ? "You accepted the award" : "The freelancer accepted the award")}
+            {event === "declined" && "The freelancer declined the award"}
+            {event === "cancelled" && "The client cancelled the award"}
           </span>
         </div>
-        {amountStr && (
+        {amountStr && event !== "declined" && (
           <span className="text-xs text-muted-foreground">{amountStr}</span>
         )}
         {showAcceptDecline && (
@@ -138,7 +146,7 @@ export function AwardEventBubble({
               size="sm"
               className="gap-1.5 bg-green-600 hover:bg-green-700"
               onClick={handleAccept}
-              disabled={accepting || declining}
+              disabled={accepting || declining || alreadyAccepted}
             >
               {accepting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
               Accept
@@ -148,7 +156,8 @@ export function AwardEventBubble({
               variant="outline"
               className="gap-1.5"
               onClick={handleDecline}
-              disabled={accepting || declining}
+              disabled={accepting || declining || alreadyAccepted}
+              title={alreadyAccepted ? "Cannot decline after accepting" : undefined}
             >
               {declining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
               Decline

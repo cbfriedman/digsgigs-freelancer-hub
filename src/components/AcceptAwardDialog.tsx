@@ -168,7 +168,7 @@ export function AcceptAwardDialog({
           <Button 
             onClick={handleAcceptAward} 
             disabled={accepting}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-green-600 hover:bg-green-700"
           >
             {accepting ? (
               <>

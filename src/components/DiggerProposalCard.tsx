@@ -464,7 +464,7 @@ export function DiggerProposalCard({
                   )}
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleChat} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={handleChat} className="gap-1.5 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600">
                 <MessageSquare className="h-4 w-4" />
                 Chat
               </Button>
@@ -564,7 +564,7 @@ export function DiggerProposalCard({
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 bg-orange-500 text-white hover:bg-orange-600 hover:text-white"
                   onClick={() => openFloatingChat(gigId, diggerProfile.id)}
                   title={messageClientTooltip}
                 >

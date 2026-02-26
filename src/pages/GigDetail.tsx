@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
+import { openFloatingChat } from "@/lib/openFloatingChat";
 import {
   Dialog,
   DialogContent,
@@ -296,6 +297,17 @@ const GigDetail = () => {
       return () => clearTimeout(t);
     }
   }, [id, loading, gig, isDigger, diggerId, existingBid]);
+
+  // Auto-open floating chat for Digger when they're awarded, so they see the award message
+  const awardedChatOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!id || !diggerId || !gig?.consumer_id) return;
+    if (gig.status !== "awarded" || gig.awarded_digger_id !== diggerId) return;
+    if (awardedChatOpenedRef.current) return;
+    awardedChatOpenedRef.current = true;
+    const t = setTimeout(() => openFloatingChat(id, diggerId), 500);
+    return () => clearTimeout(t);
+  }, [id, diggerId, gig?.status, gig?.awarded_digger_id, gig?.consumer_id]);
 
   // When arriving with ?award=diggerId (from float chat Award button), scroll to bids and clear param after opening
   useEffect(() => {
@@ -1084,8 +1096,8 @@ const GigDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Payout reminder for Diggers: connect Stripe to receive money when awarded */}
-            {showDiggerContent && diggerId && gig.status === "open" && !stripeConnectLoading && !canReceivePayments && (
+            {/* Payout reminder for Diggers: connect Stripe to receive money when awarded or hired */}
+            {showDiggerContent && diggerId && !stripeConnectLoading && !canReceivePayments && (
               <StripeConnectBanner />
             )}
 
@@ -1157,7 +1169,8 @@ const GigDetail = () => {
               diggerId &&
               gig?.status === "awarded" &&
               gig.awarded_digger_id === diggerId &&
-              existingBid?.awarded && (
+              existingBid?.awarded &&
+              existingBid?.status !== "accepted" && (
                 <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
                   <CardHeader>
                     <div className="flex items-start gap-3">
@@ -1176,7 +1189,7 @@ const GigDetail = () => {
                     <Button
                       onClick={handleAcceptAward}
                       disabled={acceptAwardLoading}
-                      className="gap-2"
+                      className="gap-2 bg-green-600 hover:bg-green-700"
                     >
                       {acceptAwardLoading ? (
                         <>

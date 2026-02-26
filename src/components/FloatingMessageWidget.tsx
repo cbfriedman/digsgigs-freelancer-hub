@@ -68,6 +68,7 @@ import { OPEN_FLOATING_CHAT_EVENT, type OpenFloatingChatDetail } from "@/lib/ope
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
+import { clientPreCheck } from "@/lib/messageModeration/clientPreCheck";
 import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
@@ -128,7 +129,7 @@ export function FloatingMessageWidget() {
   const [floatingInputMaxHeight, setFloatingInputMaxHeight] = useState(220);
   const [dragOverConvMap, setDragOverConvMap] = useState<Record<string, boolean>>({});
   /** Gig status per conversation (for Award/Cancel/Hired/Accept-Decline in chat top) */
-  const [gigStatusMap, setGigStatusMap] = useState<Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string }>>({});
+  const [gigStatusMap, setGigStatusMap] = useState<Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string; bid_status?: string }>>({});
   const [cancelAwardLoading, setCancelAwardLoading] = useState<Record<string, boolean>>({});
   const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<Record<string, boolean>>({});
 
@@ -448,12 +449,18 @@ export function FloatingMessageWidget() {
   }, [isOpen, openChats, user?.id, hideOnMessagesPage]);
 
   const refetchGigStatus = useCallback(async (convId: string, gigId: string) => {
-    const { data } = await supabase
+    const { data: gigData } = await supabase
       .from("gigs")
       .select("status, awarded_bid_id, awarded_digger_id")
       .eq("id", gigId)
       .single();
-    if (data) setGigStatusMap((prev) => ({ ...prev, [convId]: data as { status: string; awarded_bid_id?: string; awarded_digger_id?: string } }));
+    if (!gigData) return;
+    const entry = { ...gigData } as { status: string; awarded_bid_id?: string; awarded_digger_id?: string; bid_status?: string };
+    if (entry.status === "awarded" && entry.awarded_bid_id) {
+      const { data: bidData } = await supabase.from("bids").select("status").eq("id", entry.awarded_bid_id).single();
+      if (bidData) entry.bid_status = (bidData as { status?: string }).status;
+    }
+    setGigStatusMap((prev) => ({ ...prev, [convId]: entry }));
   }, []);
 
   // Fetch gig status for open chats with gigId (for Award/Cancel/Hired/Accept-Decline in top bar)
@@ -462,7 +469,7 @@ export function FloatingMessageWidget() {
     if (withGig.length === 0) return;
     let cancelled = false;
     (async () => {
-      const next: Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string }> = {};
+      const next: Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string; bid_status?: string }> = {};
       for (const c of withGig) {
         if (!c.gigId) continue;
         const { data } = await supabase
@@ -471,7 +478,14 @@ export function FloatingMessageWidget() {
           .eq("id", c.gigId)
           .single();
         if (cancelled) return;
-        if (data) next[c.id] = data as { status: string; awarded_bid_id?: string; awarded_digger_id?: string };
+        if (data) {
+          const entry = { ...data } as { status: string; awarded_bid_id?: string; awarded_digger_id?: string; bid_status?: string };
+          if (entry.status === "awarded" && entry.awarded_bid_id) {
+            const { data: bidData } = await supabase.from("bids").select("status").eq("id", entry.awarded_bid_id).single();
+            if (bidData) entry.bid_status = (bidData as { status?: string }).status;
+          }
+          next[c.id] = entry;
+        }
       }
       if (!cancelled) setGigStatusMap((prev) => ({ ...prev, ...next }));
     })();
@@ -938,12 +952,27 @@ export function FloatingMessageWidget() {
         [conv.id]: [...(prev[conv.id] || []), optimisticMessage],
       }));
       try {
-        const { data: messageId, error } = await supabase.rpc("send_message" as any, {
-          _conversation_id: conv.id,
-          _content: parsed.data,
-          _attachments: [],
+        const data = await invokeEdgeFunction<{
+          ok: boolean;
+          message_id?: string;
+          user_facing_message?: string;
+        }>(supabase, "moderate-and-send-message", {
+          body: {
+            conversation_id: conv.id,
+            content: parsed.data,
+            attachments: [],
+          },
         });
-        if (error) throw error;
+        if (!data.ok) {
+          toast.error(data.user_facing_message ?? "Your message violates marketplace policy.");
+          setMessagesMap((prev) => ({
+            ...prev,
+            [conv.id]: (prev[conv.id] || []).filter((m) => m.id !== tempId),
+          }));
+          setInputMap((prev) => ({ ...prev, [conv.id]: trimmed }));
+          return;
+        }
+        const messageId = data.message_id;
         if (messageId) {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("recent-conversations-refresh"));
@@ -1029,12 +1058,27 @@ export function FloatingMessageWidget() {
           attachments.push({ name: file.name, path, type: file.type || "application/octet-stream" });
         }
         setAttachmentUploadProgress(100);
-        const { data: messageId, error } = await supabase.rpc("send_message" as any, {
-          _conversation_id: conv.id,
-          _content: content.trim(),
-          _attachments: attachments,
+        const data = await invokeEdgeFunction<{
+          ok: boolean;
+          message_id?: string;
+          user_facing_message?: string;
+        }>(supabase, "moderate-and-send-message", {
+          body: {
+            conversation_id: conv.id,
+            content: content.trim(),
+            attachments,
+          },
         });
-        if (error) throw error;
+        if (!data.ok) {
+          toast.error(data.user_facing_message ?? "Your message violates marketplace policy.");
+          setMessagesMap((prev) => ({
+            ...prev,
+            [conv.id]: (prev[conv.id] || []).filter((m) => m.id !== tempId),
+          }));
+          setInputMap((prev) => ({ ...prev, [conv.id]: content.trim() }));
+          return;
+        }
+        const messageId = data.message_id;
         if (messageId) {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("recent-conversations-refresh"));
@@ -1638,8 +1682,8 @@ export function FloatingMessageWidget() {
                 return null;
               }
 
-              // Digger: Accept/Decline when awarded and this digger is the awarded one
-              if (isDigger && status === "awarded" && isAwardedDigger && bidId) {
+              // Digger: Accept/Decline when awarded and this digger is the awarded one (hide if bid already accepted)
+              if (isDigger && status === "awarded" && isAwardedDigger && bidId && gigStatus?.bid_status !== "accepted") {
                 return (
                   <div className="shrink-0 flex justify-end items-center gap-2 py-2 px-3 border-b border-border/40 bg-muted/30">
                       <div className="flex gap-2">
@@ -1737,7 +1781,7 @@ export function FloatingMessageWidget() {
                         return (
                           <AwardEventBubble
                             key={m.id}
-                            event={meta.event as "awarded" | "accepted" | "declined"}
+                            event={meta.event as "awarded" | "accepted" | "declined" | "cancelled"}
                             timestamp={m.created_at}
                             bidId={meta.bid_id}
                             gigId={meta.gig_id}
@@ -1809,6 +1853,8 @@ export function FloatingMessageWidget() {
                 maxAutoHeight={floatingInputMaxHeight}
                 onInputFocus={() => handleMessageInputFocus(conv.id)}
                 className="min-w-0"
+                showPreCheckWarning={clientPreCheck(inputMap[conv.id] ?? "").hasWarning}
+                preCheckWarningMessage={clientPreCheck(inputMap[conv.id] ?? "").warningMessage}
                 inputRef={(el) => {
                   inputRefsMap.current[conv.id] = el ?? null;
                 }}
@@ -1939,7 +1985,7 @@ export function FloatingMessageWidget() {
                     const isAwardEvent = meta?._type === "award_event" && meta?.event;
                     const display = isAwardEvent
                       ? (c.lastMessageFromMe ? "You: " : "") +
-                        (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                        (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined")
                       : (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
                     const isOpenChat = openChats.some((o) => o.id === c.id);
                     const isMuted = mutedChats[c.id] ?? !!c.muted;

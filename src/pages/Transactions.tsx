@@ -79,7 +79,7 @@ interface Transaction {
 const Transactions = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: payoutLoading, canReceivePayments } = useStripeConnect();
+  const { loading: payoutLoading, isOnboarded, canReceivePayments } = useStripeConnect();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState<'digger' | 'consumer' | null>(null);
@@ -708,10 +708,22 @@ const Transactions = () => {
             <Alert className="border-amber-500/30 bg-amber-500/10">
               <Wallet className="h-4 w-4 text-amber-600" />
               <AlertDescription>
-                Set up your payout account in Account to receive milestone payments.{" "}
-                <Button variant="link" className="h-auto p-0 font-medium" onClick={() => navigate("/account#payout-account")}>
-                  Go to Account
-                </Button>
+                {isOnboarded ? (
+                  <>
+                    <span className="font-medium text-amber-700 dark:text-amber-400">Payout account pending verification.</span>{" "}
+                    Stripe is verifying your identity and bank details. Once complete, you can receive milestone payments.{" "}
+                    <Button variant="link" className="h-auto p-0 font-medium" onClick={() => navigate("/account#payout-account")}>
+                      Check status in Account
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    Set up your payout account in Account to receive milestone payments.{" "}
+                    <Button variant="link" className="h-auto p-0 font-medium" onClick={() => navigate("/account#payout-account")}>
+                      Go to Account
+                    </Button>
+                  </>
+                )}
               </AlertDescription>
             </Alert>
           )}

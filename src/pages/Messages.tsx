@@ -64,6 +64,7 @@ import {
   TypingIndicator,
 } from "@/components/messages";
 import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
+import { clientPreCheck } from "@/lib/messageModeration/clientPreCheck";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -1275,16 +1276,31 @@ export default function Messages() {
         return;
       }
 
-      const { data: messageId, error } = await supabase.rpc("send_message" as any, {
-        _conversation_id: selectedConversation,
-        _content: validated.content,
-        _attachments: [],
+      const data = await invokeEdgeFunction<{
+        ok: boolean;
+        message_id?: string;
+        user_facing_message?: string;
+        retry_allowed?: boolean;
+      }>(supabase, "moderate-and-send-message", {
+        body: {
+          conversation_id: selectedConversation,
+          content: validated.content,
+          attachments: [],
+        },
       });
 
-      if (error) throw error;
+      if (!data.ok) {
+        toast({
+          title: "Message blocked",
+          description: data.user_facing_message ?? "Your message violates marketplace policy.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const messageId = data.message_id;
       setNewMessage("");
       setReplyingTo(null);
-      // Optimistic append: avoid full refetch so partner bubbles don't re-render
       if (messageId && currentUser?.id) {
         const sentMessage: Message = {
           id: messageId,
@@ -1443,12 +1459,27 @@ export default function Messages() {
         attachments.push({ name: file.name, path, type: file.type || "application/octet-stream" });
       }
       setAttachmentUploadProgress(100);
-      const { data: messageId, error } = await supabase.rpc("send_message" as any, {
-        _conversation_id: selectedConversation,
-        _content: content.trim(),
-        _attachments: attachments,
+      const data = await invokeEdgeFunction<{
+        ok: boolean;
+        message_id?: string;
+        user_facing_message?: string;
+      }>(supabase, "moderate-and-send-message", {
+        body: {
+          conversation_id: selectedConversation,
+          content: content.trim(),
+          attachments,
+        },
       });
-      if (error) throw error;
+      if (!data.ok) {
+        toast({
+          title: "Message blocked",
+          description: data.user_facing_message ?? "Your message violates marketplace policy.",
+          variant: "destructive",
+        });
+        setAttachmentUploadProgress(null);
+        return;
+      }
+      const messageId = data.message_id;
       setNewMessage("");
       if (messageId && currentUser?.id) {
         const sentMessage: Message = {
@@ -1941,7 +1972,7 @@ export default function Messages() {
                       const isAwardEvent = meta?._type === "award_event" && meta?.event;
                       const lastSnippet = isAwardEvent
                         ? (lastFromMe ? "You: " : `${partnerName}: `) +
-                          (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                          (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined")
                         : conv?.last_message_content
                           ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
                           : null;
@@ -2199,7 +2230,7 @@ export default function Messages() {
                                   return (
                                     <AwardEventBubble
                                       key={msg.id}
-                                      event={meta.event as "awarded" | "accepted" | "declined"}
+                                      event={meta.event as "awarded" | "accepted" | "declined" | "cancelled"}
                                       timestamp={msg.created_at}
                                       bidId={meta.bid_id}
                                       gigId={meta.gig_id}
@@ -2271,6 +2302,8 @@ export default function Messages() {
                     maxLength={5000}
                     inputRef={messageInputRef}
                     onInputFocus={handleMessageInputFocus}
+                    showPreCheckWarning={clientPreCheck(newMessage).hasWarning}
+                    preCheckWarningMessage={clientPreCheck(newMessage).warningMessage}
                   />
                 </div>
               </>
@@ -2376,7 +2409,7 @@ export default function Messages() {
                         const isAwardEvent = meta?._type === "award_event" && meta?.event;
                         const lastSnippet = isAwardEvent
                           ? (lastFromMe ? "You: " : `${partnerName}: `) +
-                            (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : "✗ Declined")
+                            (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined")
                           : conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
                         const isPinned = pinnedIds.includes(conv.id);
                         const isStarred = starredIds.includes(conv.id);
@@ -2496,7 +2529,7 @@ export default function Messages() {
                                   return (
                                     <AwardEventBubble
                                       key={msg.id}
-                                      event={meta.event as "awarded" | "accepted" | "declined"}
+                                      event={meta.event as "awarded" | "accepted" | "declined" | "cancelled"}
                                       timestamp={msg.created_at}
                                       bidId={meta.bid_id}
                                       gigId={meta.gig_id}
@@ -2555,7 +2588,18 @@ export default function Messages() {
                           <Progress value={attachmentUploadProgress} className="h-1.5" />
                         </div>
                       )}
-                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} inputRef={messageInputRef} onInputFocus={handleMessageInputFocus} />
+                      <MessageInput
+                        value={newMessage}
+                        onChange={setNewMessage}
+                        onSend={sendMessage}
+                        onFileSelect={sendMessageWithAttachments}
+                        placeholder="Type a message..."
+                        maxLength={5000}
+                        inputRef={messageInputRef}
+                        onInputFocus={handleMessageInputFocus}
+                        showPreCheckWarning={clientPreCheck(newMessage).hasWarning}
+                        preCheckWarningMessage={clientPreCheck(newMessage).warningMessage}
+                      />
                     </div>
                   </>
                 ) : (
