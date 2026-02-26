@@ -237,20 +237,20 @@ export function PaymentContractDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6 border border-border rounded-lg">
+        <DialogHeader className="space-y-1.5">
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2 flex-wrap">
             Set up payment contract
             {isHourly && (
-              <Badge variant="secondary" className="font-normal">
+              <Badge variant="secondary" className="font-normal text-xs">
                 Hourly · ${Math.round(hourlyRate ?? 0)}/hr
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription className="space-y-2">
+          <DialogDescription className="text-sm text-muted-foreground">
             {isHourly && (
-              <span className="block text-muted-foreground">
-                Same secure escrow as fixed projects: you approve and pay per time period (e.g. first payment = estimated total; add more periods from the gig page later). You pay only when satisfied.
+              <span className="block mb-1">
+                Pay per time period. First payment = estimated total; add more from the gig page later. You pay only when you approve.
               </span>
             )}
             <span className="block">
@@ -258,22 +258,22 @@ export function PaymentContractDialog({
             </span>
             <span className="block text-xs text-muted-foreground mt-2 flex items-start gap-1.5">
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <strong>How it works:</strong> 1) Set milestones below → 2) The Digger delivers and submits each one → 3) You review and click “Approve & pay” (your card is charged then; the Digger is paid right away).
+              Set milestones → Digger delivers → You click “Approve & pay” to charge and pay.
             </span>
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {suggestedMilestones && suggestedMilestones.length > 0 && (
-            <Alert className="border-green-500/30 bg-green-500/5">
-              <Info className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                The professional suggested the milestone plan below. You can edit any description or amount before creating the contract.
+            <Alert className="border border-border rounded-lg bg-muted/30 shadow-none">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              <AlertDescription className="text-sm">
+                The Digger suggested the milestone plan below. You can edit any description or amount.
               </AlertDescription>
             </Alert>
           )}
           {diggerEligibility === "digger_payouts_not_set_up" && (
-            <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
+            <Alert variant="destructive" className="border border-border rounded-lg bg-destructive/5 shadow-none">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="space-y-2">
                 <p className="text-sm">
@@ -295,7 +295,7 @@ export function PaymentContractDialog({
             </Alert>
           )}
           {diggerEligibility === "digger_payouts_pending_verification" && (
-            <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
+            <Alert variant="destructive" className="border border-border rounded-lg bg-destructive/5 shadow-none">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="space-y-2">
                 <p className="text-sm">
@@ -319,8 +319,8 @@ export function PaymentContractDialog({
             </Alert>
           )}
           {hasPaymentMethod === false && (
-            <Alert className="border-blue-500/30 bg-blue-500/5">
-              <CreditCard className="h-4 w-4 text-blue-600" />
+            <Alert className="border border-border rounded-lg bg-muted/30 shadow-none">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
               <AlertDescription className="space-y-2">
                 <p className="text-sm">
                   No saved payment method. You can still create the contract. You’ll pay via Stripe Checkout when you approve each milestone.
@@ -360,13 +360,13 @@ export function PaymentContractDialog({
             </Alert>
           )}
 
-          <div className="grid gap-2">
-            <Label>Project</Label>
-            <Input value={gigTitle} disabled />
+          <div className="grid gap-1.5">
+            <Label className="text-sm font-medium">Project</Label>
+            <Input value={gigTitle} disabled className="border-border bg-muted/30 h-9" />
           </div>
-          <div className="grid gap-2">
-            <Label>{isHourly ? "Estimated total (first payment)" : "Contract amount (milestone budget)"}</Label>
-            <Input value={`$${milestoneTotal.toFixed(2)}`} disabled />
+          <div className="grid gap-1.5">
+            <Label className="text-sm font-medium">{isHourly ? "Estimated total (first payment)" : "Contract amount (milestone budget)"}</Label>
+            <Input value={`$${milestoneTotal.toFixed(2)}`} disabled className="border-border bg-muted/30 h-9" />
             {isHourly && (
               <p className="text-xs text-muted-foreground">
                 {estimatedHours != null && estimatedHours > 0
@@ -391,10 +391,10 @@ export function PaymentContractDialog({
             ) : null}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <Label>{isHourly ? "First payment (estimated total)" : "Milestones"}</Label>
+                <Label className="text-sm font-medium">{isHourly ? "First payment (estimated total)" : "Milestones"}</Label>
                 {isHourly && milestones.length <= 1 && (
                   <p className="text-xs text-muted-foreground mt-0.5">Add more time periods later from the gig page.</p>
                 )}
@@ -405,6 +405,7 @@ export function PaymentContractDialog({
                 size="sm"
                 onClick={addMilestone}
                 disabled={loading}
+                className="border-border"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add milestone
@@ -414,7 +415,7 @@ export function PaymentContractDialog({
             {milestones.map((m, index) => (
               <div
                 key={index}
-                className="flex gap-2 items-start border rounded-lg p-3 bg-muted/30"
+                className="flex gap-2 items-start border border-border rounded-lg p-3 bg-muted/20"
               >
                 <div className="flex-1 space-y-2">
                   <div>
@@ -474,8 +475,8 @@ export function PaymentContractDialog({
             ))}
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="border-border min-h-[44px] sm:min-h-0">
               Cancel
             </Button>
             <Button
@@ -490,6 +491,7 @@ export function PaymentContractDialog({
                   ? "The Digger must complete payout setup first"
                   : undefined
               }
+              className="min-h-[44px] sm:min-h-0"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create contract
@@ -497,14 +499,14 @@ export function PaymentContractDialog({
           </div>
           {(diggerEligibility === "digger_payouts_not_set_up" ||
             diggerEligibility === "digger_payouts_pending_verification") && (
-            <p className="text-sm text-muted-foreground text-right">
+            <p className="text-xs text-muted-foreground text-right">
               Once the Digger completes payout setup (Stripe Connect), you can create the contract here.
             </p>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-            <Shield className="h-4 w-4 shrink-0" />
-            <span>Payments are secure and powered by Stripe. You’re only charged when you approve a milestone.</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border">
+            <Shield className="h-3.5 w-3.5 shrink-0" />
+            <span>Secure payments via Stripe. You’re only charged when you approve a milestone.</span>
           </div>
         </div>
       </DialogContent>

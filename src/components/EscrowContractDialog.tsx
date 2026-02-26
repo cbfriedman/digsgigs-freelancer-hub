@@ -153,7 +153,7 @@ export const EscrowContractDialog = ({
           <DialogTitle>Set Up Escrow Contract</DialogTitle>
           <DialogDescription>
             Create milestones for the work. You'll pay the full amount upfront, and funds will be
-            released to the professional as milestones are completed. 5% fee with $10 minimum per payment.
+            released to the freelancer as milestones are completed. 5% fee with $10 minimum per payment.
           </DialogDescription>
         </DialogHeader>
 

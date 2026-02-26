@@ -15,19 +15,19 @@ const FAQ = () => {
     general: [
       {
         question: "What is Digs & Gigs?",
-        answer: "Digs & Gigs is a freelance marketplace where consumers (clients) can post projects and freelancers (\"Diggers\") can connect with them. Diggers can either buy leads or bid on gigs and pay an 8% referral fee when awarded. No membership required."
+        answer: "Digs & Gigs is a lead marketplace. Giggers (clients) post gigs. Diggers (freelancers) get leads by email and can unlock the Gigger’s contact or bid and pay an 8% referral fee when awarded. No membership required."
       },
       {
         question: "Is Digs & Gigs a bidding platform?",
-        answer: "No. Freelancers do not compete in bidding wars. Instead, freelancers choose which leads they want to pursue and pay a flat-rate fee to access the client's contact info."
+        answer: "No. Diggers (freelancers) choose which leads to pursue and pay a flat fee to unlock the Gigger’s contact, or they bid and pay 8% when awarded. No bidding wars."
       },
       {
         question: "Who can use the platform?",
-        answer: "Anyone 18 or older can create an account. Freelancers worldwide may join. Consumers may post any project that does not violate our terms."
+        answer: "Anyone 18 or older can create an account. Diggers (freelancers) worldwide may join. Giggers (clients) may post any gig that does not violate our terms."
       },
       {
         question: "Does Digs & Gigs take a percentage of what freelancers earn?",
-        answer: "Never. Freelancers keep 100% of what they make."
+        answer: "Never. Diggers (freelancers) keep 100% of what they make."
       }
     ],
     forDiggers: [
@@ -37,23 +37,23 @@ const FAQ = () => {
       },
       {
         question: "How does matching work?",
-        answer: "When a consumer posts a project, our system automatically pairs it with Diggers whose skills match the project criteria."
+        answer: "When a Gigger (client) posts a gig, our system notifies Diggers whose skills match. Diggers get the lead by email and can unlock or bid."
       },
       {
         question: "Do I need a membership or subscription?",
-        answer: "No. Diggers can buy leads or bid on gigs with no membership required. When you're awarded a job, we charge an 8% referral fee (from the client's deposit)."
+        answer: "No. Diggers can unlock leads or bid on gigs with no membership required. When you’re awarded a gig, we charge an 8% referral fee (from the Gigger’s deposit)."
       },
       {
         question: "What do I get when I pay for a lead reveal?",
-        answer: "Freelancers receive: Client's full name, email address, phone number, project description, budget range (if provided), timeline, and attachments."
+        answer: "Diggers receive the Gigger’s (client’s) full name, email, phone, project description, budget range (if provided), timeline, and attachments."
       },
       {
         question: "Are leads exclusive?",
-        answer: "Not necessarily. Multiple Diggers can reveal the same lead. This ensures clients receive multiple viable options, and freelancers can pursue as many leads as they want."
+        answer: "Not necessarily. Multiple Diggers can unlock the same lead. Giggers get multiple options; Diggers can pursue as many leads as they want."
       },
       {
         question: "If a client doesn't respond, do I get a refund?",
-        answer: "No. Lead fees are non-refundable. Like all freelance marketplaces, Digs & Gigs cannot guarantee client responsiveness or job outcomes."
+        answer: "No. Lead fees are non-refundable. We cannot guarantee the Gigger’s responsiveness or job outcomes. Bad or bogus leads are refundable per our policy."
       },
       {
         question: "Do you guarantee freelance work?",
@@ -61,21 +61,21 @@ const FAQ = () => {
       },
       {
         question: "Can freelancers be removed from the platform?",
-        answer: "Yes — accounts may be suspended for: Harassment, attempting to bypass lead fees (\"off-platform solicitation\"), fraudulent or misleading behavior, abusing refund systems, or violating platform policies."
+        answer: "Yes. Accounts may be suspended for harassment, bypassing lead fees (off-platform solicitation), fraud, abusing refunds, or violating policies."
       }
     ],
     forConsumers: [
       {
         question: "Is it free to post a project?",
-        answer: "Yes. Consumers post projects for free."
+        answer: "Yes. Giggers (clients) post gigs for free."
       },
       {
         question: "How many freelancers will contact me?",
-        answer: "It depends on the category, your budget, timeline, and project clarity. Typically, 1–6 freelancers reach out per project."
+        answer: "It depends on category, budget, timeline, and clarity. Typically 1–6 Diggers (freelancers) unlock the lead or bid per gig."
       },
       {
         question: "Does it cost money for consumers to hire freelancers?",
-        answer: "No. Consumers pay nothing to use the platform."
+        answer: "No. Giggers (clients) pay nothing to post or use the platform. You pay a deposit when you award a Digger; 8% referral fee applies."
       },
       {
         question: "Do freelancers see my contact info automatically?",

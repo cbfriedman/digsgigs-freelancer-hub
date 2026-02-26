@@ -10,8 +10,8 @@ export const PricingPreviewSection = () => {
       <div className="container-wide">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="mb-3">Two ways to engage</h2>
-            <p className="text-muted-foreground">Choose the model that fits your workflow.</p>
+            <h2 className="mb-3">Two ways to get work</h2>
+            <p className="text-muted-foreground">Pay per lead or get awarded and pay the referral fee.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -19,7 +19,7 @@ export const PricingPreviewSection = () => {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Pay per lead</p>
               <h3 className="font-semibold text-lg mb-2">Non-exclusive access</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Pay once to unlock client contact details. Others may also engage.
+                Pay once to unlock the Gigger’s contact. Other Diggers can unlock the same lead.
               </p>
               <p className="text-2xl font-semibold text-foreground">3% of budget</p>
               <p className="text-xs text-muted-foreground mt-1">$20 min – $69 max</p>
@@ -29,7 +29,7 @@ export const PricingPreviewSection = () => {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Exclusive award</p>
               <h3 className="font-semibold text-lg mb-2">15% gigger deposit</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                8% referral fee from deposit. Full refund if Digger doesn't accept within 24h.
+                Gigger pays 15% deposit; 8% referral fee. Full refund if the Digger doesn’t accept within 24h.
               </p>
               <p className="text-2xl font-semibold text-foreground">8% referral fee</p>
               <p className="text-xs text-muted-foreground mt-1">$99 minimum</p>
@@ -37,7 +37,7 @@ export const PricingPreviewSection = () => {
           </div>
 
           <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm text-muted-foreground">
-            {["No subscriptions", "Bogus leads refunded", "Transparent pricing"].map((item, i) => (
+            {["No subscriptions", "Bad leads refunded", "Transparent pricing"].map((item, i) => (
               <span key={i} className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                 {item}

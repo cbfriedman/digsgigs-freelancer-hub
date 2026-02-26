@@ -4,22 +4,22 @@ const trustPoints = [
   {
     icon: DollarSign,
     title: "Transparent pricing",
-    description: "Know what you pay before you commit. No hidden fees.",
+    description: "See the unlock price before you pay. No hidden fees.",
   },
   {
     icon: Mail,
-    title: "Instant email delivery",
-    description: "Leads hit your inbox as soon as they're submitted.",
+    title: "Leads by email",
+    description: "New gigs land in your inbox as soon as Giggers post.",
   },
   {
     icon: Zap,
-    title: "Choose your leads",
-    description: "Pay only for leads you want. No packages or subscriptions.",
+    title: "Pay only for what you use",
+    description: "Unlock a lead or bid and pay when awarded. No subscriptions.",
   },
   {
     icon: Shield,
-    title: "Lead protection",
-    description: "Bogus leads are refundable.",
+    title: "Bad leads refunded",
+    description: "Invalid or bogus leads are refundable.",
   },
 ];
 
@@ -29,8 +29,8 @@ export const TrustSection = () => {
       <div className="container-wide">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="mb-3">Why diggers love us</h2>
-            <p className="text-muted-foreground">Built by freelancers, for freelancers.</p>
+            <h2 className="mb-3">Why Diggers use Digs & Gigs</h2>
+            <p className="text-muted-foreground">Leads delivered. You choose which to unlock or bid on.</p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-8">

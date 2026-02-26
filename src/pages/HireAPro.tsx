@@ -25,7 +25,7 @@ const benefits = [
   {
     icon: Shield,
     title: "Vetted US-Based Talent",
-    description: "Work with professionals in your timezone who understand your market."
+    description: "Work with freelancers in your timezone who understand your market."
   },
   {
     icon: Users,
@@ -115,7 +115,7 @@ export default function HireAPro() {
             </span>
             <h2 className="mb-4">Built for Clients Who Value Quality</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              We connect you with serious professionals, not a sea of low-ball bidders.
+              We connect you with serious freelancers, not a sea of low-ball bidders.
             </p>
           </div>
 

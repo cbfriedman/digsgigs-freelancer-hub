@@ -73,7 +73,7 @@ export function AcceptAwardDialog({
 
       toast({
         title: "Job Accepted!",
-        description: "You've accepted this job. Time to start work! Most professionals collect a deposit from the client before starting.",
+        description: "You've accepted this job. Time to start work! Most freelancers collect a deposit from the client before starting.",
       });
 
       setOpen(false);
@@ -154,7 +154,7 @@ export function AcceptAwardDialog({
                   Pro Tip
                 </p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Most professionals collect a deposit from the client before starting work.
+                  Most freelancers collect a deposit from the client before starting work.
                 </p>
               </div>
             </div>

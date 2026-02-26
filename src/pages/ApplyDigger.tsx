@@ -63,10 +63,10 @@ const ApplyDigger = () => {
   return (
     <>
       <SEOHead
-        title="Apply as a Digger | Freelancing Without the Platform Tax"
-        description="Join a curated marketplace where clients find you — and you keep 100% of what you earn. No commissions. No bidding wars. 30-day free trial."
+        title="Become a Digger (Freelancer) | Get Leads by Email | Digs & Gigs"
+        description="Diggers (freelancers) get leads by email. Giggers (clients) post gigs. Pay per lead or when awarded. No commissions. Apply as a Digger today."
         canonical="/apply-digger"
-        keywords="freelancer, freelance platform, no commission freelancing, keep 100% earnings"
+        keywords="Digger, freelancer, freelance leads, pay per lead, Gigger, client gigs"
       />
 
       <div className="min-h-screen bg-background">
@@ -77,8 +77,8 @@ const ApplyDigger = () => {
               Freelancing — without the platform tax
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              Join a curated marketplace where clients find you — and you keep 100% of what you earn.
-              No commissions. No bidding wars. No race-to-the-bottom pricing.
+              As a Digger (freelancer), get leads when Giggers (clients) post gigs. Keep 100% of what you earn.
+              No commissions. No bidding wars. Pay per lead or when awarded.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -388,7 +388,7 @@ const ApplyDigger = () => {
                 },
                 {
                   question: "How much do leads cost?",
-                  answer: "Lead pricing is based on the client's project budget, ranging from $25 to $140 per lead. You see project details before deciding to unlock contact information, so you never pay for mismatched opportunities."
+                  answer: "Lead pricing is based on the Gigger’s (client’s) project budget, ranging from $25 to $140 per lead. You see project details before deciding to unlock contact information, so you never pay for mismatched opportunities."
                 },
                 {
                   question: "Can I really keep 100% of what I earn?",

@@ -486,7 +486,7 @@ const PostGig = () => {
   if (isQuickPost) {
     return (
       <PageLayout maxWidth="tight" navProps={{ showBackButton: true, backLabel: "Back" }}>
-        <SEOHead title="Quick post a gig — Digs & Gigs" description="Post a gig in seconds. Get bids from Diggers." />
+        <SEOHead title="Quick post a gig (Gigger) — Digs & Gigs" description="Post a gig in seconds as a Gigger (client). Get bids from Diggers (freelancers)." />
         <div className="max-w-xl mx-auto space-y-6 animate-fade-in-up">
           {showGiggerOnlyAlert && (
             <div role="alert" className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5 shadow-sm">
@@ -597,9 +597,9 @@ const PostGig = () => {
   return (
     <PageLayout maxWidth="tight" navProps={{ showBackButton: true, backLabel: "Back" }}>
       <SEOHead
-        title="Post a Project — Get Freelance Quotes | Digs & Gigs"
-        description="Post a gig and get bids from Diggers. No cost to post—pay when you award or unlock leads."
-        keywords="post gig, hire digger, get bids"
+        title="Post a Gig (Client/Gigger) — Get Bids from Freelancers | Digs & Gigs"
+        description="As a Gigger (client), post a gig for free. Get bids from Diggers (freelancers). Pay when you award or when leads are unlocked. No cost to post."
+        keywords="post gig, Gigger, hire freelancer, get bids, client gigs, Digger bids"
       />
 
       <div className="space-y-8 animate-fade-in-up">
@@ -613,7 +613,7 @@ const PostGig = () => {
             Tell Us What You Need
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Describe your gig. Diggers will bid and you'll see proposals here—award when you're ready.
+            Describe your gig. Diggers (freelancers) will bid or unlock the lead. Review proposals and award when you’re ready.
           </p>
         </div>
 

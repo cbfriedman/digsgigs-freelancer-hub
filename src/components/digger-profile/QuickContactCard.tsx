@@ -29,7 +29,7 @@ export const QuickContactCard = ({
   return (
     <Card className="border-primary/20 shadow-lg">
       <CardHeader className="px-4 sm:px-6 pb-2 sm:pb-3">
-        <CardTitle className="text-base sm:text-lg">Contact This Professional</CardTitle>
+        <CardTitle className="text-base sm:text-lg">Contact This Freelancer</CardTitle>
         <CardDescription className="text-sm">
           Get in touch to discuss your project
         </CardDescription>

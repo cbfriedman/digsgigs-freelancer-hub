@@ -1513,7 +1513,7 @@ const DiggerDetail = () => {
     digger.custom_occupation_title ||
     digger.digger_categories?.[0]?.categories?.name ||
     digger.profession ||
-    "Professional";
+    "Freelancer";
   // User-level location and time (same as Gigger profile when user has both roles)
   const profilesCountry = (digger.profiles as any)?.country ?? null;
   const profilesTimezone = (digger.profiles as any)?.timezone ?? null;
@@ -1669,11 +1669,11 @@ const DiggerDetail = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>Update your professional headline, hourly rate, photo, and cover.</DialogDescription>
+            <DialogDescription>Update your freelancer headline, hourly rate, photo, and cover.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-6 py-2">
             <div className="space-y-2">
-              <label htmlFor="profile-name-edit" className="text-sm font-medium">Professional headline</label>
+              <label htmlFor="profile-name-edit" className="text-sm font-medium">Freelancer headline</label>
               <Input
                 id="profile-name-edit"
                 value={profileNameDraft}
@@ -1749,8 +1749,8 @@ const DiggerDetail = () => {
       </Dialog>
       <SEOHead
         title={`${digger.business_name} - ${displayProfession} in ${digger.location}`}
-        description={`${digger.bio || `Professional ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
-        keywords={`${displayProfession}, ${digger.location}, contractor, service professional, ${(digger.skills || digger.keywords || []).join(', ')}`}
+        description={`${digger.bio || `Freelancer ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
+        keywords={`${displayProfession}, ${digger.location}, contractor, freelancer, ${(digger.skills || digger.keywords || []).join(', ')}`}
         ogType="profile"
         ogImage={effectiveAvatarUrl}
         structuredData={generateLocalBusinessSchema({
@@ -2087,7 +2087,7 @@ const DiggerDetail = () => {
                   ) : (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                      <p className="text-muted-foreground mb-4">Add a professional bio to help Giggers learn about your services</p>
+                      <p className="text-muted-foreground mb-4">Add a bio to help Giggers learn about your services</p>
                       <Button onClick={() => openSectionModal("about")}>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Add Bio with AI Assistance

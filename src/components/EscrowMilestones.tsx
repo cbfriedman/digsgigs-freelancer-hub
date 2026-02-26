@@ -85,7 +85,7 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
 
       toast({
         title: "Milestone released!",
-        description: "Payment has been transferred to the professional.",
+        description: "Payment has been transferred to the freelancer.",
       });
 
       loadEscrowData();

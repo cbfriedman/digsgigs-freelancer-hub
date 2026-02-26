@@ -11,7 +11,7 @@ export default function CompareHub() {
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Compare DigsAndGigs to Other Platforms",
-    "description": "See how DigsAndGigs compares to Bark, Thumbtack, Angi, HomeAdvisor, and other lead generation platforms for service professionals.",
+    "description": "See how DigsAndGigs compares to Bark, Thumbtack, Angi, HomeAdvisor, and other lead generation platforms for freelancers.",
     "url": "https://digsandgigs.com/compare"
   };
 
@@ -208,14 +208,14 @@ export default function CompareHub() {
                   Ready to Try a Better Way?
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Join thousands of professionals who switched to DigsAndGigs for transparent pricing, exclusive leads, and better conversion rates.
+                  Join thousands of freelancers who switched to DigsAndGigs for transparent pricing, exclusive leads, and better conversion rates.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
                     to="/register?role=digger"
                     className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
                   >
-                    Join as a Professional
+                    Join as a Freelancer
                   </Link>
                   <Link
                     to="/post-gig"

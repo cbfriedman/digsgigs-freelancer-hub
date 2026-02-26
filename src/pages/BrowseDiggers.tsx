@@ -361,7 +361,7 @@ const BrowseDiggers = () => {
     if (digger.custom_occupation_title) {
       return digger.custom_occupation_title;
     }
-    return digger.profession || "Professional";
+    return digger.profession || "Freelancer";
   };
 
   const getOccupationBadge = (digger: Digger) => {
@@ -438,8 +438,8 @@ const BrowseDiggers = () => {
     return (
       <div className="min-h-screen bg-background">
         <SEOHead
-          title="Browse Service Professionals - Find Qualified Contractors"
-          description="Find skilled service professionals and contractors for your project."
+          title="Browse Freelancers - Find Qualified Diggers"
+          description="Find skilled freelancers and Diggers for your project."
         />
         <div className="container mx-auto px-4 py-12">
           <Card className="max-w-2xl mx-auto mt-12">
@@ -466,8 +466,8 @@ const BrowseDiggers = () => {
     return (
       <div className="min-h-screen bg-background">
         <SEOHead
-          title="Browse Service Professionals - Find Qualified Contractors"
-          description="Find skilled service professionals and contractors for your project."
+          title="Browse Freelancers - Find Qualified Diggers"
+          description="Find skilled freelancers and Diggers for your project."
         />
         <div className="container mx-auto px-4 py-12">
           <Card className="max-w-2xl mx-auto mt-12">
@@ -492,9 +492,9 @@ const BrowseDiggers = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Browse Service Professionals - Find Qualified Contractors"
-        description="Find skilled service professionals and contractors for your project. Search by specialty, location, hourly rate, and reviews. Connect with verified plumbers, electricians, landscapers, handymen, and more."
-        keywords="hire contractors, find professionals, service providers, skilled workers, local contractors, verified professionals, hire plumber, hire electrician"
+        title="Browse Freelancers - Find Qualified Diggers"
+        description="Find skilled freelancers and Diggers for your project. Search by specialty, location, hourly rate, and reviews. Connect with verified freelancers and Diggers."
+        keywords="hire freelancers, find Diggers, service providers, skilled workers, verified freelancers"
       />
 
       <div className="container mx-auto px-4 py-12">
@@ -593,7 +593,7 @@ const BrowseDiggers = () => {
                         <DirectoryDiggerCard
                           key={digger.id}
                           id={digger.id}
-                          profession={digger.profession || "Professional"}
+                          profession={digger.profession || "Freelancer"}
                           customOccupationTitle={digger.custom_occupation_title}
                           categories={(digger.digger_categories || []).map(dc => dc.categories?.name || '').filter(Boolean)}
                           rating={digger.average_rating}
@@ -618,7 +618,7 @@ const BrowseDiggers = () => {
                 <MapView 
                   items={filteredDiggers.map(d => ({
                     id: getCanonicalDiggerProfilePath({ handle: d.handle, diggerId: d.id }) || `/digger/${d.id}`,
-                    title: `@${d.handle || "anonymous"} - ${d.profession || "Professional"}`,
+                    title: `@${d.handle || "anonymous"} - ${d.profession || "Freelancer"}`,
                     location_lat: d.location_lat,
                     location_lng: d.location_lng,
                   }))}

@@ -274,7 +274,7 @@ export function ContractMilestonesCard({
           setReloadKey((k) => k + 1);
           onUpdate?.();
           if (!result.alreadyCompleted) {
-            toast({ title: "Payment confirmed", description: "The professional will receive this milestone amount." });
+            toast({ title: "Payment confirmed", description: "The freelancer will receive this milestone amount." });
           }
         } else if (result?.error) {
           toast({ title: "Could not confirm payment", description: result.error, variant: "destructive" });
@@ -529,7 +529,7 @@ export function ContractMilestonesCard({
         if (!stripe) throw new Error("Stripe not loaded");
         const { error } = await stripe.confirmCardPayment(data.clientSecret);
         if (error) throw error;
-        toast({ title: "Payment successful", description: "The professional will receive this milestone amount." });
+        toast({ title: "Payment successful", description: "The freelancer will receive this milestone amount." });
         onUpdate?.();
         setContract((c) => {
           if (!c) return c;
@@ -548,7 +548,7 @@ export function ContractMilestonesCard({
         throw new Error("Payment did not complete");
       }
 
-      toast({ title: "Payment successful", description: "The professional will receive this milestone amount." });
+      toast({ title: "Payment successful", description: "The freelancer will receive this milestone amount." });
       onUpdate?.();
       setContract((c) => {
         if (!c) return c;
@@ -584,7 +584,7 @@ export function ContractMilestonesCard({
       if (data?.success) {
         toast({
           title: "Contract ended",
-          description: "You and the professional can now leave reviews for each other in Transaction history.",
+          description: "You and the freelancer can now leave reviews for each other in Transaction history.",
         });
         setReloadKey((k) => k + 1);
         onUpdate?.();
@@ -637,8 +637,8 @@ export function ContractMilestonesCard({
       toast({
         title: "Milestone added",
         description: isHourlyContract
-          ? "The professional can submit it when the time period is done; you'll pay when you approve."
-          : "The professional can submit it when the work is done; you'll pay when you approve.",
+          ? "The freelancer can submit it when the time period is done; you'll pay when you approve."
+          : "The freelancer can submit it when the work is done; you'll pay when you approve.",
       });
       setAddMilestoneOpen(false);
       setAddMilestoneDescription("");
@@ -694,7 +694,7 @@ export function ContractMilestonesCard({
           <CardContent className="space-y-4">
             {suggestedMilestonesFromBid && suggestedMilestonesFromBid.length > 0 && (
               <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                <p className="text-sm font-medium">Suggested plan by the professional</p>
+                <p className="text-sm font-medium">Suggested plan by the freelancer</p>
                 <ul className="space-y-1.5 text-sm">
                   {suggestedMilestonesFromBid.map((m, i) => (
                     <li key={i} className="flex justify-between gap-2">
@@ -790,7 +790,7 @@ export function ContractMilestonesCard({
           )}
           {isGigger ? (
             <>
-              <span className="block">Approve and pay each milestone when the professional delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%). {exclusiveWithDeposit
+              <span className="block">Approve and pay each milestone when the freelancer delivers. You pay a 3% transaction fee per payment (Gigger total = milestone + 3%). {exclusiveWithDeposit
                   ? "The professional receives the full milestone amount (8% was from your 15% deposit); first milestone includes 7% deposit advance (from your deposit, no extra charge)."
                   : "The professional receives milestone minus 8% platform fee. You're only charged when you click \"Approve & pay\"."}</span>
               <span className="block text-xs mt-2 text-muted-foreground">
@@ -1158,7 +1158,7 @@ export function ContractMilestonesCard({
             <DialogDescription>
               {isHourlyContract
                 ? "Enter hours worked for this period. Amount is calculated from the agreed rate. The professional can submit when the time is done; you approve and pay (same secure escrow)."
-                : "Add an extra deliverable to this contract. Enter a description and amount. The professional can submit it when the work is done; you'll be charged (milestone + 3% fee) when you approve. Secure and reliable."}
+                : "Add an extra deliverable to this contract. Enter a description and amount. The freelancer can submit it when the work is done; you'll be charged (milestone + 3% fee) when you approve. Secure and reliable."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">

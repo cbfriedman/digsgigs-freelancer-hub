@@ -294,7 +294,7 @@ export default function LeadUnlock() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`Unlock Lead: ${lead.title} | Digs & Gigs`}
-        description="Unlock this lead to get full client contact details and project information."
+        description="Unlock this lead (as a Digger) to get the Gigger’s contact details and full project information. Pay per lead."
       />
       
       <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -524,7 +524,7 @@ export default function LeadUnlock() {
                                 <span className="text-2xl font-bold text-primary">${leadPrice}</span>
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                Contact the client. Other professionals may also engage.
+                                Contact the client. Other freelancers may also engage.
                               </p>
                               <div className="mt-2 flex items-center gap-2 text-xs text-primary">
                                 <CheckCircle className="w-3 h-3" />

@@ -3,18 +3,18 @@ import { Users, Mail, Zap } from "lucide-react";
 const steps = [
   {
     icon: Users,
-    title: "Client submits project",
-    description: "Clients describe project, budget, and timeline. No approval gate.",
+    title: "Gigger posts a gig",
+    description: "Project, budget, and timeline. Goes live immediately.",
   },
   {
     icon: Mail,
-    title: "You get an email",
-    description: "Diggers receive the lead via email with details and pricing.",
+    title: "Lead lands in your inbox",
+    description: "Every Digger gets the lead by email with details and unlock price.",
   },
   {
     icon: Zap,
     title: "Unlock or bid",
-    description: "Pay to unlock contact info, or submit a proposal and pay when you win.",
+    description: "Pay to unlock client contact, or bid and pay the referral fee when you’re awarded.",
   },
 ];
 
@@ -25,7 +25,7 @@ export const HowItWorksSection = () => {
         <div className="text-center mb-14">
           <h2 className="mb-3">How it works</h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Simple, fair, instant lead delivery.
+            Email-first. Pay per lead or per award. No membership.
           </p>
         </div>
 

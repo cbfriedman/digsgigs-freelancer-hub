@@ -181,7 +181,7 @@ export const ValuePropositionBanner = () => {
               View All Pricing Plans <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <p className="text-sm text-muted-foreground mt-3">
-              Join 10,000+ service professionals growing with DigsAndGigs
+              Join 10,000+ freelancers growing with Digs & Gigs
             </p>
           </div>
         </div>

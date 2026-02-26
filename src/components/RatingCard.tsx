@@ -159,7 +159,7 @@ export const RatingCard = ({ rating }: RatingCardProps) => {
         {/* Digger response */}
         {rating.digger_response && (
           <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-sm font-medium text-foreground mb-1">Response from professional</p>
+            <p className="text-sm font-medium text-foreground mb-1">Response from freelancer</p>
             <p className="text-sm text-muted-foreground leading-relaxed">{rating.digger_response}</p>
             {rating.responded_at && (
               <p className="text-xs text-muted-foreground mt-2">

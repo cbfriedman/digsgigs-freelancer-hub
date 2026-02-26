@@ -120,8 +120,8 @@ export default function LeadUnlockPreview() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Lead Unlock Preview | Digs & Gigs"
-        description="Preview of what Diggers see when they receive a lead notification email."
+        title="Lead Unlock Preview (Digger) | Digs & Gigs"
+        description="Preview of what Diggers (freelancers) see when a Gigger (client) posts a gig. Unlock the lead to get contact details."
       />
       
       <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -303,7 +303,7 @@ export default function LeadUnlockPreview() {
                           <span className="text-2xl font-bold text-primary">${leadPrice}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Contact the client. Other professionals may also engage.
+                          Contact the client. Other freelancers may also engage.
                         </p>
                         <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
                           <CheckCircle className="w-3 h-3" />

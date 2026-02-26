@@ -168,7 +168,7 @@ export function DiggerProposalCard({
 
   const realName = formatRealName(diggerProfile.profiles?.full_name);
   const handle = diggerProfile.handle ? `@${String(diggerProfile.handle).replace(/^@/, "")}` : "";
-  const displayName = realName || diggerProfile.business_name || diggerProfile.profession || "Professional";
+  const displayName = realName || diggerProfile.business_name || diggerProfile.profession || "Freelancer";
   /** Link to full digger profile page (DiggerDetail), not profile/handle summary. */
   const diggerProfileUrl = `/digger/${diggerProfile.id}`;
   const professionalHeadline =

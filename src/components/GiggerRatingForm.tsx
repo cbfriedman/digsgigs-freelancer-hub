@@ -66,7 +66,7 @@ export const GiggerRatingForm = ({
           review_text: reviewText || null,
         });
         if (error) throw error;
-        toast.success("Thanks! Your review helps other professionals know what to expect from this client.");
+        toast.success("Thanks! Your review helps other freelancers know what to expect from this client.");
       }
       onSuccess?.();
     } catch (error: any) {

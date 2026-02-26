@@ -100,9 +100,9 @@ const HowItWorks = () => {
       navProps={{ showBackButton: true, backTo: "/", backLabel: "Back to Home" }}
     >
       <SEOHead
-        title="How Digs & Gigs Works — Fair, Simple Freelancing"
-        description="No commissions. No bidding wars. See how Diggers and Giggers connect on Digs & Gigs."
-        keywords="how it works, gigs, diggers, giggers, no commissions, post gig, find leads"
+        title="How Digs & Gigs Works — For Freelancers (Diggers) & Clients (Giggers)"
+        description="Giggers (clients) post gigs. Diggers (freelancers) get leads by email. Pay per lead or when awarded. No commissions, no subscriptions. See how it works."
+        keywords="how it works, Digger, Gigger, freelancer leads, client gigs, post gig, pay per lead"
         structuredData={generateFAQSchema([
           { question: "How do Giggers post gigs?", answer: "Giggers describe what they need and post a gig. Diggers bid or buy leads—you review and award when ready." },
           { question: "How do Diggers find gigs?", answer: "Diggers create a profile, browse gigs or get matched, and bid or buy leads. Pay per lead or 8% when awarded—no membership." },
@@ -120,7 +120,7 @@ const HowItWorks = () => {
             Simple. Transparent. Built for Results.
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Connect with Diggers or find your next gig in a few steps.
+            Giggers post gigs. Diggers get leads and bid. One clear process for clients and freelancers.
           </p>
           
           {/* Trust Signals */}

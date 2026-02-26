@@ -214,7 +214,7 @@ const ReviewGigConfirmation = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Freelancers unlock your contact info and reach out directly</span>
+                    <span>Diggers (freelancers) can unlock your contact and reach out directly</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />

@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList, defaultBidFilters, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
@@ -895,8 +895,8 @@ const GigDetail = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`${gig.title} - Service Project in ${gig.location}`}
-        description={`${gig.description.substring(0, 150)}... Budget: ${budgetText}. Posted ${formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}. Find qualified professionals on digsandgigs.`}
-        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}${getGigSkillNames(gig).length ? `, ${getGigSkillNames(gig).join(', ')}` : ''}`}
+        description={`${gig.description.substring(0, 150)}... Budget: ${budgetText}. Posted ${formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}. Bid or unlock lead. Digs & Gigs — for Diggers (freelancers) and Giggers (clients).`}
+        keywords={`${gig.title}, ${gig.location}, gig, hire freelancer, Digger, Gigger, ${gig.categories?.name || 'services'}${getGigSkillNames(gig).length ? `, ${getGigSkillNames(gig).join(', ')}` : ''}`}
         structuredData={generateJobPostingSchema({
           title: gig.title,
           description: gig.description,
@@ -911,11 +911,11 @@ const GigDetail = () => {
         })}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-10 gap-6 lg:gap-8">
-          <div className="lg:col-span-7 space-y-6">
-            <Card>
-              <CardHeader>
+      <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6 min-w-0">
+            <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors">
+              <CardHeader className="p-4 sm:p-5 md:p-6">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   {hasBothRoles && (
                     <Badge
@@ -954,7 +954,7 @@ const GigDetail = () => {
                   </span>
                 </div>
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <CardTitle className="text-3xl">{gig.title}</CardTitle>
+                  <CardTitle className="text-2xl sm:text-3xl font-semibold">{gig.title}</CardTitle>
                   {canSeeBudget && (gig.project_type === "hourly" ? (gig.hourly_rate_min != null || gig.hourly_rate_max != null) : (gig.budget_min != null || gig.budget_max != null)) && (
                     <span className="text-xl font-semibold text-primary shrink-0 flex items-center gap-2">
                       {formatGigPrice(gig)}
@@ -973,7 +973,7 @@ const GigDetail = () => {
                   </p>
                 )}
                 {canViewAsOwner && (
-                  <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t">
+                  <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-border">
                     {isAdmin && (
                       <Badge variant="outline" className="text-xs">Viewing as admin</Badge>
                     )}
@@ -983,7 +983,7 @@ const GigDetail = () => {
                         size="sm"
                         onClick={handleCancelAward}
                         disabled={cancelAwardLoading}
-                        className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                        className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 min-h-[44px] sm:min-h-0"
                         title="Cancel the award and reopen the gig; your deposit will be refunded"
                       >
                         {cancelAwardLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
@@ -996,6 +996,7 @@ const GigDetail = () => {
                         size="sm"
                         onClick={handleBump}
                         disabled={bumping}
+                        className="min-h-[44px] sm:min-h-0"
                         title="Bump this listing to the top so more diggers see it"
                       >
                         {bumping ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
@@ -1009,18 +1010,19 @@ const GigDetail = () => {
                           size="sm"
                           onClick={handleRepost}
                           disabled={reposting || !gig.consumer_id}
+                          className="min-h-[44px] sm:min-h-0"
                           title="Create a new listing with the same details"
                         >
                           {reposting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
                           Repost
                         </Button>
                         {gig.status !== "completed" && (
-                          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
+                          <Button variant="outline" size="sm" className="gap-2 min-h-[44px] sm:min-h-0" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
                             <Pencil className="h-4 w-4" />
                             Edit gig
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => navigate("/my-gigs")}>
+                        <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={() => navigate("/my-gigs")}>
                           Manage in My Gigs
                         </Button>
                         <Button
@@ -1028,21 +1030,21 @@ const GigDetail = () => {
                           size="sm"
                           onClick={handleRemoveGig}
                           disabled={removing || gig.status !== "open"}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 min-h-[44px] sm:min-h-0"
                           title="Close and remove this gig"
                         >
                           {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
                           Remove gig
                         </Button>
-                      </>
+                  </>
                     )}
                   </div>
                 )}
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-4 sm:p-5 md:p-6 pt-0 space-y-4 sm:space-y-6">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Description</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{descriptionDisplay}</p>
+                  <h3 className="font-semibold text-base sm:text-lg mb-2">Description</h3>
+                  <p className="text-muted-foreground text-sm sm:text-base whitespace-pre-wrap leading-relaxed">{descriptionDisplay}</p>
                   {descriptionNeedsToggle && (
                     <Button
                       variant="link"
@@ -1055,7 +1057,7 @@ const GigDetail = () => {
                 </div>
 
                 {/* At-a-glance: job type, preferred location, deadline (no category tag, no budget here, no client flag) */}
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-xl bg-muted/40 px-4 py-3 border border-transparent">
+                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-2 text-xs sm:text-sm text-muted-foreground rounded-lg bg-muted/30 sm:bg-muted/40 px-3 sm:px-4 py-2.5 sm:py-3 border border-border/50">
                   <div className="flex items-center gap-1.5">
                     <Briefcase className="h-4 w-4 shrink-0 text-primary" />
                     <span>
@@ -1171,25 +1173,25 @@ const GigDetail = () => {
               gig.awarded_digger_id === diggerId &&
               existingBid?.awarded &&
               existingBid?.status !== "accepted" && (
-                <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                        <Award className="h-6 w-6" aria-hidden />
+                <Card id="award-response" className="border border-primary/20 rounded-lg bg-muted/20 shadow-none">
+                  <CardHeader className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-start gap-3">
+                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <Award className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-xl">You&apos;re awarded</CardTitle>
-                        <CardDescription className="mt-1 space-y-1">
+                        <CardTitle className="text-lg sm:text-xl">You&apos;re awarded</CardTitle>
+                        <CardDescription className="mt-1 space-y-1 text-sm">
                           <span className="block">The client awarded you this gig. Accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty and the client gets their deposit back.</span>
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex flex-wrap gap-3">
+                  <CardContent className="p-4 sm:p-5 pt-0 flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button
                       onClick={handleAcceptAward}
                       disabled={acceptAwardLoading}
-                      className="gap-2 bg-green-600 hover:bg-green-700"
+                      className="gap-2 bg-green-600 hover:bg-green-700 w-full sm:w-auto min-h-[44px] sm:min-h-0"
                     >
                       {acceptAwardLoading ? (
                         <>
@@ -1203,7 +1205,7 @@ const GigDetail = () => {
                     <Button
                       variant="outline"
                       onClick={() => setDeclineDialogOpen(true)}
-                      className="gap-2"
+                      className="gap-2 w-full sm:w-auto min-h-[44px] sm:min-h-0"
                     >
                       Decline
                     </Button>
@@ -1216,15 +1218,15 @@ const GigDetail = () => {
               gig?.status === "in_progress" &&
               gig.awarded_digger_id === diggerId &&
               existingBid?.awarded && existingBid?.status === "accepted" && (
-                <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                        <Award className="h-6 w-6" aria-hidden />
+                <Card id="award-response" className="border border-primary/20 rounded-lg bg-muted/20 shadow-none">
+                  <CardHeader className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-start gap-3">
+                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <Award className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-xl">You&apos;re hired for this gig</CardTitle>
-                        <CardDescription className="mt-1 space-y-1">
+                        <CardTitle className="text-lg sm:text-xl">You&apos;re hired for this gig</CardTitle>
+                        <CardDescription className="mt-1 space-y-1 text-sm">
                           <span className="block">You accepted the award. You or the client can set up the payment contract (milestones) next.</span>
                         </CardDescription>
                       </div>
@@ -1265,12 +1267,12 @@ const GigDetail = () => {
               </DialogContent>
             </Dialog>
             {activeRole === 'gigger' && !isOwner && currentUser && gig.status === 'open' && (
-              <Card id="bid">
-                <CardContent className="pt-6 space-y-4">
-                  <p className="text-center text-muted-foreground">
+              <Card id="bid" className="border border-border rounded-lg shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base">
                     You’re viewing as a <strong>Gigger</strong>. Post your own gig to receive bids from Diggers.
                   </p>
-                  <Button className="w-full" variant="outline" onClick={() => navigate('/post-gig')}>
+                  <Button className="w-full min-h-[44px]" variant="outline" onClick={() => navigate('/post-gig')}>
                     Post a gig
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
@@ -1280,43 +1282,43 @@ const GigDetail = () => {
               </Card>
             )}
             {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && !userRoles?.includes('digger') && activeRole !== 'gigger' && (
-              <Card id="bid">
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
+              <Card id="bid" className="border border-border rounded-lg shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base">
                     Only <strong>Diggers</strong> can bid on gigs. Switch to Digger to bid, or post your own gigs as a Gigger.
                   </p>
                 </CardContent>
               </Card>
             )}
             {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && userRoles?.includes('digger') && activeRole !== 'gigger' && (
-              <Card id="bid">
-                <CardContent className="pt-6 space-y-4">
-                  <p className="text-center text-muted-foreground">
+              <Card id="bid" className="border border-border rounded-lg shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base">
                     To place a bid you need an active <strong>Digger</strong> profile.
                   </p>
-                  <Button className="w-full" onClick={() => navigate('/role-dashboard')}>
+                  <Button className="w-full min-h-[44px]" onClick={() => navigate('/role-dashboard')}>
                     Go to Dashboard
                   </Button>
                 </CardContent>
               </Card>
             )}
             {showDiggerContent && diggerId && !diggerCanBid && !existingBid && gig.status === 'open' && (
-              <Card id="bid">
-                <CardContent className="pt-6 space-y-4">
-                  <p className="text-center text-muted-foreground">
+              <Card id="bid" className="border border-border rounded-lg shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base">
                     To place a bid, add a <strong>profile photo</strong> and <strong>hourly rate</strong> to your Digger profile.
                   </p>
-                  <Button className="w-full" onClick={() => navigate('/role-dashboard')}>
+                  <Button className="w-full min-h-[44px]" onClick={() => navigate('/role-dashboard')}>
                     Complete profile
                   </Button>
                 </CardContent>
               </Card>
             )}
             {!currentUser && !isOwner && gig.status === 'open' && (
-              <Card id="bid">
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground mb-4">Want to bid on this gig?</p>
-                  <Button className="w-full" onClick={() => navigate('/register')}>
+              <Card id="bid" className="border border-border rounded-lg shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base mb-4">Want to bid on this gig?</p>
+                  <Button className="w-full min-h-[44px]" onClick={() => navigate('/register')}>
                     Sign in as Digger
                   </Button>
                 </CardContent>
@@ -1355,10 +1357,10 @@ const GigDetail = () => {
                 canMessageClient={!!(hasClientSentMessage || gig?.awarded_digger_id === diggerId)}
                 messageClientTooltip={
                   gig?.awarded_digger_id === diggerId
-                    ? "Open conversation with the client"
+                    ? "Open conversation with the Gigger"
                     : hasClientSentMessage
-                      ? "Open conversation with the client"
-                      : "You can reply after the client sends you a message first"
+                      ? "Open conversation with the Gigger"
+                      : "You can reply after the Gigger sends you a message first"
                 }
               />
               </div>
@@ -1366,23 +1368,23 @@ const GigDetail = () => {
           </div>
 
           {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = Contact client + client info */}
-          <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
+          <aside className="lg:col-span-3 space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
             {/* Contact the client now — in sidebar for non-owners who have not yet purchased the lead */}
             {isOwner && activeRole === "digger" && (
-              <Card className="border-accent/30 bg-accent/5">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Briefcase className="h-5 w-5 text-accent" />
+              <Card className="border border-border rounded-lg shadow-none border-accent/30 bg-accent/5">
+                <CardHeader className="p-4 sm:p-5">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
                     Manage this gig
                   </CardTitle>
-                  <CardDescription>
-                    You own this gig. Switch to Gigger mode to view bids, award a digger, edit, or manage.
+                  <CardDescription className="text-sm">
+                    You own this gig. Switch to Gigger mode to view bids, award a Digger, edit, or manage.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-5 pt-0">
                   <Button
                     variant="default"
-                    className="w-full gap-2 bg-accent hover:bg-accent/90"
+                    className="w-full gap-2 bg-accent hover:bg-accent/90 min-h-[44px]"
                     onClick={() => switchRole("gigger")}
                   >
                     <Briefcase className="h-4 w-4" />
@@ -1392,28 +1394,28 @@ const GigDetail = () => {
               </Card>
             )}
             {!canViewAsOwner && !hasLeadPurchase && !isOwner && (
-              <Card className="border-primary/30 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    Contact the client now
+              <Card className="border border-primary/20 rounded-lg shadow-none bg-primary/5">
+                <CardHeader className="p-4 sm:p-5">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                    Unlock the Gigger’s contact
                   </CardTitle>
-                  <CardDescription>
-                    Pay once to unlock contact information. After payment clears, you&apos;ll see the client&apos;s details and can reach out directly—no proposal required.
+                  <CardDescription className="text-sm">
+                    Pay once to unlock the lead. You’ll see the Gigger’s (client’s) contact details and can reach out directly—no proposal required.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
+                <CardContent className="p-4 sm:p-5 pt-0 flex flex-col gap-4">
                   <div>
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">
                       {getLeadPriceDisplay(
                         getLeadPriceBudget().min,
                         getLeadPriceBudget().max,
                         (gig as { calculated_price_cents?: number | null }).calculated_price_cents
                       ).label}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">{LEAD_PRICE_CAPTION}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{LEAD_PRICE_CAPTION}</p>
                   </div>
-                  <Button onClick={handleUnlockLead} className="gap-2 w-full sm:w-auto shrink-0">
+                  <Button onClick={handleUnlockLead} className="gap-2 w-full min-h-[44px] sm:min-h-0 sm:w-auto shrink-0">
                     <Unlock className="h-4 w-4" />
                     Unlock lead
                   </Button>
@@ -1423,9 +1425,9 @@ const GigDetail = () => {
             {canViewAsOwner && (
               <>
                 {/* Filters */}
-                <Card className="border-border/60 bg-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
+                <Card className="border border-border rounded-lg shadow-none bg-card">
+                  <CardHeader className="p-4 sm:p-5 pb-2">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                       <Filter className="h-4 w-4 text-primary" />
                       Filter Diggers
                     </CardTitle>
@@ -1433,7 +1435,7 @@ const GigDetail = () => {
                       Narrow bids by proposal, price, timeline, rating, or location.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="bid-filter-search" className="text-xs">Search</Label>
                       <div className="relative">
@@ -1443,7 +1445,7 @@ const GigDetail = () => {
                           placeholder="Name, @handle, proposal, location..."
                           value={bidFilters.search}
                           onChange={(e) => setBidFilters((f) => ({ ...f, search: e.target.value }))}
-                          className="pl-8 h-9 text-sm"
+                          className="pl-8 h-9 min-h-[44px] sm:min-h-9 text-sm"
                         />
                       </div>
                     </div>
@@ -1457,7 +1459,7 @@ const GigDetail = () => {
                           placeholder="0"
                           value={bidFilters.priceMin}
                           onChange={(e) => setBidFilters((f) => ({ ...f, priceMin: e.target.value }))}
-                          className="h-9 text-sm"
+                          className="h-9 min-h-[44px] sm:min-h-9 text-sm"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -1469,7 +1471,7 @@ const GigDetail = () => {
                           placeholder="Any"
                           value={bidFilters.priceMax}
                           onChange={(e) => setBidFilters((f) => ({ ...f, priceMax: e.target.value }))}
-                          className="h-9 text-sm"
+                          className="h-9 min-h-[44px] sm:min-h-9 text-sm"
                         />
                       </div>
                     </div>
@@ -1480,7 +1482,7 @@ const GigDetail = () => {
                         placeholder="e.g. 2 weeks"
                         value={bidFilters.timeline}
                         onChange={(e) => setBidFilters((f) => ({ ...f, timeline: e.target.value }))}
-                        className="h-9 text-sm"
+                        className="h-9 min-h-[44px] sm:min-h-9 text-sm"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -1494,7 +1496,7 @@ const GigDetail = () => {
                         placeholder="Any"
                         value={bidFilters.minRating}
                         onChange={(e) => setBidFilters((f) => ({ ...f, minRating: e.target.value }))}
-                        className="h-9 text-sm"
+                        className="h-9 min-h-[44px] sm:min-h-9 text-sm"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -1504,7 +1506,7 @@ const GigDetail = () => {
                         placeholder="Country, state, or city"
                         value={bidFilters.location}
                         onChange={(e) => setBidFilters((f) => ({ ...f, location: e.target.value }))}
-                        className="h-9 text-sm"
+                        className="h-9 min-h-[44px] sm:min-h-9 text-sm"
                       />
                     </div>
                     <Button
@@ -1526,14 +1528,14 @@ const GigDetail = () => {
               const clientProfile = raw == null ? null : Array.isArray(raw) ? raw[0] : raw;
               const p = clientProfile || gig.profiles || null;
               return (
-              <Card className="border-muted/50 bg-muted/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
+              <Card className="border border-border rounded-lg shadow-none bg-muted/20">
+                <CardHeader className="p-4 sm:p-5 pb-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     About the client
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-4 sm:p-5 pt-0 space-y-4">
                   {/* Photo + name (user-level, same for Digger/Gigger) */}
                   {(p?.avatar_url || p?.full_name || gig.client_name) && (
                     <div className="flex items-center gap-3">
@@ -1674,18 +1676,9 @@ const GigDetail = () => {
                       </div>
                     </div>
                   )}
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Posted</div>
-                    <div className="text-sm font-medium">{formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</div>
-                  </div>
-                  {diggerId && gig.awarded_digger_id === diggerId && gig.consumer_id && (
-                    <Button variant="outline" className="w-full mt-2" onClick={() => navigate(`/gigger/${gig.consumer_id}`)}>
-                      View full profile <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  )}
                   {!isOwner && gig.status === 'open' && (
                     <p className="text-xs text-muted-foreground border-t pt-3">
-                      Submit a proposal below or buy the lead to unlock contact and reach out directly.
+                      Submit a proposal below or buy the lead to unlock the Gigger’s contact and reach out directly.
                     </p>
                   )}
                 </CardContent>

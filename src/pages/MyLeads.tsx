@@ -179,15 +179,15 @@ export default function MyLeads() {
   return (
     <>
       <SEOHead 
-        title="My Leads - Digsandgigs"
-        description="View and manage your purchased leads"
+        title="My Leads (Digger) | Digs & Gigs"
+        description="As a Digger (freelancer), view and manage your purchased leads. Unlock Gigger contact details and track lead usage."
       />
       <div className="min-h-screen bg-background">
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">My Leads</h1>
             <p className="text-muted-foreground">
-              View and manage your purchased leads
+              Leads you’ve unlocked from Giggers’ gigs. Contact clients and track usage.
             </p>
           </div>
 

@@ -586,7 +586,7 @@ export const BidsList = ({
 
       toast({
         title: "Bid awarded",
-        description: "The professional has been hired and notified. You can set up the payment contract (milestones) next.",
+        description: "The freelancer has been hired and notified. You can set up the payment contract (milestones) next.",
       });
 
       // Insert award system message into chat so Digger sees it
@@ -671,7 +671,7 @@ export const BidsList = ({
           if (!stripe) throw new Error("Stripe not loaded");
           const { error } = await stripe.confirmCardPayment(data.clientSecret);
           if (error) throw error;
-          toast({ title: "Payment confirmed", description: "The professional has been awarded. They have 24 hours to accept." });
+          toast({ title: "Payment confirmed", description: "The freelancer has been awarded. They have 24 hours to accept." });
           setBidToAward(null);
           loadBids();
           onAwardSuccess?.();
@@ -681,7 +681,7 @@ export const BidsList = ({
         }
 
         if (data?.success) {
-          toast({ title: "Payment confirmed", description: "The professional has been awarded. They have 24 hours to accept." });
+          toast({ title: "Payment confirmed", description: "The freelancer has been awarded. They have 24 hours to accept." });
           setBidToAward(null);
           loadBids();
           onAwardSuccess?.();
@@ -838,10 +838,10 @@ export const BidsList = ({
                   (bid.digger_profiles as any)?.business_name ||
                   (bid.digger_profiles as any)?.profile_name ||
                   (bid.digger_profiles as any)?.profession ||
-                  "This professional";
+                  "This freelancer";
                 setBidToAward({
                   id: bid.id,
-                  diggerDisplayName: String(name).trim() || "This professional",
+                  diggerDisplayName: String(name).trim() || "This freelancer",
                   diggerId: (bid as any).digger_id ?? (bid as any).digger_profiles?.id ?? "",
                   amount: bid.amount ?? 0,
                   pricing_model: bid.pricing_model,

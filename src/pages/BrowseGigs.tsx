@@ -491,16 +491,17 @@ const BrowseGigs = () => {
   return (
     <PageLayout maxWidth="wide" padded>
       <SEOHead
-        title="Browse Gigs — Find Projects & Bid or Buy Leads | Digs & Gigs"
-        description="Find open gigs that match your skills. Filter by category, budget, and when posted. Bid free or buy the lead to contact the client directly."
-        keywords="browse gigs, find projects, freelance gigs, bid on gigs, buy leads, Digger jobs"
+        title="Browse Gigs — Freelancer Leads (Diggers) | Digs & Gigs"
+        description="For Diggers (freelancers): find open gigs, bid free or buy the lead to contact the Gigger. Filter by category, budget, when posted. Pay per lead or when awarded."
+        keywords="browse gigs, freelancer leads, Digger, bid on gigs, buy leads, pay per lead"
       />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <div className="px-4 pt-1 pb-8 sm:pt-2 sm:pb-10">
+      <div className="px-4 sm:px-6 pt-4 pb-8 sm:pt-6 sm:pb-10 max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="mb-3 sm:mb-4">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Browse Gigs</h1>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">Browse Gigs</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Find gigs posted by Giggers. Bid or unlock the lead.</p>
           {(diggerProfile as any)?.lead_limit_enabled && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
@@ -523,20 +524,20 @@ const BrowseGigs = () => {
           <StripeConnectBanner />
         )}
 
-        {/* Single top filter bar — find gigs quickly */}
-        <div className="flex flex-col gap-3 mb-6">
+        {/* Filter bar */}
+        <div className="flex flex-col gap-3 mb-4 sm:mb-6">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
+            <div className="relative w-full sm:min-w-[200px] sm:max-w-md sm:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search by title or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 bg-background"
+                className="pl-9 h-10 sm:h-10 bg-background min-h-[44px] sm:min-h-0"
               />
             </div>
             <Select value={projectTypeFilter} onValueChange={setProjectTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-10">
+              <SelectTrigger className="w-full sm:w-[140px] h-10 min-h-[44px] sm:min-h-10">
                 <SelectValue placeholder="Project type" />
               </SelectTrigger>
               <SelectContent>
@@ -546,7 +547,7 @@ const BrowseGigs = () => {
               </SelectContent>
             </Select>
             <Select value={budgetFilter} onValueChange={setBudgetFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] h-10">
+              <SelectTrigger className="w-full sm:w-[160px] h-10 min-h-[44px] sm:min-h-10">
                 <SelectValue placeholder="Budget" />
               </SelectTrigger>
               <SelectContent>
@@ -560,7 +561,7 @@ const BrowseGigs = () => {
               value={advancedFilters.postedSince}
               onValueChange={(v: GigFilters["postedSince"]) => setAdvancedFilters({ ...advancedFilters, postedSince: v })}
             >
-              <SelectTrigger className="w-full sm:w-[140px] h-10">
+              <SelectTrigger className="w-full sm:w-[140px] h-10 min-h-[44px] sm:min-h-10">
                 <SelectValue placeholder="Posted" />
               </SelectTrigger>
               <SelectContent>
@@ -574,7 +575,7 @@ const BrowseGigs = () => {
               value={advancedFilters.sortBy}
               onValueChange={(v: GigFilters["sortBy"]) => setAdvancedFilters({ ...advancedFilters, sortBy: v })}
             >
-              <SelectTrigger className="w-full sm:w-[160px] h-10">
+              <SelectTrigger className="w-full sm:w-[160px] h-10 min-h-[44px] sm:min-h-10">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
@@ -587,10 +588,10 @@ const BrowseGigs = () => {
             <Button
               variant={showRefinePanel ? "secondary" : "outline"}
               size="sm"
-              className="h-10 shrink-0 gap-1.5"
+              className="h-10 min-h-[44px] sm:min-h-10 shrink-0 gap-1.5"
               onClick={() => setShowRefinePanel((p) => !p)}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className="h-4 w-4 shrink-0" />
               Refine
               {hasActiveRefine && <span className="h-2 w-2 rounded-full bg-primary" />}
               {showRefinePanel ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -598,9 +599,9 @@ const BrowseGigs = () => {
           </div>
         </div>
 
-        <div className={cn("grid gap-6", showRefinePanel ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1")}>
+        <div className={cn("grid gap-4 sm:gap-6", showRefinePanel ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-1")}>
           {showRefinePanel && (
-            <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+            <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1 min-w-0">
               <GigAdvancedFilters
                 categories={getGigCategoriesForFilter(allCategories)}
                 categoriesWithProfessions={categoriesWithProfessions}
@@ -627,18 +628,18 @@ const BrowseGigs = () => {
 
           <div className={cn("min-w-0", showRefinePanel && "lg:col-span-1 order-1 lg:order-2")}>
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "map")} className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <TabsList>
-                  <TabsTrigger value="list">
-                    <List className="h-4 w-4 mr-2" />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <TabsList className="w-full sm:w-auto grid grid-cols-2 h-11">
+                  <TabsTrigger value="list" className="min-h-[44px] sm:min-h-0 text-sm">
+                    <List className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
                     List
                   </TabsTrigger>
-                  <TabsTrigger value="map">
-                    <Map className="h-4 w-4 mr-2" />
+                  <TabsTrigger value="map" className="min-h-[44px] sm:min-h-0 text-sm">
+                    <Map className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
                     Map
                   </TabsTrigger>
                 </TabsList>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground order-first sm:order-none w-full sm:w-auto">
                   {displayGigs.length} {displayGigs.length === 1 ? "gig" : "gigs"}
                 </span>
               </div>
@@ -650,9 +651,9 @@ const BrowseGigs = () => {
                     <p className="text-muted-foreground text-sm">Loading gigs...</p>
                   </div>
                 ) : displayGigs.length === 0 ? (
-                  <Card className="border-dashed">
-                    <CardContent className="py-16 text-center">
-                      <p className="text-muted-foreground mb-2">
+                  <Card className="border border-dashed bg-transparent shadow-none">
+                    <CardContent className="py-12 sm:py-16 px-4 text-center">
+                      <p className="text-muted-foreground mb-2 text-sm sm:text-base">
                         {limitReached
                           ? "No older gigs available right now. Check back later or increase your lead limit."
                           : "No gigs match your filters."}
@@ -663,7 +664,7 @@ const BrowseGigs = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {displayGigs.map((gig) => {
                       const isOld = isOldGig(gig.created_at);
                       const isNew = !isOld;
@@ -674,14 +675,15 @@ const BrowseGigs = () => {
                         <Card
                           key={gig.id}
                           className={cn(
-                            "relative overflow-hidden transition-all duration-200",
-                            "hover:shadow-md hover:border-primary/20 cursor-pointer"
+                            "relative overflow-hidden cursor-pointer",
+                            "border border-border bg-card rounded-lg",
+                            "hover:border-primary/30 active:border-primary/40"
                           )}
                           onClick={() => navigate(`/gig/${gig.id}`)}
                         >
-                          <CardContent className="p-5 sm:p-6">
+                          <CardContent className="p-4 sm:p-5 md:p-6">
                             <div
-                              className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-md bg-background/95 p-1 shadow-sm ring-1 ring-border/50"
+                              className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-md bg-background border border-border p-1.5"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Checkbox
@@ -775,7 +777,7 @@ const BrowseGigs = () => {
                                     </Button>
                                   )}
                                 </div>
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2">
+                                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-2 text-xs sm:text-sm text-muted-foreground rounded-lg bg-muted/30 sm:bg-muted/40 px-3 py-2">
                         {gig.categories && (
                           <div className="flex items-center gap-1">
                             <Tag className="h-4 w-4 shrink-0" />
@@ -865,9 +867,9 @@ const BrowseGigs = () => {
                         <div className="flex flex-col gap-2 mt-3">
                           {gig.status === 'open' ? (
                             !userBids.has(gig.id) ? (
-                              <div className="flex gap-2 flex-wrap">
+                              <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                                 <Button
-                                  className="flex-1 min-w-[120px]"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -879,7 +881,7 @@ const BrowseGigs = () => {
                                 </Button>
                                 <Button
                                   variant="outline"
-                                  className="flex-1 min-w-[120px]"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -911,9 +913,9 @@ const BrowseGigs = () => {
                                 <p className="text-sm font-medium text-green-700 dark:text-green-400">
                                   You have already submitted a proposal.
                                 </p>
-                                <div className="flex gap-2 flex-wrap">
+                                <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                                   <Button
-                                    className="flex-1 min-w-[120px]"
+                                    className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
@@ -924,7 +926,7 @@ const BrowseGigs = () => {
                                   </Button>
                                 <Button
                                   variant="outline"
-                                  className="flex-1 min-w-[120px]"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -954,9 +956,9 @@ const BrowseGigs = () => {
                               </>
                             )
                           ) : (
-                            <div className="flex gap-2 flex-wrap">
+                            <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                               <Button
-                                className="flex-1 min-w-[120px]"
+                                className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
@@ -986,8 +988,8 @@ const BrowseGigs = () => {
                           )}
                           <p className="text-xs text-muted-foreground">
                             {gig.status === 'open'
-                              ? "Bid free to compete · Buy lead to unlock contact & reach out"
-                              : "Buy lead to unlock client contact"}
+                              ? "Bid free to compete · Or buy lead to unlock Gigger’s contact"
+                              : "Buy lead to unlock Gigger’s contact"}
                           </p>
                         </div>
                       )}

@@ -154,7 +154,7 @@ export function ConfirmHireDialog({
                 You are awarding this job to <strong>{diggerName}</strong>.
                 <br />
                 <span className="text-orange-600 font-medium mt-2 block">
-                  This job will become exclusive and cannot be awarded to any other professional.
+                  This job will become exclusive and cannot be awarded to any other freelancer.
                 </span>
               </span>
             ) : (
@@ -189,7 +189,7 @@ export function ConfirmHireDialog({
                   </p>
                   <ul className="text-orange-700 dark:text-orange-300 space-y-1">
                     <li>• This job will become exclusive to {diggerName}</li>
-                    <li>• No other professionals can be awarded this job</li>
+                    <li>• No other freelancers can be awarded this job</li>
                     <li>• <strong>You will pay a 5% down-payment of ${giggerDeposit.toFixed(0)} now</strong> (higher of 5% + lead cost or $249)</li>
                     <li>• This down-payment is deducted from the total you owe {diggerName} at job completion</li>
                     <li>• If {diggerName} accepts within 24 hours, the 5% is released to them as an advance</li>

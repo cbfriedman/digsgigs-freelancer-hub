@@ -37,8 +37,8 @@ export default function Pricing() {
   return (
     <>
       <Helmet>
-        <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $20-$69) or exclusive jobs (8% referral fee, $99 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <title>Pricing for Freelancers (Diggers) & Clients (Giggers) | Digs & Gigs</title>
+        <meta name="description" content="For Diggers (freelancers): pay per lead (3% of budget, $20–$69) or 8% when awarded. For Giggers (clients): post free; 15% deposit when awarding. No subscriptions. Bad leads refundable." />
       </Helmet>
       
       <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
@@ -55,7 +55,7 @@ export default function Pricing() {
               <div className="animate-fade-in-up">
                 <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm">
                   <DollarSign className="h-3.5 w-3.5 mr-1.5" />
-                  Two Ways to Engage
+                  Two ways to get work
                 </Badge>
               </div>
               
@@ -100,7 +100,7 @@ export default function Pricing() {
                   </CardHeader>
                   <CardContent className="space-y-6 pt-2">
                     <p className="text-center text-muted-foreground">
-                      Pay once to unlock client contact details. Other professionals may also engage.
+                      Pay once to unlock the Gigger’s contact. Other Diggers (freelancers) may also unlock the same lead.
                     </p>
                     
                     <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/10">

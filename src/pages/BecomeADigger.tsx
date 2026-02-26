@@ -105,7 +105,7 @@ export default function BecomeADigger() {
       <>
         <SEOHead
           title="You're In! | Digs & Gigs"
-          description="Welcome to Digs & Gigs. You'll receive project opportunities in your inbox."
+          description="Welcome to Digs & Gigs. As a Digger (freelancer), you’ll receive gig leads in your inbox from Giggers (clients)."
           canonical="/become-a-digger"
           noindex={true}
         />
@@ -117,7 +117,7 @@ export default function BecomeADigger() {
               </div>
               <CardTitle className="text-2xl">You're In!</CardTitle>
               <CardDescription className="text-base">
-                We've added you to our lead notification list. You'll receive emails when clients need your services.
+                We've added you to our lead list. You'll receive emails when Giggers (clients) post gigs that match your profile.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -146,7 +146,7 @@ export default function BecomeADigger() {
                     <div className="text-left">
                       <h4 className="font-semibold text-sm">Option 2: Get Awarded a Project</h4>
                       <p className="text-xs text-muted-foreground mt-1">
-                        When a client chooses you, pay only <span className="font-medium text-foreground">8% referral fee</span>. 
+                        When a Gigger (client) awards you, pay only <span className="font-medium text-foreground">8% referral fee</span>. 
                         Keep 92% of your earnings—no upfront cost.
                       </p>
                     </div>
@@ -211,8 +211,8 @@ export default function BecomeADigger() {
   return (
     <>
       <SEOHead
-        title="Become a Digger | Get Tech Freelance Leads | Digs & Gigs"
-        description="Join Digs & Gigs to receive tech project leads directly in your inbox. Free to join, pay only for leads you want."
+        title="Become a Digger (Freelancer) | Get Leads by Email | Digs & Gigs"
+        description="Join as a Digger (freelancer). Get gig leads by email from Giggers (clients). Free to join. Pay per lead or 8% when awarded."
         canonical="/become-a-digger"
       />
       <div className="min-h-screen bg-gradient-to-b from-background to-muted py-12 px-4">
@@ -223,7 +223,7 @@ export default function BecomeADigger() {
               Get Tech Project Leads <span className="text-primary">Instantly</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join 500+ freelancers receiving project opportunities. No fees until you win work.
+              Join Diggers (freelancers) receiving gig leads from Giggers (clients). No fees until you unlock a lead or get awarded.
             </p>
           </div>
 

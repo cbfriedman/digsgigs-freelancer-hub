@@ -12,10 +12,10 @@ export const HeroSection = () => {
       <div className="container-wide relative">
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="mb-6 text-foreground">
-            Where tech talent meets opportunity.
+            Leads in your inbox. Pay only for what you unlock.
           </h1>
           <p className="text-lg text-muted-foreground mb-12 max-w-xl mx-auto leading-relaxed">
-            Connect with software developers, designers, and digital experts. Post gigs or find leads—no subscriptions.
+            Giggers post projects. Diggers get leads by email. Unlock contacts or bid and pay when you win. No subscriptions.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
@@ -27,7 +27,7 @@ export const HeroSection = () => {
                 navigate("/post-gig");
               }}
             >
-              Post a Project
+              Post a gig (Gigger)
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -39,12 +39,12 @@ export const HeroSection = () => {
                 navigate("/register?mode=signup&type=digger");
               }}
             >
-              Become a Digger
+              Get leads (Digger)
             </Button>
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Free to join · Pay only for leads you unlock
+            Free to join · Pay per lead or 8% when awarded
           </p>
         </div>
       </div>

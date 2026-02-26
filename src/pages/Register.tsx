@@ -1918,8 +1918,8 @@ const Register = () => {
   return (
     <>
       <SEOHead
-        title="Register - DigsandGigs"
-        description="Create your DigsandGigs account and start connecting with opportunities. Choose to be a Digger or Gigger."
+        title="Sign up | Digs & Gigs"
+        description="Create your Digs & Gigs account. Sign up as a Digger (freelancer) to get leads by email, or as a Gigger (client) to post gigs. Free to join."
         canonical="/register"
       />
       
@@ -1946,7 +1946,7 @@ const Register = () => {
                     : selectedRoles.has('digger')
                       ? "Get matched with jobs tailored to your skills, passions, and experience – all for free."
                       : ""
-                  : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+                  : step === 3 ? "Digger = freelancer (get leads). Gigger = client (post gigs). Pick one or both." : `Set up your ${currentRole} profile`}
               </CardDescription>
             </CardHeader>
 
@@ -2558,81 +2558,67 @@ const Register = () => {
 
             {/* Step 3: Role Selection */}
             {!isPasswordResetMode && step === 3 && (
-              <div className="space-y-6">
-                <div className="space-y-4">
+              <div className="space-y-5">
+                {isFromGigPosting && (
                   <p className="text-sm text-muted-foreground">
-                    {isFromGigPosting 
-                      ? "You're registering as a Gigger to post your gig."
-                      : "Select one or more roles. You can always add more later."}
+                    You're registering as a Gigger to post your gig.
                   </p>
-
-                  {/* Only show Gigger role when coming from gig posting, otherwise show all roles */}
+                )}
+                <div className="space-y-3">
                   {!isFromGigPosting && (
-                    <>
-                      {/* Digger Role */}
-                      <Card
-                        className={`cursor-pointer transition-all ${
-                          selectedRoles.has('digger')
-                            ? 'ring-2 ring-primary bg-primary/5'
-                            : 'hover:bg-accent'
-                        }`}
-                        onClick={() => toggleRole('digger')}
-                      >
-                        <CardContent className="flex items-start space-x-4 p-4">
-                          <Checkbox
-                            checked={selectedRoles.has('digger')}
-                            onCheckedChange={() => toggleRole('digger')}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
-                              <Badge variant="secondary">🔧</Badge>
-                            </div>
-                            <p className="text-sm text-foreground/85 mt-1">
-                              Get matched with gigs, purchase leads, bid on projects, and grow your business.
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => toggleRole('digger')}
+                      className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                        selectedRoles.has('digger')
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedRoles.has('digger')}
+                          onCheckedChange={() => toggleRole('digger')}
+                          className="mt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-foreground">Find work (Digger)</h3>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            Get gigs, buy leads, bid on projects.
+                          </p>
+                        </div>
+                      </div>
+                    </button>
                   )}
 
-                  {/* Gigger Role - Always show */}
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      selectedRoles.has('gigger')
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-accent'
-                    }`}
+                  <button
+                    type="button"
                     onClick={() => toggleRole('gigger')}
+                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                      selectedRoles.has('gigger')
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:bg-muted/50'
+                    }`}
                   >
-                    <CardContent className="flex items-start space-x-4 p-4">
+                    <div className="flex items-start gap-3">
                       <Checkbox
                         checked={selectedRoles.has('gigger')}
                         onCheckedChange={() => toggleRole('gigger')}
-                        className="mt-1"
+                        className="mt-0.5"
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Hire Professionals (Gigger)</h3>
-                          <Badge variant="secondary">📋</Badge>
-                        </div>
-                        <p className="text-sm text-foreground/85 mt-1">
-                          Post gigs, receive bids from qualified professionals, and hire the best talent.
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-foreground">Hire talent (Gigger)</h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          Post gigs, review bids, hire freelancers.
                         </p>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {!isFromGigPosting && (
-                    <>
-                      {/* Telemarketer role has been removed */}
-                    </>
-                  )}
+                    </div>
+                  </button>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3 pt-1">
                   <Button
                     variant="outline"
                     onClick={() => setStep(1)}
@@ -2646,7 +2632,8 @@ const Register = () => {
                     disabled={selectedRoles.size === 0 || loading || isSendingOtpRef.current}
                     className="flex-1"
                   >
-                    {(loading || isSendingOtpRef.current) ? "Sending..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
+                    {(loading || isSendingOtpRef.current) ? "Sending..." : "Continue"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>

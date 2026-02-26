@@ -207,7 +207,7 @@ export default function DiggerGuide() {
                       <DollarSign className="h-5 w-5 text-primary mt-0.5" />
                       <div>
                         <div className="font-medium">Purchase Lead</div>
-                        <div className="text-sm text-muted-foreground">Pay tier-based cost (Free: $3, Pro: $1.50, Premium: $0) to unlock client contact info. For hourly pricing, pay 1 hour rate when awarded.</div>
+                        <div className="text-sm text-muted-foreground">Pay tier-based cost (Free: $3, Pro: $1.50, Premium: $0) to unlock the Gigger’s contact. For hourly pricing, pay 1 hour rate when awarded.</div>
                       </div>
                     </div>
                   </div>

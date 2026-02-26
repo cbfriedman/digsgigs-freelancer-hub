@@ -188,7 +188,7 @@ const MyBids = () => {
               My Bids
             </h1>
             <p className="text-muted-foreground mt-2">
-              Track all your submitted bids and manage accepted offers
+              Your bids on Giggers’ gigs. View status and manage accepted offers.
             </p>
           </div>
         </div>
@@ -197,12 +197,12 @@ const MyBids = () => {
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <DollarSign className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Bids Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">No bids yet</h3>
               <p className="text-muted-foreground text-center mb-6">
-                Start bidding on gigs to grow your business
+                As a Digger, you can bid on gigs or unlock leads. Browse gigs posted by Giggers to get started.
               </p>
               <Button onClick={() => navigate("/browse-gigs")}>
-                Browse Available Gigs
+                Browse gigs
               </Button>
             </CardContent>
           </Card>

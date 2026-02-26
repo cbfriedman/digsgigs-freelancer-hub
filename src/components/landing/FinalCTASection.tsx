@@ -11,9 +11,9 @@ export const FinalCTASection = () => {
     <section className="section-padding bg-muted/30">
       <div className="container-wide">
         <div className="max-w-xl mx-auto text-center">
-          <h2 className="mb-4">Ready to get started?</h2>
+          <h2 className="mb-4">Start getting leads</h2>
           <p className="text-muted-foreground mb-8">
-            Join Digs & Gigs and start receiving leads. Free to join.
+            Join Digs & Gigs as a Digger or post your first gig as a Gigger. Free to join.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
@@ -24,7 +24,7 @@ export const FinalCTASection = () => {
                 navigate("/register?mode=signup&type=digger");
               }}
             >
-              Become a Digger — free
+              Get leads (Digger)
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -36,7 +36,7 @@ export const FinalCTASection = () => {
                 navigate("/post-gig");
               }}
             >
-              Post a project
+              Post a gig (Gigger)
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-6">No credit card required.</p>
