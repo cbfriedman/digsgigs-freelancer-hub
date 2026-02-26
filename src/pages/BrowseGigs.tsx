@@ -913,7 +913,6 @@ const BrowseGigs = () => {
                                 </p>
                                 <div className="flex gap-2 flex-wrap">
                                   <Button
-                                    variant="outline"
                                     className="flex-1 min-w-[120px]"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -957,7 +956,6 @@ const BrowseGigs = () => {
                           ) : (
                             <div className="flex gap-2 flex-wrap">
                               <Button
-                                variant="outline"
                                 className="flex-1 min-w-[120px]"
                                 onClick={(e) => {
                                   e.stopPropagation();

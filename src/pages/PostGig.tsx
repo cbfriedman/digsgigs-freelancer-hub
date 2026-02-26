@@ -501,11 +501,11 @@ const PostGig = () => {
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
                     {hasGiggerRole ? (
-                      <Button type="button" onClick={() => switchRole("gigger")} className="rounded-xl bg-primary text-primary-foreground">
+                      <Button type="button" onClick={() => switchRole("gigger")}>
                         Switch to Gigger
                       </Button>
                     ) : (
-                      <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")} className="rounded-xl border-primary/30 text-primary">
+                      <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")}>
                         Get a Gigger account
                       </Button>
                     )}
@@ -658,30 +658,15 @@ const PostGig = () => {
                 </p>
                 <div className="flex flex-wrap gap-3 pt-1">
                   {hasGiggerRole ? (
-                    <Button
-                      type="button"
-                      onClick={() => switchRole("gigger")}
-                      className="rounded-xl bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-                    >
+                    <Button type="button" onClick={() => switchRole("gigger")}>
                       Switch to Gigger
                     </Button>
                   ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => navigate("/register?type=gigger")}
-                      className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
-                    >
+                    <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")}>
                       Get a Gigger account
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/role-dashboard")}
-                    className="rounded-xl text-muted-foreground hover:text-foreground"
-                  >
+                  <Button type="button" variant="ghost" size="sm" onClick={() => navigate("/role-dashboard")}>
                     Go to dashboard
                   </Button>
                 </div>
@@ -1346,7 +1331,7 @@ const PostGig = () => {
               <Button 
                 type="submit" 
                 size="lg" 
-                className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all" 
+                className="w-full h-12 text-base font-semibold" 
                 disabled={loading}
               >
                 {loading ? (

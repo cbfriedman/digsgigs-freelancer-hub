@@ -184,7 +184,7 @@ const MyBids = () => {
             Back
           </Button>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-foreground">
               My Bids
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -286,12 +286,10 @@ const MyBids = () => {
 
                   <div className="flex gap-3 pt-4 border-t">
                     <Button
-                      variant="outline"
                       onClick={() => navigate(`/gig/${bid.gigs.id}`)}
                     >
                       View Gig Details
                     </Button>
-                    
                     {bid.status === "accepted" && !bid.withdrawn_at && (
                       <WithdrawBidDialog
                         bidId={bid.id}

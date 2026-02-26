@@ -457,10 +457,10 @@ const MyGigs = () => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => navigate("/post-gig?quick=1")}>Post a gig</Button>
             <Button variant="outline" onClick={() => navigate("/transactions")}>
               View Transactions
             </Button>
-            <Button onClick={() => navigate("/post-gig?quick=1")}>Post a gig</Button>
           </div>
         </div>
 
