@@ -1678,6 +1678,11 @@ const GigDetail = () => {
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">Posted</div>
                     <div className="text-sm font-medium">{formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</div>
                   </div>
+                  {diggerId && gig.awarded_digger_id === diggerId && gig.consumer_id && (
+                    <Button variant="outline" className="w-full mt-2" onClick={() => navigate(`/gigger/${gig.consumer_id}`)}>
+                      View full profile <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  )}
                   {!isOwner && gig.status === 'open' && (
                     <p className="text-xs text-muted-foreground border-t pt-3">
                       Submit a proposal below or buy the lead to unlock contact and reach out directly.

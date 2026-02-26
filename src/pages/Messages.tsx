@@ -65,7 +65,6 @@ import {
 } from "@/components/messages";
 import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
 import { clientPreCheck } from "@/lib/messageModeration/clientPreCheck";
-
 // SECURITY: Input validation schema
 const messageSchema = z.object({
   content: z.string()
@@ -90,6 +89,8 @@ interface Conversation {
     profession: string;
     profile_image_url?: string | null;
   } | null;
+  /** Digger's full name (from profiles) for display in header/list */
+  digger_full_name?: string | null;
   consumer_profile?: { full_name: string | null } | null;
   /** Last message preview (from get_my_conversations) */
   last_message_content?: string | null;
@@ -1036,6 +1037,7 @@ export default function Messages() {
         updated_at: string;
         gig_title: string | null;
         digger_handle: string | null;
+        digger_full_name?: string | null;
         digger_profession: string | null;
         digger_profile_image_url?: string | null;
         consumer_avatar_url?: string | null;
@@ -1071,6 +1073,7 @@ export default function Messages() {
                   profile_image_url: c.digger_profile_image_url ?? null,
                 }
               : null,
+          digger_full_name: c.digger_full_name ?? null,
           consumer_profile: c.consumer_id != null ? { full_name: c.consumer_full_name ?? null } : null,
           last_message_content: c.last_message_content ?? null,
           last_message_sender_id: c.last_message_sender_id ?? null,
@@ -1580,7 +1583,7 @@ export default function Messages() {
       return "Support";
     }
     if (currentUser?.id === conv.consumer_id) {
-      return conv.digger_profiles?.handle || "Unknown Digger";
+      return (conv.digger_full_name || conv.digger_profiles?.handle || "Unknown Digger").trim() || "Unknown Digger";
     }
     return conv.consumer_profile?.full_name?.trim() || "Gigger";
   };
@@ -1704,17 +1707,14 @@ export default function Messages() {
     if (!selectedConv || !currentUser?.id) return null;
     if (selectedConv.admin_id) {
       if (currentUser.id === selectedConv.admin_id) {
-        return selectedConv.consumer_id ? `/profile/${selectedConv.consumer_id}` : null;
+        return selectedConv.consumer_id ? `/gigger/${selectedConv.consumer_id}` : null;
       }
       return null;
     }
-    if (currentUser.id === selectedConv.consumer_id) {
-      return getCanonicalDiggerProfilePath({
-        handle: selectedConv.digger_profiles?.handle,
-        diggerId: selectedConv.digger_id,
-      });
+    if (currentUser.id === selectedConv.consumer_id && selectedConv.digger_id) {
+      return `/digger/${selectedConv.digger_id}`;
     }
-    return selectedConv.consumer_id ? `/profile/${selectedConv.consumer_id}` : null;
+    return selectedConv.consumer_id ? `/gigger/${selectedConv.consumer_id}` : null;
   })();
   const projectTitle = selectedConv?.gigs?.title || null;
   const projectUrl = selectedConv?.gig_id ? `/gig/${selectedConv.gig_id}` : null;
@@ -1963,7 +1963,7 @@ export default function Messages() {
                         if (!currentUser?.id) return null;
                         if (conv.admin_id) {
                           if (currentUser.id === conv.admin_id) {
-                            return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                            return conv.consumer_id ? `/gigger/${conv.consumer_id}` : null;
                           }
                           return null;
                         }
@@ -1973,7 +1973,7 @@ export default function Messages() {
                             diggerId: conv.digger_id,
                           });
                         }
-                        return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                        return conv.consumer_id ? `/gigger/${conv.consumer_id}` : null;
                       })();
                       const projectUrl = conv?.gig_id ? `/gig/${conv.gig_id}` : null;
                       const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
@@ -2400,7 +2400,7 @@ export default function Messages() {
                           if (!currentUser?.id) return null;
                           if (conv.admin_id) {
                             if (currentUser.id === conv.admin_id) {
-                              return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                              return conv.consumer_id ? `/gigger/${conv.consumer_id}` : null;
                             }
                             return null;
                           }
@@ -2410,7 +2410,7 @@ export default function Messages() {
                               diggerId: conv.digger_id,
                             });
                           }
-                          return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                          return conv.consumer_id ? `/gigger/${conv.consumer_id}` : null;
                         })();
                         const projectUrl = conv?.gig_id ? `/gig/${conv.gig_id}` : null;
                         const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");

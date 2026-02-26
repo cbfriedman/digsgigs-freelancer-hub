@@ -73,6 +73,7 @@ export function useRecentConversations(currentUser: User | null) {
           gig_id?: string | null;
           gig_title?: string | null;
           digger_handle: string | null;
+          digger_full_name?: string | null;
           digger_profile_image_url?: string | null;
           consumer_avatar_url?: string | null;
           consumer_full_name?: string | null;
@@ -113,7 +114,7 @@ export function useRecentConversations(currentUser: User | null) {
             }
           } else {
             if (uid === c.consumer_id) {
-              partnerDisplayName = (c.digger_handle || "Digger").trim() || "Digger";
+              partnerDisplayName = (c.digger_full_name || c.digger_handle || "Digger").trim() || "Digger";
               partnerAvatarUrl = c.digger_profile_image_url ?? null;
               partnerUserId = c.digger_id;
               partnerIsDigger = true;
@@ -127,7 +128,7 @@ export function useRecentConversations(currentUser: User | null) {
               partnerUserId = c.digger_id || c.consumer_id || null;
               partnerIsDigger = Boolean(partnerUserId && c.digger_id && partnerUserId === c.digger_id);
               if (partnerIsDigger) {
-                partnerDisplayName = (c.digger_handle || "Digger").trim() || "Digger";
+                partnerDisplayName = (c.digger_full_name || c.digger_handle || "Digger").trim() || "Digger";
                 partnerAvatarUrl = c.digger_profile_image_url ?? null;
               } else {
                 partnerDisplayName = (c.consumer_full_name || "Client").trim() || "Client";
@@ -142,7 +143,7 @@ export function useRecentConversations(currentUser: User | null) {
                 diggerId: partnerUserId,
               });
             } else {
-              partnerProfileUrl = `/profile/${partnerUserId}`;
+              partnerProfileUrl = c.consumer_id && partnerUserId === c.consumer_id ? `/gigger/${partnerUserId}` : `/profile/${partnerUserId}`;
             }
           }
           const lastMessageFromMe = c.last_message_sender_id === uid;

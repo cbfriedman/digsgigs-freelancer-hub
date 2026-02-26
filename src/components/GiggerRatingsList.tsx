@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Star, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
@@ -28,14 +29,23 @@ interface GiggerRatingRow {
     profile_image_url: string | null;
     user_id: string;
   } | null;
-  gigs: { title: string | null } | null;
+  gigs: { title: string | null; budget_min: number | null; budget_max: number | null } | null;
+  /** Actual paid amount from escrow (set after fetch) */
+  paidAmount?: number | null;
+}
+
+function formatBudgetRange(min: number | null, max: number | null): string {
+  if (min != null && max != null) return `$${Math.round(min).toLocaleString()} - $${Math.round(max).toLocaleString()}`;
+  if (min != null) return `From $${Math.round(min).toLocaleString()}`;
+  if (max != null) return `Up to $${Math.round(max).toLocaleString()}`;
+  return "";
 }
 
 export const GiggerRatingsList = ({
   consumerId,
   averageRating,
   totalRatings,
-  title = "Reviews from professionals",
+  title = "Reviews from freelancers",
 }: GiggerRatingsListProps) => {
   const [ratings, setRatings] = useState<GiggerRatingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,14 +64,30 @@ export const GiggerRatingsList = ({
           created_at,
           gig_id,
           digger_profiles ( id, profession, profile_image_url, user_id ),
-          gigs ( title )
+          gigs ( title, budget_min, budget_max )
         `
         )
         .eq("consumer_id", consumerId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setRatings((data as GiggerRatingRow[]) ?? []);
+      const list = (data as GiggerRatingRow[]) ?? [];
+
+      // Fetch actual paid amount per gig via RPC (works for owner and visitors; escrow table RLS blocks direct read for non-owner)
+      let paidByGig: Record<string, number> = {};
+      const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", {
+        p_consumer_id: consumerId,
+      });
+      (paidRows || []).forEach((row: { gig_id: string; total_amount: number }) => {
+        if (row.gig_id) paidByGig[row.gig_id] = Number(row.total_amount);
+      });
+
+      setRatings(
+        list.map((r) => ({
+          ...r,
+          paidAmount: r.gig_id ? paidByGig[r.gig_id] : null,
+        }))
+      );
     } catch (e) {
       console.error("Error fetching gigger ratings:", e);
     } finally {
@@ -109,19 +135,22 @@ export const GiggerRatingsList = ({
       </CardHeader>
       <CardContent>
         {ratings.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No reviews from professionals yet.</p>
+          <p className="text-sm text-muted-foreground py-4">No reviews from freelancers yet.</p>
         ) : (
           <div className="space-y-4">
             {ratings.map((r) => (
               <div key={r.id} className="border rounded-lg p-4 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
+                      <AvatarImage src={r.digger_profiles?.profile_image_url ?? undefined} alt="" />
+                      <AvatarFallback className="bg-muted text-muted-foreground">
+                        <User className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <p className="text-sm font-medium">
-                        {r.digger_profiles?.profession ?? "Professional"}
+                        {r.digger_profiles?.profession ?? "Freelancer"}
                         {r.gigs?.title && (
                           <span className="text-muted-foreground font-normal"> · {r.gigs.title}</span>
                         )}
@@ -139,6 +168,13 @@ export const GiggerRatingsList = ({
                         </div>
                         <span>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
                       </div>
+                      {((r.paidAmount != null && r.paidAmount > 0) || (r.gigs && (r.gigs.budget_min != null || r.gigs.budget_max != null))) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {r.paidAmount != null && r.paidAmount > 0
+                            ? `Paid: $${Number(r.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                            : `Budget: ${formatBudgetRange(r.gigs?.budget_min ?? null, r.gigs?.budget_max ?? null)}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

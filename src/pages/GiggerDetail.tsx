@@ -23,6 +23,9 @@ import {
   ImagePlus,
   Clock,
   MapPin,
+  Star,
+  MessageSquare,
+  DollarSign,
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -42,6 +45,7 @@ import { getLocalTimeForCountry, formatJoinDate, formatRealName } from "@/pages/
 import { ensureGiggerProfile } from "@/lib/ensureGiggerProfile";
 import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
 import { GiggerRatingsList } from "@/components/GiggerRatingsList";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
 
@@ -88,6 +92,12 @@ interface GigRow {
   budget_max: number | null;
   location: string | null;
   created_at: string;
+  description?: string | null;
+  skills_required?: string[] | null;
+  poster_country?: string | null;
+  preferred_regions?: string[] | null;
+  work_type?: string | null;
+  timeline?: string | null;
 }
 
 function formatLocalTime(timezone: string | null): string {
@@ -126,6 +136,8 @@ export default function GiggerDetail() {
   const [diggerFallback, setDiggerFallback] = useState<DiggerFallbackRow | null>(null);
   const [gigs, setGigs] = useState<GigRow[]>([]);
   const [stats, setStats] = useState<{ open: number; active: number; completed: number; total: number } | null>(null);
+  const [totalSpent, setTotalSpent] = useState<number | null>(null);
+  const [paidByGigId, setPaidByGigId] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -142,6 +154,8 @@ export default function GiggerDetail() {
   const [locationStateDraft, setLocationStateDraft] = useState("");
   const [locationCityDraft, setLocationCityDraft] = useState("");
   const [savingHeader, setSavingHeader] = useState(false);
+  const [previewGig, setPreviewGig] = useState<GigRow | null>(null);
+  const [showAllRecentProjects, setShowAllRecentProjects] = useState(false);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const coverPhotoInputRef = useRef<HTMLInputElement>(null);
 
@@ -174,7 +188,7 @@ export default function GiggerDetail() {
           (supabase.from("profiles") as any).select("id, full_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
           (supabase.from("gigger_profiles" as any)).select("user_id, show_to_diggers, average_rating, total_ratings").eq("user_id", userId).maybeSingle(),
           supabase.from("digger_profiles").select("profile_image_url, country, location").eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
-          supabase.from("gigs").select("id, title, status, budget_min, budget_max, location, created_at, awarded_at").eq("consumer_id", userId).order("created_at", { ascending: false }),
+          supabase.from("gigs").select("id, title, status, budget_min, budget_max, location, created_at, awarded_at, description, skills_required, poster_country, preferred_regions, work_type, timeline").eq("consumer_id", userId).order("created_at", { ascending: false }),
         ]);
         return {
           profileData: profileRes.data as unknown as ProfileRow | null,
@@ -232,6 +246,19 @@ export default function GiggerDetail() {
         const active = gigList.filter((g) => g.status === "in_progress" || ((g as { awarded_at?: string | null }).awarded_at != null && g.status !== "completed")).length;
         const completed = gigList.filter((g) => g.status === "completed").length;
         setStats({ open, active, completed, total: gigList.length });
+        const { data: spentTotal } = await supabase.rpc("get_gigger_total_spent", { p_consumer_id: userId });
+        if (!cancelled && spentTotal != null) {
+          const n = Number(spentTotal);
+          setTotalSpent(n > 0 ? n : null);
+        }
+        const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
+        if (!cancelled && paidRows?.length) {
+          const map: Record<string, number> = {};
+          (paidRows as { gig_id: string; total_amount: number }[]).forEach((row) => {
+            if (row.gig_id) map[row.gig_id] = Number(row.total_amount);
+          });
+          setPaidByGigId(map);
+        }
         setLoading(false);
         return;
       }
@@ -240,7 +267,14 @@ export default function GiggerDetail() {
         setLoading(false);
         return;
       }
-      const visible = isOwnerView || (giggerData?.show_to_diggers !== false);
+      let visible = isOwnerView || (giggerData?.show_to_diggers !== false);
+      if (!visible && uid) {
+        const { data: myDigger } = await supabase.from("digger_profiles").select("id").eq("user_id", uid).limit(1).maybeSingle();
+        if (myDigger?.id && !cancelled) {
+          const { data: hiredGig } = await supabase.from("gigs").select("id").eq("consumer_id", userId).eq("awarded_digger_id", myDigger.id).limit(1).maybeSingle();
+          if (hiredGig) visible = true;
+        }
+      }
       if (!visible) {
         setNotVisible(true);
         setLoading(false);
@@ -264,6 +298,19 @@ export default function GiggerDetail() {
       const active = gigList.filter((g) => g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")).length;
       const completed = gigList.filter((g) => g.status === "completed").length;
       setStats({ open, active, completed, total: gigList.length });
+      const { data: spentTotal } = await supabase.rpc("get_gigger_total_spent", { p_consumer_id: userId });
+      if (!cancelled && spentTotal != null) {
+        const n = Number(spentTotal);
+        setTotalSpent(n > 0 ? n : null);
+      }
+      const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
+      if (!cancelled && paidRows?.length) {
+        const map: Record<string, number> = {};
+        (paidRows as { gig_id: string; total_amount: number }[]).forEach((row) => {
+          if (row.gig_id) map[row.gig_id] = Number(row.total_amount);
+        });
+        setPaidByGigId(map);
+      }
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -657,14 +704,35 @@ export default function GiggerDetail() {
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile"><Share2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
-                {stats && (
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                    <div className="flex flex-col gap-0.5"><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Open</span><div className="flex items-center gap-1.5"><Briefcase className="h-5 w-5 text-primary" /><span className="font-semibold text-foreground tabular-nums">{stats.open}</span></div></div>
-                    <div className="flex flex-col gap-0.5"><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</span><div className="flex items-center gap-1.5"><Briefcase className="h-5 w-5 text-amber-500" /><span className="font-semibold text-foreground tabular-nums">{stats.active}</span></div></div>
-                    <div className="flex flex-col gap-0.5"><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Completed</span><div className="flex items-center gap-1.5"><Briefcase className="h-5 w-5 text-green-600" /><span className="font-semibold text-foreground tabular-nums">{stats.completed}</span></div></div>
-                    <div className="flex flex-col gap-0.5"><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total</span><div className="flex items-center gap-1.5"><FileText className="h-5 w-5 text-muted-foreground" /><span className="font-semibold text-foreground tabular-nums">{stats.total}</span></div></div>
+                <div className="mt-6 grid grid-cols-3 gap-4 sm:gap-6">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
+                    <div className="flex items-center gap-1.5">
+                      <Star className="h-5 w-5 text-primary fill-primary" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {giggerProfile?.average_rating != null && giggerProfile.average_rating > 0
+                          ? Number(giggerProfile.average_rating).toFixed(1)
+                          : "—"}
+                      </span>
+                    </div>
                   </div>
-                )}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-foreground tabular-nums">{giggerProfile?.total_ratings ?? 0}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-0.5" title="Total paid on reviewed projects (matches sum of Paid on review cards)">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Spent</span>
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {totalSpent != null ? `$${Math.round(totalSpent).toLocaleString()}` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             {(profile.about_me?.trim() || isOwner) && (
@@ -677,30 +745,46 @@ export default function GiggerDetail() {
               </Card>
             )}
             <Card className="rounded-xl border border-border/70">
-              <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary" />Projects</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-muted-foreground">{stats && stats.total > 0 ? `${stats.open} open, ${stats.active} active, ${stats.completed} completed.` : "No projects posted yet."}</div>
-              </CardContent>
-            </Card>
-            <Card className="rounded-xl border border-border/70">
               <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />Recent projects</CardTitle></CardHeader>
               <CardContent>
                 {gigs.length === 0 ? <p className="text-sm text-muted-foreground">No projects posted yet.</p> : (
                   <div className="space-y-3">
-                    {gigs.slice(0, 10).map((gig) => (
-                      <button type="button" key={gig.id} className="w-full rounded-lg border p-4 text-left hover:bg-muted/50 transition-colors flex items-center justify-between gap-4" onClick={() => navigate(`/gig/${gig.id}`)}>
-                        <div className="min-w-0 flex-1">
+                    {gigs.slice(0, showAllRecentProjects ? gigs.length : 5).map((gig) => {
+                      const descTrim = gig.description?.trim() ?? "";
+                      const descPreview = descTrim.length > 300 ? `${descTrim.slice(0, 300)}…` : descTrim;
+                      return (
+                      <button type="button" key={gig.id} className={`w-full rounded-lg border p-4 text-left transition-colors ${isOwner ? "hover:bg-muted/50 flex items-start justify-between gap-4" : "border-border/70 bg-muted/20 hover:bg-muted/30"}`} onClick={() => setPreviewGig(gig)}>
+                        <div className="min-w-0 flex-1 text-left">
                           <p className="font-medium text-foreground line-clamp-1">{gig.title || "Untitled"}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
-                            {gig.location && <span className="line-clamp-1">{gig.location}</span>}
-                            <span>{new Date(gig.created_at).toLocaleDateString()}</span>
+                          {descPreview && <p className="mt-1.5 text-sm text-muted-foreground line-clamp-4">{descPreview}</p>}
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(gig.skills_required && gig.skills_required.length > 0)
+                              ? gig.skills_required.map((s) => (
+                                  <Badge key={s} variant="secondary" className="text-xs font-normal">{s}</Badge>
+                                ))
+                              : null}
                           </div>
+                          {paidByGigId[gig.id] != null && paidByGigId[gig.id] > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1.5">
+                              Paid so far: ${Number(paidByGigId[gig.id]).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                          )}
                         </div>
-                        <Badge variant={gig.status === "open" ? "default" : "secondary"} className="shrink-0 capitalize">{gig.status || "—"}</Badge>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {isOwner && (
+                          <>
+                            <Badge variant={gig.status === "open" ? "default" : "secondary"} className="shrink-0 capitalize">{gig.status || "—"}</Badge>
+                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+                          </>
+                        )}
                       </button>
-                    ))}
+                    ); })}
+                    {gigs.length > 5 && (
+                      <div className="pt-1">
+                        <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAllRecentProjects((v) => !v)}>
+                          {showAllRecentProjects ? "Show less" : `Load more (${gigs.length - 5} more)`}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -710,40 +794,39 @@ export default function GiggerDetail() {
                 consumerId={userId}
                 averageRating={giggerProfile?.average_rating}
                 totalRatings={giggerProfile?.total_ratings}
-                title="Reviews from professionals"
+                title="Reviews from freelancers"
               />
             )}
           </div>
           <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
             <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
-              <Card className="w-full">
-                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Location & time</CardTitle></CardHeader>
-                <CardContent className="pt-0 px-4 pb-4 space-y-4">
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Location</div>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <MapPin className="h-4 w-4 text-primary shrink-0" />
-                      {displayLocationText ? (
-                        <span className="flex items-center gap-1.5">
-                          {countryCode ? <img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded-sm shrink-0" width={20} height={15} /> : null}
-                          <span>{displayLocationText}</span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not specified</span>
-                      )}
+              {stats && (
+                <Card className="w-full">
+                  <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />Projects</CardTitle></CardHeader>
+                  <CardContent className="pt-0 px-4 pb-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Open</span>
+                        <span className="font-semibold text-foreground tabular-nums">{stats.open}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</span>
+                        <span className="font-semibold text-foreground tabular-nums">{stats.active}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Completed</span>
+                        <span className="font-semibold text-foreground tabular-nums">{stats.completed}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total</span>
+                        <span className="font-semibold text-foreground tabular-nums">{stats.total}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Local time</div>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Clock className="h-4 w-4 text-primary shrink-0" />
-                      {localTime ? <span>{localTime}</span> : <span className="text-muted-foreground">Not specified</span>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
               <Card className="w-full">
-                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Verification status</CardTitle></CardHeader>
+                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Verification</CardTitle></CardHeader>
                 <CardContent className="pt-0 px-4 pb-4">
                   {hasAnyVerification ? (
                     <div className="grid grid-cols-2 gap-3">
@@ -761,14 +844,88 @@ export default function GiggerDetail() {
                   )}
                 </CardContent>
               </Card>
-              <Card className="w-full rounded-xl border border-border/70 border-primary/20 bg-primary/5 overflow-hidden">
-                <CardHeader className="pb-2"><CardTitle className="text-lg">Hire this client&apos;s projects</CardTitle><CardDescription>View their open gigs and submit a proposal.</CardDescription></CardHeader>
-                <CardContent><Button className="w-full" onClick={() => navigate("/browse-gigs")}>Browse open gigs<ArrowRight className="h-4 w-4 ml-2" /></Button></CardContent>
-              </Card>
             </div>
           </div>
         </div>
       </div>
+
+      <Sheet open={!!previewGig} onOpenChange={(open) => !open && setPreviewGig(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          {previewGig && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-left pr-8">{previewGig.title || "Untitled"}</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-4 text-left">
+                {previewGig.status?.trim() && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Project status</span>
+                    <Badge variant={previewGig.status === "open" ? "default" : "secondary"} className="capitalize shrink-0">
+                      {previewGig.status.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                )}
+                {previewGig.description?.trim() && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Description</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{previewGig.description.trim()}</p>
+                  </div>
+                )}
+                {(previewGig.skills_required && previewGig.skills_required.length > 0) && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Required skills</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {previewGig.skills_required.map((s) => (
+                        <Badge key={s} variant="secondary" className="text-xs font-normal">{s}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  {previewGig.poster_country?.trim() && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Country</span>
+                      <span className="font-medium">{previewGig.poster_country.trim()}</span>
+                    </div>
+                  )}
+                  {(previewGig.preferred_regions && previewGig.preferred_regions.length > 0) && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Preferred location</span>
+                      <span className="font-medium text-right">{previewGig.preferred_regions.join(", ")}</span>
+                    </div>
+                  )}
+                  {previewGig.location?.trim() && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Location</span>
+                      <span className="font-medium">{previewGig.location.trim()}</span>
+                    </div>
+                  )}
+                  {previewGig.work_type?.trim() && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Job type</span>
+                      <span className="font-medium capitalize">{previewGig.work_type.replace(/_/g, " ")}</span>
+                    </div>
+                  )}
+                  {previewGig.timeline?.trim() && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Contract period</span>
+                      <span className="font-medium">{previewGig.timeline.trim()}</span>
+                    </div>
+                  )}
+                </div>
+                {isOwner && (
+                  <div className="pt-4">
+                    <Button className="w-full gap-2" onClick={() => { navigate(`/gig/${previewGig.id}`); setPreviewGig(null); }}>
+                      View full detail <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
       <Footer />
     </div>
   );

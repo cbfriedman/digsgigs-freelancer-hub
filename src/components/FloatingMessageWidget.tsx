@@ -70,7 +70,6 @@ import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
 import { clientPreCheck } from "@/lib/messageModeration/clientPreCheck";
 import { AwardEventBubble } from "@/components/messages/AwardEventBubble";
-
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
 
 interface Message {
@@ -698,7 +697,7 @@ export function FloatingMessageWidget() {
             .single();
           partnerDisplayName = (consumer?.full_name || "Client").trim() || "Client";
           partnerAvatarUrl = consumer?.avatar_url ?? null;
-          partnerProfileUrl = `/profile/${gig.consumer_id}`;
+          partnerProfileUrl = `/gigger/${gig.consumer_id}`;
           partnerUserId = gig.consumer_id;
         }
 
@@ -742,7 +741,7 @@ export function FloatingMessageWidget() {
           partnerJobTitle: gig.title ?? null,
           gigId,
           consumerId: gig.consumer_id ?? null,
-          diggerId,
+          diggerId: isGigger ? diggerId : null,
           isCurrentUserDigger: !isGigger,
           lastMessageContent: null,
           lastMessageFromMe: false,

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -745,6 +745,12 @@ const BrowseGigs = () => {
                                   {inCart && (
                                     <Badge variant="outline" className="text-xs">In cart</Badge>
                                   )}
+                                  {diggerProfile && userBids.has(gig.id) && (
+                                    <Badge variant="secondary" className="text-xs gap-1 border-green-600/40 text-green-700 dark:text-green-400 bg-green-500/10">
+                                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                      Proposal submitted
+                                    </Badge>
+                                  )}
                                   {(gig as any).escrow_requested_by_consumer && (
                                     <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-700 dark:text-blue-400">
                                       Escrow
@@ -901,18 +907,22 @@ const BrowseGigs = () => {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex gap-2 flex-wrap">
-                                <Button
-                                  variant="outline"
-                                  className="flex-1 min-w-[120px]"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    navigate(`/gig/${gig.id}`);
-                                  }}
-                                >
-                                  View Your Bid
-                                </Button>
+                              <>
+                                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                                  You have already submitted a proposal.
+                                </p>
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button
+                                    variant="outline"
+                                    className="flex-1 min-w-[120px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      navigate(`/gig/${gig.id}`);
+                                    }}
+                                  >
+                                    View Your Bid
+                                  </Button>
                                 <Button
                                   variant="outline"
                                   className="flex-1 min-w-[120px]"
@@ -941,7 +951,8 @@ const BrowseGigs = () => {
                                   <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
                                   Buy lead
                                 </Button>
-                              </div>
+                                </div>
+                              </>
                             )
                           ) : (
                             <div className="flex gap-2 flex-wrap">
