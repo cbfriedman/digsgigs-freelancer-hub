@@ -614,6 +614,11 @@ export function FloatingMessageWidget() {
     const handler = (e: Event) => {
       const { conversationId, message } = (e as CustomEvent<MessagesSyncDetail>).detail ?? {};
       if (!conversationId) return;
+      // Don't add our own sent message from sync — we already replaced temp with final
+      if (message?.sender_id && message.sender_id === userIdRef.current) {
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("recent-conversations-refresh"));
+        return;
+      }
       if (message && openChatIdsRef.current.has(conversationId)) {
         setMessagesMap((prev) => {
           const list = prev[conversationId] || [];

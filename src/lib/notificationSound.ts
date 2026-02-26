@@ -1,6 +1,6 @@
 const MUTE_KEY = "notification-sound-muted";
 let lastNotificationPlayAt = 0;
-const MIN_PLAY_GAP_MS = 300;
+const MIN_PLAY_GAP_MS = 1000;
 
 export function isNotificationMuted(): boolean {
   try {

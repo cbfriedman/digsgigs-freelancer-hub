@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { playNotificationSound } from "@/lib/notificationSound";
 
+// Module-level: one sound per message id across all listeners/channels (e.g. Strict Mode double mount)
+const playedMessageIds = new Set<string>();
+const PLAYED_TTL_MS = 2500;
+
 /**
  * Subscribes to new messages globally. When the current user receives a message
  * (on any page), plays the notification sound at max volume so they hear it even
@@ -12,7 +16,6 @@ export function GlobalMessageSound() {
   const { user } = useAuth();
   const userIdRef = useRef<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const heardMessageIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     userIdRef.current = user?.id ?? null;
@@ -26,6 +29,8 @@ export function GlobalMessageSound() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) await supabase.realtime.setAuth(session.access_token);
       if (cancelled) return;
+      // Avoid duplicate channel when effect runs twice before cleanup (e.g. Strict Mode)
+      if (channelRef.current) return;
       const channel = supabase
         .channel("global:messages")
         .on(
@@ -34,17 +39,12 @@ export function GlobalMessageSound() {
           (payload) => {
             const msg = payload.new as { id: string; conversation_id: string; sender_id: string; metadata?: { _type?: string } };
             if (msg.sender_id === userIdRef.current) return;
-            // Award events trigger sound via AwardNotificationListener; avoid double-play
             if (msg.metadata?._type === "award_event") return;
-            // Guard against duplicate listeners/events playing sound twice.
-            if (msg.id && heardMessageIdsRef.current.has(msg.id)) return;
+            if (msg.id && playedMessageIds.has(msg.id)) return;
             if (msg.id) {
-              heardMessageIdsRef.current.add(msg.id);
-              window.setTimeout(() => {
-                heardMessageIdsRef.current.delete(msg.id);
-              }, 5000);
+              playedMessageIds.add(msg.id);
+              window.setTimeout(() => playedMessageIds.delete(msg.id), PLAYED_TTL_MS);
             }
-            // Realtime only sends to clients who can SELECT the row (RLS), so we're the recipient — play same sound/volume for both client and freelancer
             playNotificationSound();
           }
         )
