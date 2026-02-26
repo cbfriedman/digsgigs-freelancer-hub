@@ -1,16 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { 
-  Mail, 
-  Facebook, 
-  Twitter, 
-  Linkedin, 
+import {
+  Mail,
+  Facebook,
+  Twitter,
+  Linkedin,
   Instagram,
-  ArrowRight,
-  CheckCircle2,
-  Shield,
   Users,
   Briefcase,
-  Heart
+  Heart,
 } from "lucide-react";
 import logo from "@/assets/digsandgigs-logo.png";
 import { SUPPORT_EMAIL } from "@/config/siteContact";
@@ -48,51 +45,29 @@ export const Footer = () => {
   const navigate = useNavigate();
 
   return (
-    <footer className="relative border-t border-border/50 bg-gradient-subtle">
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-accent/3 pointer-events-none" />
-      
-      <div className="container-wide section-padding-sm relative z-10">
-        {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          
-          {/* Brand Column */}
+    <footer className="border-t border-border bg-muted/30">
+      <div className="container-wide py-12 md:py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 mb-12">
           <div className="lg:col-span-1">
-            <div 
-              className="cursor-pointer hover:opacity-80 transition-opacity inline-block mb-6"
+            <button
+              type="button"
               onClick={() => navigate("/")}
+              className="inline-block mb-4 text-left hover:opacity-80"
             >
-              <img 
-                src={logo} 
-                alt="Digs & Gigs" 
-                className="h-20 w-auto object-contain"
-              />
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xs">
-              Connect Diggers with Giggers. Post gigs, bid or buy leads, get awarded—no membership required.
+              <img src={logo} alt="Digs & Gigs" className="h-16 w-auto object-contain" />
+            </button>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xs">
+              Connect Diggers with Giggers. Post gigs, bid or buy leads—no membership required.
             </p>
-            
-            {/* Trust Badges */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                <span>Secure Platform</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
-                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                <span>Verified Users</span>
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="flex items-center gap-3">
+            <p className="text-xs text-muted-foreground mb-4">Secure platform · Verified users</p>
+            <div className="flex items-center gap-2">
               {socialLinks.map((social, i) => (
-                <a 
+                <a
                   key={i}
-                  href={social.href} 
-                  target="_blank" 
+                  href={social.href}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110 hover:-translate-y-0.5"
+                  className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
                   aria-label={social.label}
                 >
                   <social.icon className="h-4 w-4" />
@@ -101,100 +76,81 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Platform Links */}
           <div>
-            <h4 className="font-display font-semibold text-base mb-6 flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-primary" />
-              Platform
-            </h4>
-            <ul className="space-y-3">
+            <h4 className="font-semibold text-sm text-foreground mb-4">Platform</h4>
+            <ul className="space-y-2">
               {platformLinks.map((link, i) => (
                 <li key={i}>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => navigate(link.path)} 
-                    className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-all duration-200"
+                    onClick={() => navigate(link.path)}
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
-                    <ArrowRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                    <span>{link.label}</span>
+                    {link.label}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Company Links */}
           <div>
-            <h4 className="font-display font-semibold text-base mb-6 flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              Company
-            </h4>
-            <ul className="space-y-3">
+            <h4 className="font-semibold text-sm text-foreground mb-4">Company</h4>
+            <ul className="space-y-2">
               {companyLinks.map((link, i) => (
                 <li key={i}>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => navigate(link.path)} 
-                    className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-all duration-200"
+                    onClick={() => navigate(link.path)}
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
-                    <ArrowRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                    <span>{link.label}</span>
+                    {link.label}
                   </button>
                 </li>
               ))}
             </ul>
-
-            {/* Contact */}
-            <div className="mt-8 pt-6 border-t border-border/50">
-              <a 
-                href={`mailto:${SUPPORT_EMAIL}`} 
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+            <div className="mt-6 pt-4 border-t border-border">
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
               >
                 <Mail className="h-4 w-4" />
-                <span>{SUPPORT_EMAIL}</span>
+                {SUPPORT_EMAIL}
               </a>
             </div>
           </div>
 
-          {/* Legal Links */}
           <div>
-            <h4 className="font-display font-semibold text-base mb-6 flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              Legal & Resources
-            </h4>
-            <ul className="space-y-3 mb-8">
+            <h4 className="font-semibold text-sm text-foreground mb-4">Legal & resources</h4>
+            <ul className="space-y-2 mb-6">
               {legalLinks.map((link, i) => (
                 <li key={i}>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => navigate(link.path)} 
-                    className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-all duration-200"
+                    onClick={() => navigate(link.path)}
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
-                    <ArrowRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                    <span>{link.label}</span>
+                    {link.label}
                   </button>
                 </li>
               ))}
             </ul>
-
-            {/* Resources */}
-            <div className="pt-6 border-t border-border/50">
-              <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Resources</p>
-              <ul className="space-y-2">
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Resources</p>
+              <ul className="space-y-1">
                 <li>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => navigate("/digger-guide")} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => navigate("/digger-guide")}
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     Freelancer Guide
                   </button>
                 </li>
                 <li>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => navigate("/sitemap")} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => navigate("/sitemap")}
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     Sitemap
                   </button>
@@ -204,18 +160,13 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-border/50 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} Digs & Gigs. All Rights Reserved.
-            </p>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span>Made with</span>
-              <Heart className="h-4 w-4 text-destructive fill-destructive" />
-              <span>for freelancers & clients</span>
-            </div>
-          </div>
+        <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} Digs & Gigs. All rights reserved.
+          </p>
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            Made with <Heart className="h-4 w-4 text-destructive fill-destructive" /> for freelancers & clients
+          </p>
         </div>
       </div>
     </footer>

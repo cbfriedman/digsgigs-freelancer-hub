@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 /* =============================================================================
-   DIGS & GIGS DESIGN SYSTEM v2.0
-   Clean & Minimal aesthetic with refined brand colors
+   DIGS & GIGS DESIGN SYSTEM v2.0 — MINIMAL
+   Clean, minimal aesthetic: ample whitespace, flat hierarchy, restrained color
    ============================================================================= */
 
 /* -----------------------------------------------------------------------------
@@ -76,28 +76,28 @@
     --radius-2xl: 1.5rem;
     --radius-full: 9999px;
 
-    /* Gradients */
+    /* Gradients — minimal: very subtle only */
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 42%) 0%, hsl(280 70% 50%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(35 95% 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(262 83% 42% / 0.05) 0%, hsl(25 95% 53% / 0.05) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220 14% 98%) 0%, hsl(0 0% 100%) 100%);
+    --gradient-card: none;
     --gradient-subtle: linear-gradient(180deg, hsl(220 14% 98%) 0%, hsl(220 14% 96%) 100%);
-    
-    /* Shadows - Elevation System */
-    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.1), 0 1px 2px -1px hsl(222 47% 11% / 0.1);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1), 0 2px 4px -2px hsl(222 47% 11% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1), 0 4px 6px -4px hsl(222 47% 11% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.1);
-    --shadow-2xl: 0 25px 50px -12px hsl(222 47% 11% / 0.25);
-    
-    /* Brand Shadows */
-    --shadow-primary: 0 4px 14px 0 hsl(262 83% 42% / 0.25);
-    --shadow-primary-lg: 0 10px 30px -5px hsl(262 83% 42% / 0.3);
-    --shadow-accent: 0 4px 14px 0 hsl(25 95% 53% / 0.25);
-    --shadow-accent-lg: 0 10px 30px -5px hsl(25 95% 53% / 0.3);
-    --shadow-card: 0 1px 3px hsl(222 47% 11% / 0.06), 0 4px 12px hsl(222 47% 11% / 0.04);
-    --shadow-card-hover: 0 4px 12px hsl(222 47% 11% / 0.08), 0 8px 24px hsl(222 47% 11% / 0.06);
+
+    /* Shadows — minimal: very soft, flat */
+    --shadow-xs: 0 1px 1px 0 hsl(222 47% 11% / 0.04);
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06);
+    --shadow-md: 0 2px 4px -1px hsl(222 47% 11% / 0.06), 0 2px 4px -2px hsl(222 47% 11% / 0.04);
+    --shadow-lg: 0 4px 8px -2px hsl(222 47% 11% / 0.06), 0 4px 8px -4px hsl(222 47% 11% / 0.04);
+    --shadow-xl: 0 8px 16px -4px hsl(222 47% 11% / 0.06), 0 4px 8px -4px hsl(222 47% 11% / 0.04);
+    --shadow-2xl: 0 12px 24px -8px hsl(222 47% 11% / 0.08);
+
+    /* Brand — minimal: no glow */
+    --shadow-primary: 0 2px 8px 0 hsl(262 83% 42% / 0.12);
+    --shadow-primary-lg: 0 4px 12px 0 hsl(262 83% 42% / 0.15);
+    --shadow-accent: 0 2px 8px 0 hsl(25 95% 53% / 0.12);
+    --shadow-accent-lg: 0 4px 12px 0 hsl(25 95% 53% / 0.15);
+    --shadow-card: 0 1px 2px hsl(222 47% 11% / 0.04);
+    --shadow-card-hover: 0 2px 6px hsl(222 47% 11% / 0.06);
 
     /* Sidebar */
     --sidebar-background: 220 14% 98%;
@@ -166,20 +166,20 @@
     --gradient-card: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 10%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
     
-    /* Dark Shadows */
-    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.4), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.4);
-    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.6);
-    
-    --shadow-primary: 0 4px 14px 0 hsl(262 83% 58% / 0.3);
-    --shadow-primary-lg: 0 10px 30px -5px hsl(262 83% 58% / 0.4);
-    --shadow-accent: 0 4px 14px 0 hsl(25 95% 55% / 0.3);
-    --shadow-accent-lg: 0 10px 30px -5px hsl(25 95% 55% / 0.4);
-    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.2), 0 4px 12px hsl(0 0% 0% / 0.15);
-    --shadow-card-hover: 0 4px 12px hsl(0 0% 0% / 0.25), 0 8px 24px hsl(0 0% 0% / 0.2);
+    /* Dark Shadows — minimal */
+    --shadow-xs: 0 1px 1px 0 hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 2px 4px -1px hsl(0 0% 0% / 0.25), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 4px 8px -2px hsl(0 0% 0% / 0.25), 0 4px 8px -4px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 8px 16px -4px hsl(0 0% 0% / 0.25), 0 4px 8px -4px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 12px 24px -8px hsl(0 0% 0% / 0.35);
+
+    --shadow-primary: 0 2px 8px 0 hsl(262 83% 58% / 0.2);
+    --shadow-primary-lg: 0 4px 12px 0 hsl(262 83% 58% / 0.25);
+    --shadow-accent: 0 2px 8px 0 hsl(25 95% 55% / 0.2);
+    --shadow-accent-lg: 0 4px 12px 0 hsl(25 95% 55% / 0.25);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.15);
+    --shadow-card-hover: 0 2px 6px hsl(0 0% 0% / 0.2);
 
     /* Dark Sidebar */
     --sidebar-background: 222 47% 8%;
@@ -418,20 +418,19 @@
     box-shadow: var(--shadow-accent-lg);
   }
 
-  /* Interactive Utilities (no transition: disabled globally) */
+  /* Minimal: subtle hover only, no lift/scale */
   .hover-lift:hover {
-    @apply -translate-y-1;
     box-shadow: var(--shadow-card-hover);
   }
 
   .hover-scale:hover {
-    @apply scale-[1.02];
+    /* no scale */
   }
 
   .hover-glow-primary:hover {
     box-shadow: var(--shadow-primary);
   }
-  
+
   .hover-glow-accent:hover {
     box-shadow: var(--shadow-accent);
   }

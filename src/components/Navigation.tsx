@@ -219,8 +219,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
         className={cn(
           "sticky top-0 z-50 w-full transition-all duration-300",
           scrolled 
-            ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm" 
-            : "bg-background/95 backdrop-blur-sm border-b border-border/30"
+? "bg-background border-b border-border shadow-sm"
+            : "bg-background border-b border-border/50"
         )}
       >
         <div className="container mx-auto px-4 sm:px-6">
@@ -380,7 +380,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Button
                     size="sm"
                     onClick={() => navigate("/register")}
-                    className="bg-gradient-accent text-accent-foreground font-semibold rounded-lg shadow-accent hover:shadow-accent-lg hover-glow-accent transition-all duration-200 border-0"
+                    className="bg-accent text-accent-foreground font-semibold rounded-lg border-0"
                   >
                     Sign Up
                   </Button>
@@ -415,7 +415,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">Recent Messages</span>
                         <button
@@ -522,7 +522,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">Recent Notifications</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -579,7 +579,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">{projectMenuTitle}</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -665,7 +665,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <Avatar className="h-7 w-7">
                           <AvatarImage src={userPhotoUrl || DEFAULT_AVATAR} alt="Profile" />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-xs font-medium">
+                          <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
                             {getUserInitials()}
                           </AvatarFallback>
                         </Avatar>
@@ -822,7 +822,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-sm">Recent Messages</span>
                       <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -914,7 +914,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-sm">Recent Notifications</span>
                       <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -968,7 +968,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">{projectMenuTitle}</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
@@ -1079,7 +1079,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
                             <AvatarImage src={userPhotoUrl || DEFAULT_AVATAR} alt="Profile" />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-sm font-medium">
+                            <AvatarFallback className="bg-muted text-foreground text-sm font-medium">
                               {getUserInitials()}
                             </AvatarFallback>
                           </Avatar>
@@ -1430,7 +1430,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             Sign In
                           </Button>
                           <Button
-                            className="w-full bg-gradient-accent text-accent-foreground font-semibold rounded-lg shadow-accent hover-glow-accent transition-all duration-200 border-0"
+                            className="w-full bg-accent text-accent-foreground font-semibold rounded-lg border-0"
                             onClick={() => {
                               setMobileMenuOpen(false);
                               navigate("/register");
@@ -1461,7 +1461,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
         </div>
       </nav>
       <Dialog open={showGetStartedModal} onOpenChange={setShowGetStartedModal}>
-        <DialogContent className="max-w-2xl sm:rounded-2xl">
+        <DialogContent className="max-w-2xl sm:rounded-lg">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-2xl font-semibold">How do you want to get started?</DialogTitle>
             <DialogDescription>
@@ -1475,7 +1475,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 setShowGetStartedModal(false);
                 navigate("/register?type=gigger");
               }}
-              className="group flex h-full flex-col rounded-2xl border border-border/60 bg-background/90 p-5 text-left shadow-sm transition-all hover:border-accent hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="group flex h-full flex-col rounded-lg border border-border bg-background p-5 text-left shadow-sm hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -1500,7 +1500,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 setShowGetStartedModal(false);
                 navigate("/register?type=digger");
               }}
-              className="group flex h-full flex-col rounded-2xl border border-border/60 bg-background/90 p-5 text-left shadow-sm transition-all hover:border-accent hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="group flex h-full flex-col rounded-lg border border-border bg-background p-5 text-left shadow-sm hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-secondary/20 text-secondary-foreground">
