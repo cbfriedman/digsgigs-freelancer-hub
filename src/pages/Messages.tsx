@@ -1310,7 +1310,10 @@ export default function Messages() {
           read_at: null,
           attachments: [],
         };
-        setMessages((prev) => [...prev, sentMessage]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === messageId)) return prev;
+          return [...prev, sentMessage];
+        });
         dispatchMessagesSync({ conversationId: selectedConversation, message: sentMessage });
       } else {
         await loadMessages(selectedConversation);
@@ -1490,7 +1493,10 @@ export default function Messages() {
           read_at: null,
           attachments,
         };
-        setMessages((prev) => [...prev, sentMessage]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === messageId)) return prev;
+          return [...prev, sentMessage];
+        });
         dispatchMessagesSync({ conversationId: selectedConversation, message: sentMessage });
       } else {
         await loadMessages(selectedConversation);

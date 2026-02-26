@@ -1,4 +1,6 @@
 const MUTE_KEY = "notification-sound-muted";
+let lastNotificationPlayAt = 0;
+const MIN_PLAY_GAP_MS = 300;
 
 export function isNotificationMuted(): boolean {
   try {
@@ -24,6 +26,10 @@ export function setNotificationMuted(muted: boolean): void {
  */
 export function playNotificationSound(): void {
   if (isNotificationMuted()) return;
+  const now = Date.now();
+  // Global guard: prevent duplicate sound bursts from overlapping listeners/events.
+  if (now - lastNotificationPlayAt < MIN_PLAY_GAP_MS) return;
+  lastNotificationPlayAt = now;
   try {
     const Ctx =
       window.AudioContext ||

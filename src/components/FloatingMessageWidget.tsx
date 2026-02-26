@@ -326,7 +326,27 @@ export function FloatingMessageWidget() {
           setMessagesMap((prev) => {
             const list = prev[convId] || [];
             if (list.some((m) => m.id === incoming.id)) return prev;
-            return { ...prev, [convId]: [...list, incoming] };
+            const uidCurrent = userIdRef.current;
+            const isOwnIncoming = !!uidCurrent && incoming.sender_id === uidCurrent;
+            if (isOwnIncoming) {
+              const tempIdx = list.findIndex((m) => m.id.startsWith("temp-"));
+              if (tempIdx >= 0) {
+                const next = [...list];
+                next[tempIdx] = { ...incoming };
+                return {
+                  ...prev,
+                  [convId]: next.sort(
+                    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  ),
+                };
+              }
+            }
+            return {
+              ...prev,
+              [convId]: [...list, incoming].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              ),
+            };
           });
           dispatchMessagesSync({ conversationId: convId, message: incoming });
         }
@@ -984,12 +1004,19 @@ export function FloatingMessageWidget() {
             created_at: new Date().toISOString(),
             read_at: null,
           };
-          setMessagesMap((prev) => ({
-            ...prev,
-            [conv.id]: (prev[conv.id] || []).map((m) =>
-              m.id === tempId ? { ...finalMessage } : m
-            ),
-          }));
+          setMessagesMap((prev) => {
+            const list = prev[conv.id] || [];
+            const withoutTemp = list.filter((m) => m.id !== tempId);
+            if (withoutTemp.some((m) => m.id === String(messageId))) {
+              return { ...prev, [conv.id]: withoutTemp };
+            }
+            return {
+              ...prev,
+              [conv.id]: [...withoutTemp, finalMessage].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              ),
+            };
+          });
           dispatchMessagesSync({ conversationId: conv.id, message: finalMessage });
           supabase.functions
             .invoke("enqueue-message-notification", {
@@ -1091,12 +1118,19 @@ export function FloatingMessageWidget() {
             read_at: null,
             attachments,
           };
-          setMessagesMap((prev) => ({
-            ...prev,
-            [conv.id]: (prev[conv.id] || []).map((m) =>
-              m.id === tempId ? { ...finalMessage } : m
-            ),
-          }));
+          setMessagesMap((prev) => {
+            const list = prev[conv.id] || [];
+            const withoutTemp = list.filter((m) => m.id !== tempId);
+            if (withoutTemp.some((m) => m.id === String(messageId))) {
+              return { ...prev, [conv.id]: withoutTemp };
+            }
+            return {
+              ...prev,
+              [conv.id]: [...withoutTemp, finalMessage].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              ),
+            };
+          });
           dispatchMessagesSync({ conversationId: conv.id, message: finalMessage });
           supabase.functions
             .invoke("enqueue-message-notification", {
