@@ -932,6 +932,11 @@ export default function Messages() {
     const handler = (e: Event) => {
       const { conversationId, message } = (e as CustomEvent<MessagesSyncDetail>).detail ?? {};
       if (!conversationId) return;
+      // Don't add our own sent message from sync — we already added it optimistically
+      if (message?.sender_id && message.sender_id === currentUserIdRef.current) {
+        loadConversationsRef.current();
+        return;
+      }
       if (message && selectedConversationRef.current === conversationId) {
         setMessagesRef.current((prev) => {
           if (prev.some((m) => m.id === message.id)) return prev;

@@ -1,6 +1,14 @@
 const MUTE_KEY = "notification-sound-muted";
 let lastNotificationPlayAt = 0;
-const MIN_PLAY_GAP_MS = 300;
+const MIN_PLAY_GAP_MS = 2000;
+
+// One play per message id (receiver can get same INSERT from multiple subscriptions)
+const playedMessageIds = new Set<string>();
+const PLAYED_ID_TTL_MS = 5000;
+
+function clearPlayedId(id: string): void {
+  playedMessageIds.delete(id);
+}
 
 export function isNotificationMuted(): boolean {
   try {
@@ -20,14 +28,17 @@ export function setNotificationMuted(muted: boolean): void {
 
 /**
  * Play a single, professional notification sound at maximum volume.
- * Used for new message alerts on both client (gigger) and freelancer (digger) side.
- * Plays globally (GlobalMessageSound) so users hear it even when not on the Messages page.
- * Respects mute state set via the bell icon in the floating message widget.
+ * Pass messageId to ensure the same message never plays twice (e.g. duplicate realtime events).
  */
-export function playNotificationSound(): void {
+export function playNotificationSound(messageId?: string): void {
   if (isNotificationMuted()) return;
   const now = Date.now();
-  // Global guard: prevent duplicate sound bursts from overlapping listeners/events.
+  const id = messageId != null ? String(messageId) : undefined;
+  if (id) {
+    if (playedMessageIds.has(id)) return;
+    playedMessageIds.add(id);
+    setTimeout(() => clearPlayedId(id), PLAYED_ID_TTL_MS);
+  }
   if (now - lastNotificationPlayAt < MIN_PLAY_GAP_MS) return;
   lastNotificationPlayAt = now;
   try {
