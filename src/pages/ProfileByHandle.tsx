@@ -397,7 +397,7 @@ export default function ProfileByHandle() {
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0"
+                className="shrink-0 border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 onClick={() => navigate(`/digger/${digger.id}`)}
               >
                 Open Full Digger Profile
@@ -470,7 +470,7 @@ export default function ProfileByHandle() {
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0"
+                className="shrink-0 border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 onClick={() => navigate(getCanonicalGiggerProfilePath(resolved.user_id))}
               >
                 Open Full Gigger Profile
