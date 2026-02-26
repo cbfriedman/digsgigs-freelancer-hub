@@ -194,6 +194,9 @@ serve(async (req) => {
         throw new Error(`Failed to save payment method: ${dbError.message}`);
       }
 
+      // Mark profile as payment verified so Verification card shows green for giggers
+      await supabaseAdmin.from('profiles').update({ payment_verified: true }).eq('id', user.id);
+
       logStep("Payment method saved", { paymentMethodId });
 
       return new Response(
@@ -248,6 +251,15 @@ serve(async (req) => {
         .from('payment_methods')
         .delete()
         .eq('stripe_payment_method_id', paymentMethodId);
+
+      // If no payment methods left, clear payment_verified on profile
+      const { count } = await supabaseAdmin
+        .from('payment_methods')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (count === 0) {
+        await supabaseAdmin.from('profiles').update({ payment_verified: false }).eq('id', user.id);
+      }
 
       // If this was the default, set another one as default
       if (pmRecord.is_default) {
