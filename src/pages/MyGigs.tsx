@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,16 @@ import { RatingDialog } from "@/components/RatingDialog";
 import { cn } from "@/lib/utils";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+export type GigFilterOption = "all" | "open" | "awarded" | "in_progress" | "completed";
+
+const GIG_FILTER_OPTIONS: { value: GigFilterOption; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "open", label: "Open" },
+  { value: "awarded", label: "Awarded" },
+  { value: "in_progress", label: "In progress" },
+  { value: "completed", label: "Completed" },
+];
 
 interface Gig {
   id: string;
@@ -97,6 +108,7 @@ const MyGigs = () => {
   const [platformRefGigIds, setPlatformRefGigIds] = useState<Set<string>>(new Set());
   const [reviewedGigIds, setReviewedGigIds] = useState<Set<string>>(new Set());
   const [leaveReviewGig, setLeaveReviewGig] = useState<Gig | null>(null);
+  const [statusFilter, setStatusFilter] = useState<GigFilterOption>("all");
 
   useEffect(() => {
     loadGigs();
@@ -248,13 +260,19 @@ const MyGigs = () => {
     setBidStatsByGigId(stats);
   };
 
-  const toggleGigStatus = async (gigId: string, currentStatus: string) => {
-    // Only allow open <-> closed; never reopen in_progress / awarded / completed
-    if (currentStatus !== "open" && currentStatus !== "closed") {
+  const toggleGigStatus = async (gigId: string, currentStatus: string, newChecked: boolean) => {
+    // Only allow open <-> cancelled (closed); DB constraint allows 'cancelled', not 'closed'
+    const isToggleable = currentStatus === "open" || currentStatus === "cancelled";
+    if (!isToggleable) {
       toast.error("This gig can't be reopened once it's in progress or completed.");
       return;
     }
-    const newStatus = currentStatus === "open" ? "closed" : "open";
+    const newStatus = newChecked ? "open" : "cancelled";
+
+    // Optimistic update so the Switch reflects the new state immediately
+    setGigs((prev) =>
+      prev.map((g) => (g.id === gigId ? { ...g, status: newStatus } : g))
+    );
 
     const { error } = await supabase
       .from("gigs")
@@ -262,9 +280,13 @@ const MyGigs = () => {
       .eq("id", gigId);
 
     if (error) {
+      // Revert optimistic update on failure
+      setGigs((prev) =>
+        prev.map((g) => (g.id === gigId ? { ...g, status: currentStatus } : g))
+      );
       toast.error("Failed to update gig status");
     } else {
-      toast.success(`Gig ${newStatus === "open" ? "reopened" : "closed"} successfully`);
+      toast.success(`Gig ${newStatus === "open" ? "reopened" : "closed for new bids"} successfully`);
       loadGigs();
     }
   };
@@ -506,8 +528,43 @@ const MyGigs = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading your gigs...</p>
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <Skeleton className="h-9 w-40 mb-2 rounded" />
+              <Skeleton className="h-5 w-[320px] max-w-full rounded" />
+            </div>
+            <Skeleton className="h-10 w-36 rounded-md" />
+          </div>
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
+            <Skeleton className="h-8 w-12 rounded-full" />
+            <Skeleton className="h-8 w-14 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-24 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+          </div>
+          <div className="space-y-4" aria-busy="true" aria-label="Loading your gigs">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </div>
+                      <Skeleton className="h-4 w-full rounded" />
+                      <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                      <Skeleton className="h-9 w-24 rounded-md" />
+                      <Skeleton className="h-9 w-28 rounded-md" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -530,6 +587,26 @@ const MyGigs = () => {
           </div>
         </div>
 
+        {gigs.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
+            <span className="text-xs font-medium text-muted-foreground mr-1 shrink-0">Filter:</span>
+            {GIG_FILTER_OPTIONS.map(({ value, label }) => (
+              <Button
+                key={value}
+                variant={statusFilter === value ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "min-h-[36px] sm:min-h-0 h-8 text-xs rounded-full touch-manipulation",
+                  statusFilter === value && "bg-primary text-primary-foreground"
+                )}
+                onClick={() => setStatusFilter(value)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        )}
+
         {gigs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -541,7 +618,15 @@ const MyGigs = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {gigs.map((gig) => (
+            {(statusFilter === "all"
+              ? gigs
+              : gigs.filter((g) => g.status === statusFilter)
+            ).length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No gigs in this category.
+              </p>
+            ) : (
+            (statusFilter === "all" ? gigs : gigs.filter((g) => g.status === statusFilter)).map((gig) => (
               <Card key={gig.id} className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20">
                 <CardContent className="p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -558,9 +643,10 @@ const MyGigs = () => {
                             gig.status === "completed" && "text-green-700 dark:text-green-600",
                             (gig.status === "pending_confirmation" || gig.status === "pending") && "text-gray-500 dark:text-gray-400",
                             gig.status === "awarded" && "text-green-500 dark:text-green-400",
-                            !["open", "in_progress", "completed", "awarded", "pending", "pending_confirmation"].includes(gig.status) && "text-gray-500 dark:text-gray-400"
+                            gig.status === "cancelled" && "text-gray-500 dark:text-gray-400",
+                            !["open", "in_progress", "completed", "awarded", "pending", "pending_confirmation", "cancelled"].includes(gig.status) && "text-gray-500 dark:text-gray-400"
                           )}>
-                            {gig.status === "completed" ? "Completed" : gig.status === "in_progress" ? "In progress" : gig.status === "awarded" ? "Awarded" : gig.status}
+                            {gig.status === "completed" ? "Completed" : gig.status === "in_progress" ? "In progress" : gig.status === "awarded" ? "Awarded" : gig.status === "cancelled" ? "Closed" : gig.status}
                           </span>
                         </div>
                         {gig.purchase_count > 0 && (
@@ -579,7 +665,7 @@ const MyGigs = () => {
                           </span>
                         )}
                         <div className="ml-auto flex items-center gap-2 shrink-0">
-                          {(gig.status === "open" || gig.status === "closed") && (
+                          {(gig.status === "open" || gig.status === "cancelled") && (
                             <>
                               <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
                                 {gig.status === "open" ? "Active" : "Closed"}
@@ -587,7 +673,7 @@ const MyGigs = () => {
                               <Switch
                                 id={`status-${gig.id}`}
                                 checked={gig.status === "open"}
-                                onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
+                                onCheckedChange={(checked) => toggleGigStatus(gig.id, gig.status, checked)}
                               />
                             </>
                           )}
@@ -681,7 +767,7 @@ const MyGigs = () => {
                       </div>
                       
                       <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {gig.description}
+                        {gig.description.length > 150 ? `${gig.description.slice(0, 150).trim()}…` : gig.description}
                       </p>
 
                       <div className="flex flex-wrap gap-4 text-sm">
@@ -773,7 +859,7 @@ const MyGigs = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )))}
           </div>
         )}
       </div>

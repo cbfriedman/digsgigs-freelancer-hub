@@ -167,7 +167,7 @@ export default function LeadUnlockPreview() {
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {sampleLead.description}
+                  {sampleLead.description.length > 150 ? `${sampleLead.description.slice(0, 150).trim()}…` : sampleLead.description}
                 </p>
               </CardContent>
             </Card>

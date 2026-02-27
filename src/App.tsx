@@ -14,6 +14,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { FloatingChatButton } from "./components/FloatingChatButton";
 import { FloatingMessageWidget } from "./components/FloatingMessageWidget";
 import { Navigation } from "./components/Navigation";
+import { GlobalProgressBar } from "./components/GlobalProgressBar";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 import { GlobalMessageSound } from "./components/GlobalMessageSound";
 import { NewGigAlertListener } from "./components/NewGigAlertListener";
@@ -138,6 +139,7 @@ const RootLayout = () => {
   const roleMode = activeRole === "digger" || activeRole === "gigger" ? activeRole : "";
   return (
     <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
+      <GlobalProgressBar />
       <NewGigAlertListener />
       <AwardNotificationListener />
       {!isAdminRoute && (

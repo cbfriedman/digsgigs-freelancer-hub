@@ -23,23 +23,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStripeConnect } from "@/hooks/useStripeConnect";
-import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star, AlertTriangle, Wallet } from "lucide-react";
+import { DollarSign, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Wallet, RefreshCw, ExternalLink, ShieldCheck } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
-import { RatingDialog } from "@/components/RatingDialog";
-import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import SEOHead from "@/components/SEOHead";
 
 interface Transaction {
   id: string;
@@ -82,6 +71,7 @@ const Transactions = () => {
   const { loading: payoutLoading, isOnboarded, canReceivePayments } = useStripeConnect();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userType, setUserType] = useState<'digger' | 'consumer' | null>(null);
   const [diggerId, setDiggerId] = useState<string | null>(null);
   /** When true, user has both digger and gigger roles; they can switch between Earnings and Payments views */
@@ -96,56 +86,10 @@ const Transactions = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'all' | '30' | '90' | '180'>('all');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
-  const INITIAL_DISPLAY_LIMIT = 5;
+  const INITIAL_DISPLAY_LIMIT = 10;
   const [displayLimit, setDisplayLimit] = useState(INITIAL_DISPLAY_LIMIT);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [triggeringMonthly, setTriggeringMonthly] = useState(false);
-  const [ratingDialog, setRatingDialog] = useState<{
-    open: boolean;
-    diggerId: string;
-    gigId: string;
-    gigTitle: string;
-  }>({
-    open: false,
-    diggerId: "",
-    gigId: "",
-    gigTitle: "",
-  });
-  const [giggerRatingDialog, setGiggerRatingDialog] = useState<{
-    open: boolean;
-    consumerId: string;
-    gigId: string;
-    diggerId: string;
-    gigTitle: string;
-  }>({
-    open: false,
-    consumerId: "",
-    gigId: "",
-    diggerId: "",
-    gigTitle: "",
-  });
-  const checkContractCompleted = async (gigId: string, diggerId: string): Promise<boolean> => {
-    const { data, error } = await supabase.rpc("is_contract_fully_completed_rpc" as any, {
-      p_gig_id: gigId,
-      p_digger_id: diggerId,
-    });
-    if (error) return false;
-    return !!data;
-  };
-  const [disputeDialog, setDisputeDialog] = useState<{
-    open: boolean;
-    transaction: Transaction | null;
-    subject: string;
-    description: string;
-    submitting: boolean;
-  }>({
-    open: false,
-    transaction: null,
-    subject: "",
-    description: "",
-    submitting: false,
-  });
-
   useEffect(() => {
     checkAuthAndLoad();
   }, []);
@@ -157,6 +101,19 @@ const Transactions = () => {
   useEffect(() => {
     setDisplayLimit(INITIAL_DISPLAY_LIMIT);
   }, [sortBy, filterStatus, dateRange]);
+
+  const handleRefresh = async () => {
+    if (!userId || userType == null) return;
+    setRefreshing(true);
+    try {
+      await loadTransactions(userId, userType, diggerId);
+      toast({ title: "Refreshed", description: "Transaction list updated." });
+    } catch {
+      // Error already toasted in loadTransactions
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const applyFiltersAndSort = () => {
     let filtered = [...transactions];
@@ -210,7 +167,7 @@ const Transactions = () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.user) {
-        navigate('/auth?redirect=/transactions');
+        navigate('/register');
         return;
       }
 
@@ -475,58 +432,6 @@ const Transactions = () => {
     });
   };
 
-  const openDisputeDialog = (transaction: Transaction) => {
-    setDisputeDialog({
-      open: true,
-      transaction,
-      subject: "",
-      description: "",
-      submitting: false,
-    });
-  };
-
-  const submitDispute = async () => {
-    const { transaction, subject, description } = disputeDialog;
-    if (!transaction || !subject.trim()) {
-      toast({
-        title: "Subject required",
-        description: "Please enter a short subject for the dispute",
-        variant: "destructive",
-      });
-      return;
-    }
-    setDisputeDialog((prev) => ({ ...prev, submitting: true }));
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-
-      const { error } = await supabase.from("disputes").insert({
-        gig_id: transaction.gigs.id,
-        transaction_id: transaction.fromMilestone ? null : transaction.id,
-        milestone_payment_id: transaction.milestone_payment_id ?? null,
-        raised_by_user_id: user.id,
-        subject: subject.trim(),
-        description: description.trim() || null,
-        status: "open",
-      });
-
-      if (error) throw error;
-      toast({
-        title: "Dispute reported",
-        description: "Our team will review and get back to you.",
-      });
-      setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false });
-    } catch (e: any) {
-      toast({
-        title: "Failed to submit dispute",
-        description: e?.message ?? "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setDisputeDialog((prev) => ({ ...prev, submitting: false }));
-    }
-  };
-
   const handleEmailReport = async () => {
     if (filteredTransactions.length === 0) {
       toast({
@@ -600,32 +505,93 @@ const Transactions = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto space-y-8">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <Skeleton className="h-9 w-56 mb-2 rounded" />
+                <Skeleton className="h-5 w-full max-w-md rounded" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-8">
+              <div className="space-y-4 min-w-0">
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-10 w-[160px] rounded-md" />
+                  <Skeleton className="h-10 w-[160px] rounded-md" />
+                  <Skeleton className="h-10 w-[200px] rounded-md" />
+                </div>
+                <div className="space-y-4" aria-busy="true" aria-label="Loading transactions">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between gap-3">
+                          <Skeleton className="h-6 w-3/4 rounded" />
+                          <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-1/2 rounded mt-2" />
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Skeleton className="h-24 w-full rounded-lg" />
+                          <Skeleton className="h-24 w-full rounded-lg" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Card><CardHeader className="pb-3"><Skeleton className="h-4 w-24 rounded" /></CardHeader><CardContent><Skeleton className="h-8 w-20 rounded" /></CardContent></Card>
+                <Card><CardHeader className="pb-3"><Skeleton className="h-4 w-28 rounded" /></CardHeader><CardContent><Skeleton className="h-8 w-20 rounded" /></CardContent></Card>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Transactions | Digs & Gigs"
+        description={userType === 'digger' ? "View your earnings, milestone payments, and transaction history. Export or email your reports." : "View your payment history for completed gigs. Export transactions and manage disputes."}
+      />
       <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h1 className="text-4xl font-bold mb-2">Transaction History</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-3xl sm:text-4xl font-bold mb-2">Transaction History</h1>
+                <p className="text-muted-foreground mb-1">
                   {userType === 'digger' 
-                    ? 'View your completed work, milestone payments, and earnings. All payouts you receive appear here.'
-                    : 'View your payment history for completed gigs'}
+                    ? 'Your earnings, milestone payments, and payouts. Clear and up to date.'
+                    : 'Your payment history for completed gigs and milestones.'}
+                </p>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-green-600 dark:text-green-500" aria-hidden />
+                  Your transaction data is private and secure.
                 </p>
               </div>
               
-              {/* Export Dropdown */}
-              {transactions.length > 0 && (
-                <div className="flex gap-2">
+              {/* Actions: Refresh, Email prefs, Export */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh transaction list"
+                >
+                  {refreshing ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 sm:mr-2" />}
+                  <span className="hidden sm:inline">{refreshing ? "Refreshing…" : "Refresh"}</span>
+                </Button>
+                {transactions.length > 0 && (
+                  <>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => navigate('/email-preferences')}
                   >
                     <Settings className="w-4 h-4 mr-2" />
@@ -634,7 +600,7 @@ const Transactions = () => {
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" disabled={sendingEmail || triggeringMonthly}>
+                      <Button variant="outline" size="sm" disabled={sendingEmail || triggeringMonthly}>
                         {sendingEmail ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -666,7 +632,8 @@ const Transactions = () => {
                   </DropdownMenu>
                   
                   <Button 
-                    variant="outline" 
+                    variant="outline"
+                    size="sm"
                     onClick={handleTriggerMonthlyReports}
                     disabled={triggeringMonthly || sendingEmail}
                   >
@@ -682,8 +649,9 @@ const Transactions = () => {
                       </>
                     )}
                   </Button>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
 
           {/* View switcher for users with both Digger and Gigger roles */}
@@ -701,6 +669,40 @@ const Transactions = () => {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+          )}
+
+          {/* At a glance: key totals (visible first, especially on mobile) */}
+          {transactions.length > 0 && (
+            <section aria-label="At a glance" className="rounded-lg border border-border bg-muted/30 px-4 py-4 sm:px-5 sm:py-4">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:gap-x-8">
+                {userType === 'digger' && (
+                  <>
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total earned</span>
+                      <p className="text-xl sm:text-2xl font-bold text-primary mt-0.5">${totalEarnings.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Commission paid</span>
+                      <p className="text-xl sm:text-2xl font-bold text-destructive mt-0.5">${totalCommission.toFixed(2)}</p>
+                    </div>
+                  </>
+                )}
+                {userType === 'consumer' && (
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total paid</span>
+                    <p className="text-xl sm:text-2xl font-bold text-primary mt-0.5">${totalPaid.toFixed(2)}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Transactions</span>
+                  <p className="text-xl sm:text-2xl font-bold mt-0.5">{filteredTransactions.length}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Period</span>
+                  <p className="text-sm font-medium mt-0.5">{dateRange === 'all' ? 'All time' : `Last ${dateRange} days`}</p>
+                </div>
+              </div>
+            </section>
           )}
 
           {/* Digger: payout account status + link to Account */}
@@ -728,13 +730,12 @@ const Transactions = () => {
             </Alert>
           )}
 
-          {/* 7:3 grid: left = transaction list, right = summary stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-8 items-start">
-            {/* Left: Transactions list */}
+          {/* Transaction list — summary is in "At a glance" strip above */}
+          <div>
             <div className="space-y-4 min-w-0">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-4" role="search" aria-label="Filter and sort transactions">
               <div>
-                <h2 className="text-2xl font-semibold">All Transactions</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold">Transaction list</h2>
                 {(dateRange !== 'all' || filterStatus !== 'all' || sortBy !== 'date-desc') && (
                   <Button
                     variant="link"
@@ -795,27 +796,28 @@ const Transactions = () => {
               </div>
             </div>
 
-            {/* Results count and export info */}
+            {/* Results count and export tip */}
             {transactions.length > 0 && (
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <p>
-                  Showing {filteredTransactions.length} of {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                <p className="font-medium">
+                  {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+                  {filteredTransactions.length !== transactions.length && ` (of ${transactions.length})`}
                 </p>
                 {filteredTransactions.length > 0 && (
                   <p className="text-xs">
-                    💡 Export as CSV/PDF or email the report to yourself. Need help? <Link to="/contact" className="text-primary underline hover:no-underline">Contact support</Link>.
+                    Export CSV/PDF or <Link to="/contact" className="text-primary underline hover:no-underline">contact support</Link>.
                   </p>
                 )}
               </div>
             )}
             
             {filteredTransactions.length === 0 && transactions.length > 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium mb-2">No transactions match your filters</p>
-                  <p className="text-muted-foreground mb-4">
-                    Try adjusting your filters to see more results
+              <Card className="border-dashed">
+                <CardContent className="py-12 sm:py-16 text-center px-6">
+                  <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-80" />
+                  <p className="text-lg font-semibold mb-2">No transactions match your filters</p>
+                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                    Change the time period, status, or sort to see your transactions.
                   </p>
                   <Button 
                     variant="outline" 
@@ -825,22 +827,22 @@ const Transactions = () => {
                       setSortBy('date-desc');
                     }}
                   >
-                    Clear Filters
+                    Clear all filters
                   </Button>
                 </CardContent>
               </Card>
             ) : filteredTransactions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium mb-2">No transactions yet</p>
-                  <p className="text-muted-foreground mb-4">
+              <Card className="border-dashed">
+                <CardContent className="py-12 sm:py-16 text-center px-6">
+                  <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-80" />
+                  <p className="text-lg font-semibold mb-2">No transactions yet</p>
+                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                     {userType === 'digger' 
-                      ? 'Complete your first gig to see transactions here'
-                      : 'Post a gig and hire a digger to see transactions'}
+                      ? "When you complete gigs and receive payments, they'll show up here with full details and export options."
+                      : "When you pay for completed gigs or milestones, your payment history will appear here."}
                   </p>
                   <Button onClick={() => navigate(userType === 'digger' ? '/browse-gigs' : '/post-gig')}>
-                    {userType === 'digger' ? 'Browse Gigs' : 'Post a Gig'}
+                    {userType === 'digger' ? 'Browse gigs' : 'Post a gig'}
                   </Button>
                 </CardContent>
               </Card>
@@ -854,7 +856,21 @@ const Transactions = () => {
                 <Card
                   key={transaction.id}
                   className={`overflow-hidden ${transaction.status === 'completed' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-amber-500'}`}
+                  aria-label={`Transaction: ${transaction.gigs.title}, ${format(new Date(dateStr), 'MMM d, yyyy')}, ${transaction.status}`}
                 >
+                  {/* At a glance: date, amount, status — scan quickly */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-6 pt-4 pb-2 text-sm border-b border-border/50 bg-muted/20">
+                    <span className="text-muted-foreground font-medium">{format(new Date(dateStr), 'MMM d, yyyy')}</span>
+                    <span className="text-muted-foreground/80" aria-hidden>·</span>
+                    <span className="font-bold text-foreground">
+                      {userType === 'digger' ? `$${transaction.digger_payout.toFixed(2)} earned` : `$${transaction.total_amount.toFixed(2)} paid`}
+                    </span>
+                    <span className="text-muted-foreground/80" aria-hidden>·</span>
+                    {isMilestone && <Badge variant="secondary" className="text-xs">Milestone</Badge>}
+                    <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="shrink-0">
+                      {transaction.status}
+                    </Badge>
+                  </div>
                   <CardHeader className="pb-2">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
@@ -863,6 +879,15 @@ const Transactions = () => {
                           <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
                             {getTransactionRef(transaction)}
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-primary shrink-0"
+                            onClick={() => navigate(`/gig/${transaction.gigs.id}`)}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                            View project
+                          </Button>
                         </div>
                         {(isMilestone && (transaction.milestone_description ?? transaction.milestone_number != null)) && (
                           <p className="text-sm text-muted-foreground">
@@ -875,20 +900,11 @@ const Transactions = () => {
                               ? <>Professional: <strong className="text-foreground">{getProfessionalDisplayName(transaction)}</strong></>
                               : <>Client: <strong className="text-foreground">{getClientDisplayName(transaction)}</strong></>}
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="w-3.5 h-3.5 shrink-0" />
-                            {format(new Date(dateStr), 'MMM d, yyyy')}
-                            <span className="text-muted-foreground/80">({formatDistanceToNow(new Date(dateStr), { addSuffix: true })})</span>
+                            {formatDistanceToNow(new Date(dateStr), { addSuffix: true })}
                           </span>
                         </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isMilestone && (
-                          <Badge variant="secondary">Milestone</Badge>
-                        )}
-                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                          {transaction.status}
-                        </Badge>
                       </div>
                     </div>
                   </CardHeader>
@@ -941,104 +957,12 @@ const Transactions = () => {
 
                       <div className="space-y-2 text-sm flex flex-col justify-center">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <span><span className="text-muted-foreground">Total amount:</span> <strong>${transaction.total_amount.toFixed(2)}</strong></span>
-                        </div>
-                        <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
                           <span className="text-muted-foreground">Paid on {format(new Date(dateStr), 'MMMM d, yyyy')}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Rating and Dispute for Consumers */}
-                    {userType === 'consumer' && transaction.status === 'completed' && (
-                      <div className="pt-4 border-t flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={async () => {
-                            const completed = await checkContractCompleted(transaction.gigs.id, transaction.digger_id);
-                            if (!completed) {
-                              toast({
-                                title: "Contract not fully completed",
-                                description: "You can leave a review once the contract is fully completed (all milestones paid).",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            setRatingDialog({
-                              open: true,
-                              diggerId: transaction.digger_id,
-                              gigId: transaction.gigs.id,
-                              gigTitle: transaction.gigs.title,
-                            });
-                          }}
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          Rate Professional
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => openDisputeDialog(transaction)}
-                          className="text-amber-600 hover:text-amber-700 border-amber-200"
-                        >
-                          <AlertTriangle className="mr-2 h-4 w-4" />
-                          Report dispute
-                        </Button>
-                      </div>
-                    )}
-                    {/* Rating and Dispute for Diggers */}
-                    {userType === 'digger' && transaction.status === 'completed' && (
-                      <div className="pt-4 border-t flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            const completed = await checkContractCompleted(transaction.gigs.id, transaction.digger_id);
-                            if (!completed) {
-                              toast({
-                                title: "Contract not fully completed",
-                                description: "You can leave a review once the contract is fully completed (all milestones paid).",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            setGiggerRatingDialog({
-                              open: true,
-                              consumerId: transaction.gigs.consumer_id,
-                              gigId: transaction.gigs.id,
-                              diggerId: transaction.digger_id,
-                              gigTitle: transaction.gigs.title,
-                            });
-                          }}
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          Rate Client
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDisputeDialog(transaction)}
-                          className="text-amber-600 hover:text-amber-700 border-amber-200"
-                        >
-                          <AlertTriangle className="mr-2 h-4 w-4" />
-                          Report dispute
-                        </Button>
-                      </div>
-                    )}
-                    {userType === 'digger' && transaction.status !== 'completed' && (
-                      <div className="pt-4 border-t">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDisputeDialog(transaction)}
-                          className="text-amber-600 hover:text-amber-700 border-amber-200"
-                        >
-                          <AlertTriangle className="mr-2 h-4 w-4" />
-                          Report dispute
-                        </Button>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               );
@@ -1059,174 +983,9 @@ const Transactions = () => {
             </>
             )}
             </div>
-
-            {/* Right: Summary stats (7:3 grid) */}
-            <div className="lg:sticky lg:top-8 space-y-4">
-              {userType === 'digger' && (
-                <>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Total Earned
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-primary">
-                        ${totalEarnings.toFixed(2)}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'After commission'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Total Commission Paid
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-destructive">
-                        ${totalCommission.toFixed(2)}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Platform fees'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Completed Gigs
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {filteredTransactions.length}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Total transactions'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-              {userType === 'consumer' && (
-                <>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Total Paid
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-primary">
-                        ${totalPaid.toFixed(2)}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Amount paid'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Transactions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {filteredTransactions.length}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {dateRange !== 'all' ? `In last ${dateRange} days` : 'Total count'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </div>
-
-      <RatingDialog
-        open={ratingDialog.open}
-        onOpenChange={(open) => setRatingDialog({ ...ratingDialog, open })}
-        diggerId={ratingDialog.diggerId}
-        gigId={ratingDialog.gigId}
-        gigTitle={ratingDialog.gigTitle}
-        onSuccess={() => {
-          toast({
-            title: "Review submitted",
-            description: "Thank you for your feedback! It will appear on the professional’s profile.",
-          });
-        }}
-      />
-      <GiggerRatingDialog
-        open={giggerRatingDialog.open}
-        onOpenChange={(open) => setGiggerRatingDialog({ ...giggerRatingDialog, open })}
-        consumerId={giggerRatingDialog.consumerId}
-        gigId={giggerRatingDialog.gigId}
-        diggerId={giggerRatingDialog.diggerId}
-        gigTitle={giggerRatingDialog.gigTitle}
-        onSuccess={() => {
-          toast({
-            title: "Review submitted",
-            description: "Thanks! Your review helps other professionals and will be visible to the client after they review you.",
-          });
-        }}
-      />
-
-      <Dialog open={disputeDialog.open} onOpenChange={(open) => !open && setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Report a dispute</DialogTitle>
-            <DialogDescription>
-              Describe the issue with this transaction. Our team will review and follow our dispute process.
-              {disputeDialog.transaction && (
-                <span className="block mt-1 text-muted-foreground">
-                  Gig: {disputeDialog.transaction.gigs.title}
-                </span>
-              )}
-              <span className="block mt-2 text-sm">
-                Need help? <Link to="/contact" className="text-primary underline hover:no-underline">Contact support</Link>.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label htmlFor="dispute-subject">Subject</Label>
-              <Input
-                id="dispute-subject"
-                placeholder="e.g. Payment not received / Work not as agreed"
-                value={disputeDialog.subject}
-                onChange={(e) => setDisputeDialog((p) => ({ ...p, subject: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="dispute-description">Details (optional)</Label>
-              <Textarea
-                id="dispute-description"
-                placeholder="Add any details that help us resolve this."
-                value={disputeDialog.description}
-                onChange={(e) => setDisputeDialog((p) => ({ ...p, description: e.target.value }))}
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false })}>
-              Cancel
-            </Button>
-            <Button onClick={submitDispute} disabled={disputeDialog.submitting}>
-              {disputeDialog.submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit dispute"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

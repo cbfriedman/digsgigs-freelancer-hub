@@ -117,19 +117,6 @@ const Register = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Immediate redirect for users with roles - don't wait for other checks
-  // This ensures users with roles (like admin) can access the platform immediately
-  // BUT: Skip redirect if user is completing registration (has no roles) OR just registered
-  // ALSO: Skip if we're already on role-dashboard (prevents redirect loops)
-  useEffect(() => {
-    const isOnDashboard = window.location.pathname === '/role-dashboard';
-    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration && !justRegistered && !isOnDashboard) {
-      console.log('User has roles, redirecting to dashboard:', userRoles);
-      // Use immediate redirect for users with roles
-      window.location.href = '/role-dashboard';
-    }
-  }, [authLoading, user, userRoles, isCompletingRegistration, justRegistered]);
-  
   // Get gig title from sessionStorage for display (safe parse - invalid JSON must not crash the page)
   const pendingGigData = (() => {
     if (!isFromGigPosting) return {};
@@ -463,6 +450,15 @@ const Register = () => {
     selectedRoles,
     navigate,
   ]);
+
+  // Redirect authenticated users who already have roles to dashboard (must be after step/userId declared)
+  useEffect(() => {
+    const isOnDashboard = window.location.pathname === '/role-dashboard';
+    const isSelectingRoles = step === 3 && !!userId;
+    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration && !justRegistered && !isOnDashboard && !isSelectingRoles) {
+      window.location.href = '/role-dashboard';
+    }
+  }, [authLoading, user, userRoles, isCompletingRegistration, justRegistered, step, userId]);
 
   // Derived values and hooks MUST run before any conditional return (Rules of Hooks)
   const roleArray = Array.from(selectedRoles);
@@ -1649,19 +1645,17 @@ const Register = () => {
 
       if (rolesError) {
         console.error("Error checking roles:", rolesError);
-        // On error, default to dashboard (users signing in likely have roles)
-        // This prevents redirecting registered users to register page
         toast.success("Welcome back!");
         window.location.href = '/role-dashboard';
         return;
       }
 
-      // Successfully signed in - redirect to dashboard
-      toast.success("Welcome back!");
-      
-      // Use full page refresh to ensure AuthContext picks up updated session and roles
-      // Always redirect to dashboard after successful sign-in
-      window.location.href = '/role-dashboard';
+      toast.success(roles.length > 0 ? "Welcome back!" : "Please complete your profile.");
+      if (roles.length > 0) {
+        window.location.href = '/role-dashboard';
+      } else {
+        window.location.href = '/register?complete=true';
+      }
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
@@ -1788,11 +1782,9 @@ const Register = () => {
             // Use full page refresh to ensure AuthContext picks up updated session and roles
             // This prevents redirect loops caused by stale auth state
             if (roles && roles.length > 0) {
-              // User has roles - registration complete, go to dashboard
               window.location.href = '/role-dashboard';
             } else {
-              // User has no roles - registration incomplete, go to role selection
-              window.location.href = '/register';
+              window.location.href = '/register?complete=true';
             }
           } catch (error) {
             console.error("Error checking roles:", error);

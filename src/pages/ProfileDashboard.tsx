@@ -479,7 +479,10 @@ export default function ProfileDashboard() {
                               </h5>
                             </div>
                             <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                              {purchase.gig?.description || "No description available"}
+                              {(() => {
+                                const d = purchase.gig?.description || "No description available";
+                                return d.length > 150 ? `${d.slice(0, 150).trim()}…` : d;
+                              })()}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant={getExclusivityBadgeVariant(purchase.exclusivity_type)}>

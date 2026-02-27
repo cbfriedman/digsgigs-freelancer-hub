@@ -222,6 +222,10 @@ export default {
           "0%, 60%, 100%": { opacity: "0.4", transform: "scale(0.8)" },
           "30%": { opacity: "1", transform: "scale(1)" },
         },
+        "refresh-slide": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(400%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0s ease-out",
@@ -241,6 +245,7 @@ export default {
         shimmer: "shimmer 0s linear infinite",
         "spin-slow": "spin-slow 0s linear infinite",
         "typing-dot": "typing-dot 0s ease-in-out infinite both",
+        "refresh-slide": "refresh-slide 1.2s ease-in-out infinite",
       },
 
       /* =======================================================================

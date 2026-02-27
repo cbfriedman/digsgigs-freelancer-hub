@@ -331,9 +331,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
 
                 if (!roles || roles.length === 0) {
-                  // User hasn't selected roles yet, redirect to registration
                   toast.success('Email verified! Please complete your registration.');
-                  window.location.href = '/register';
+                  window.location.href = '/register?complete=true';
                 } else {
                   // User has roles, redirect to dashboard
                   toast.success('Welcome back! Successfully signed in.');

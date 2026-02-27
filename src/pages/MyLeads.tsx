@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, Calendar, DollarSign, Mail, Phone, AlertCircle, Lock, Zap, UserPlus, FileText } from "lucide-react";
@@ -32,6 +33,8 @@ export default function MyLeads() {
   useEffect(() => {
     if (user) {
       loadProfiles();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -191,6 +194,51 @@ export default function MyLeads() {
             </p>
           </div>
 
+          {/* Content loading skeleton when loading and no profiles yet (initial load) */}
+          {loading && profiles.length === 0 && (
+            <div className="space-y-6" aria-busy="true" aria-label="Loading">
+              <Card className="p-6">
+                <Skeleton className="h-6 w-32 mb-2 rounded" />
+                <Skeleton className="h-10 w-full max-w-md rounded-md" />
+              </Card>
+              <Card className="p-6 bg-primary/5 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-40 rounded" />
+                    <Skeleton className="h-4 w-48 rounded" />
+                  </div>
+                  <Skeleton className="h-10 w-16 rounded" />
+                </div>
+              </Card>
+              <div className="grid gap-6">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Skeleton className="h-6 w-[50%] max-w-[18ch] rounded" />
+                          <Skeleton className="h-5 w-14 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <Skeleton className="h-4 w-full rounded" />
+                      <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Skeleton className="h-8 w-24 rounded-md" />
+                      <Skeleton className="h-8 w-20 rounded-md" />
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4">
+                      <Skeleton className="h-4 w-28 rounded" />
+                      <Skeleton className="h-4 w-32 rounded" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* No digger profile yet — CTA to create one */}
           {profiles.length === 0 && !loading && (
             <Card className="p-10 text-center max-w-lg mx-auto">
@@ -269,8 +317,31 @@ export default function MyLeads() {
           )}
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
+            <div className="grid gap-6" aria-busy="true" aria-label="Loading leads">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Skeleton className="h-6 w-[60%] max-w-[20ch] rounded" />
+                        <Skeleton className="h-5 w-14 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Skeleton className="h-8 w-24 rounded-md" />
+                    <Skeleton className="h-8 w-20 rounded-md" />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4">
+                    <Skeleton className="h-4 w-28 rounded" />
+                    <Skeleton className="h-4 w-32 rounded" />
+                  </div>
+                </Card>
+              ))}
             </div>
           ) : leads.length === 0 ? (
             <Card className="p-12 text-center">
@@ -394,7 +465,10 @@ export default function MyLeads() {
                           )}
                         </div>
                         <p className="text-muted-foreground mb-4">
-                          {gig?.description || "No description"}
+                          {(() => {
+                            const d = gig?.description || "No description";
+                            return d.length > 150 ? `${d.slice(0, 150).trim()}…` : d;
+                          })()}
                         </p>
                         
                         <div className="grid gap-2 text-sm">

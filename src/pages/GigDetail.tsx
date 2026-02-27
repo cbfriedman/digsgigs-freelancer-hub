@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -878,8 +879,55 @@ const GigDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8" aria-busy="true" aria-label="Loading gig">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-6 min-w-0">
+              <Card className="border border-border rounded-lg shadow-none">
+                <CardHeader className="p-4 sm:p-5 md:p-6">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <Skeleton className="h-4 w-14 rounded" />
+                    <Skeleton className="h-4 w-20 rounded" />
+                  </div>
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
+                    <Skeleton className="h-8 w-[85%] max-w-[28ch] rounded" />
+                    <Skeleton className="h-7 w-24 rounded shrink-0" />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-5 md:p-6 pt-0 space-y-4 sm:space-y-6">
+                  <div>
+                    <Skeleton className="h-5 w-24 rounded mb-2" />
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 w-full rounded mt-2" />
+                    <Skeleton className="h-4 max-w-[90%] w-full rounded mt-2" />
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-2 rounded-lg bg-muted/30 px-3 sm:px-4 py-2.5 sm:py-3 border border-border/50">
+                    <Skeleton className="h-4 w-20 rounded" />
+                    <Skeleton className="h-4 w-24 rounded" />
+                    <Skeleton className="h-4 w-28 rounded" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Skeleton className="h-6 w-16 rounded-lg" />
+                    <Skeleton className="h-6 w-20 rounded-lg" />
+                    <Skeleton className="h-6 w-14 rounded-lg" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <aside className="lg:col-span-3 space-y-4 sm:space-y-6 min-w-0">
+              <Card className="border border-border rounded-lg shadow-none p-4 sm:p-5">
+                <Skeleton className="h-5 w-32 rounded mb-3" />
+                <Skeleton className="h-4 w-full rounded mb-2" />
+                <Skeleton className="h-10 w-full rounded-md mt-4" />
+              </Card>
+              <Card className="border border-border rounded-lg shadow-none p-4 sm:p-5">
+                <Skeleton className="h-5 w-28 rounded mb-3" />
+                <Skeleton className="h-4 w-full rounded" />
+                <Skeleton className="h-4 max-w-[80%] w-full rounded mt-2" />
+              </Card>
+            </aside>
+          </div>
+        </main>
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +82,8 @@ const ROLE_CONFIG: Record<
 export default function FirstProfileCreate() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromRegistration = (location.state as { fromRegistration?: boolean })?.fromRegistration === true;
   const [rolesLoaded, setRolesLoaded] = useState(false);
   const [setupMode, setSetupMode] = useState<SetupMode>(null);
   const [hasDiggerProfile, setHasDiggerProfile] = useState(false);
@@ -133,8 +135,18 @@ export default function FirstProfileCreate() {
     if (!user) return;
     const resolve = async () => {
       try {
-        const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id });
-        const roleList = Array.isArray(roles) ? roles : [];
+        // When coming from Register, roles were just inserted — retry a few times
+        const maxAttempts = fromRegistration ? 5 : 1;
+        const delayMs = 400;
+        let roleList: { app_role: string }[] = [];
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id });
+          roleList = Array.isArray(roles) ? roles : [];
+          if (roleList.length > 0) break;
+          if (attempt < maxAttempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+        }
+
         const hasDigger = roleList.some((r: { app_role: string }) => r.app_role === "digger");
         const hasGigger = roleList.some((r: { app_role: string }) => r.app_role === "gigger");
 
@@ -176,7 +188,7 @@ export default function FirstProfileCreate() {
       }
     };
     void resolve();
-  }, [user, navigate, diggerCompleted]);
+  }, [user, navigate, diggerCompleted, fromRegistration]);
 
   // Pre-fill Gigger form from profiles and/or Digger location (one user = one location)
   useEffect(() => {

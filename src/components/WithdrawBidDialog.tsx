@@ -58,7 +58,7 @@ export const WithdrawBidDialog = ({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
+        <Button variant="outline" size="sm" className="text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive">
           Withdraw Bid
         </Button>
       </AlertDialogTrigger>
@@ -94,11 +94,11 @@ export const WithdrawBidDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading} className="border-border bg-transparent hover:bg-muted/50">Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleWithdraw}
             disabled={loading}
-            className="bg-destructive hover:bg-destructive/90"
+            className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-none"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Pay Penalty & Withdraw

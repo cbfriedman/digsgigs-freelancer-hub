@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { cn } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawBidDialog } from "@/components/WithdrawBidDialog";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
@@ -38,12 +38,38 @@ interface Bid {
   };
 }
 
+export type BidFilterOption = "all" | "pending" | "awarded" | "hired" | "lose" | "withdrawn";
+
+function getBidCategory(bid: Bid): BidFilterOption | "rejected" | "completed" {
+  const gigStatus = bid.gigs?.status ?? "";
+  const awardedBidId = (bid.gigs as { awarded_bid_id?: string | null })?.awarded_bid_id ?? null;
+  const isThisBidAwarded = awardedBidId !== null && awardedBidId === bid.id;
+  if (bid.status === "withdrawn" || bid.withdrawn_at) return "withdrawn";
+  if (isThisBidAwarded && (gigStatus === "in_progress" || gigStatus === "completed")) return "hired";
+  if (isThisBidAwarded && gigStatus === "awarded") return "awarded";
+  if (bid.status === "rejected" || (awardedBidId !== null && awardedBidId !== bid.id)) return "lose";
+  if (bid.status === "pending") return "pending";
+  if (bid.status === "completed") return "completed";
+  if (bid.status === "accepted") return "hired";
+  return "pending";
+}
+
+const FILTER_OPTIONS: { value: BidFilterOption; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "awarded", label: "Awarded" },
+  { value: "hired", label: "Hired" },
+  { value: "lose", label: "Lose" },
+  { value: "withdrawn", label: "Withdrawn" },
+];
+
 const MyBids = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [diggerProfileId, setDiggerProfileId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<BidFilterOption>("all");
 
   useEffect(() => {
     // Check for withdrawal success/cancel params and complete withdrawal flow if needed
@@ -196,10 +222,55 @@ const MyBids = () => {
   const activeBids = bids.filter((b) => activeStatuses.has(b.status));
   const pastBids = bids.filter((b) => !activeStatuses.has(b.status));
 
+  const matchesFilter = (bid: Bid): boolean => {
+    if (statusFilter === "all") return true;
+    const cat = getBidCategory(bid);
+    if (cat === "rejected") return statusFilter === "lose";
+    if (cat === "completed") return statusFilter === "hired";
+    return cat === statusFilter;
+  };
+  const filteredActiveBids = activeBids.filter(matchesFilter);
+  const filteredPastBids = pastBids.filter(matchesFilter);
+  const filteredBidsWhenNotAll = statusFilter !== "all" ? bids.filter(matchesFilter) : [];
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner label="Loading bids..." />
+      <div className="min-h-screen">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-10 max-w-2xl md:max-w-2xl lg:max-w-3xl">
+          <StripeConnectBanner />
+          <header className="mb-4 sm:mb-6 md:mb-8">
+            <Skeleton className="h-9 w-20 rounded-md -ml-2 mb-3 sm:mb-4" />
+            <Skeleton className="h-6 sm:h-7 w-24 rounded mb-1" />
+            <Skeleton className="h-4 w-[280px] max-w-full rounded" />
+          </header>
+          <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 sm:pb-4">
+            <Skeleton className="h-4 w-12 rounded mr-1" />
+            <Skeleton className="h-8 w-12 rounded-full" />
+            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-14 rounded-full" />
+            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+          </div>
+          <div className="space-y-4 sm:space-y-6" aria-busy="true" aria-label="Loading bids">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="border border-border rounded-lg overflow-hidden p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 sm:gap-4">
+                <div className="min-w-0 flex-1 flex flex-col gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Skeleton className="h-4 w-[70%] max-w-[24ch] rounded" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-full rounded" />
+                  <Skeleton className="h-3 max-w-[90%] w-full rounded" />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-col sm:items-end">
+                  <Skeleton className="h-9 w-20 rounded-md" />
+                  <Skeleton className="h-9 w-24 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -207,89 +278,152 @@ const MyBids = () => {
   return (
     <>
       <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-10 max-w-2xl md:max-w-2xl lg:max-w-3xl">
           <StripeConnectBanner />
-          <header className="mb-6">
+          <header className="mb-4 sm:mb-6 md:mb-8">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/")}
-              className="gap-1.5 -ml-2 text-muted-foreground mb-4"
+              className="gap-1.5 -ml-2 text-muted-foreground mb-3 sm:mb-4 md:mb-4 min-h-[44px] sm:min-h-0 touch-manipulation"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
               Back
             </Button>
-            <h1 className="text-lg font-semibold text-foreground">My Bids</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-foreground">My Bids</h1>
+            <p className="text-xs sm:text-sm md:text-sm text-muted-foreground mt-0.5 md:mt-1">
               {bids.length === 0
                 ? "Proposals you’ve submitted. Open a bid to view the gig and messages."
                 : `${bids.length} bid${bids.length === 1 ? "" : "s"} · newest first`}
             </p>
           </header>
 
+          {bids.length > 0 && (
+            <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 sm:pb-4">
+              <span className="text-xs font-medium text-muted-foreground mr-1 shrink-0">Filter:</span>
+              {FILTER_OPTIONS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  variant={statusFilter === value ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "min-h-[36px] sm:min-h-0 h-8 sm:h-8 text-xs rounded-full touch-manipulation",
+                    statusFilter === value && "bg-primary text-primary-foreground"
+                  )}
+                  onClick={() => setStatusFilter(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          )}
+
           {bids.length === 0 ? (
-            <section className="text-center py-12 border border-dashed border-border rounded-lg">
-              <p className="text-muted-foreground text-sm mb-4">No bids yet.</p>
-              <Button variant="outline" size="sm" onClick={() => navigate("/browse-gigs")}>
+            <section className="text-center py-8 sm:py-12 md:py-16 lg:py-20 border border-dashed border-border rounded-lg px-4 md:px-8">
+              <p className="text-muted-foreground text-sm md:text-base mb-4 md:mb-6">No bids yet.</p>
+              <Button variant="outline" size="sm" className="min-h-[44px] sm:min-h-0 md:text-sm touch-manipulation" onClick={() => navigate("/browse-gigs")}>
                 Browse gigs
               </Button>
             </section>
           ) : (
-            <div className="space-y-8">
-              {activeBids.length > 0 && (
-                <section>
-                  <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                    Active
-                  </h2>
-                  <ul className="space-y-2">
-                    {activeBids.map((bid) => (
-                      <BidRow
-                        key={bid.id}
-                        bid={bid}
-                        diggerProfileId={diggerProfileId}
-                        getStatusLabel={getStatusLabel}
-                        getStatusClass={getStatusClass}
-                        formatBudget={formatBudget}
-                        formatDistanceToNow={formatDistanceToNow}
-                        onView={() => navigate(`/gig/${bid.gigs.id}`)}
-                        onDeclineSuccess={loadBids}
-                        WithdrawComponent={
-                          bid.status === "accepted" && !bid.withdrawn_at ? (
-                            <WithdrawBidDialog
-                              bidId={bid.id}
-                              bidAmount={bid.amount}
-                              gigTitle={bid.gigs.title}
-                              onSuccess={loadBids}
-                            />
-                          ) : undefined
-                        }
-                      />
-                    ))}
-                  </ul>
-                </section>
-              )}
-              {pastBids.length > 0 && (
-                <section>
-                  <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                    Past
-                  </h2>
-                  <ul className="space-y-2">
-                    {pastBids.map((bid) => (
-                      <BidRow
-                        key={bid.id}
-                        bid={bid}
-                        diggerProfileId={diggerProfileId}
-                        getStatusLabel={getStatusLabel}
-                        getStatusClass={getStatusClass}
-                        formatBudget={formatBudget}
-                        formatDistanceToNow={formatDistanceToNow}
-                        onView={() => navigate(`/gig/${bid.gigs.id}`)}
-                        onDeclineSuccess={loadBids}
-                        WithdrawComponent={undefined}
-                      />
-                    ))}
-                  </ul>
-                </section>
+            <div className="space-y-4 sm:space-y-8 md:space-y-10 lg:space-y-12">
+              {statusFilter === "all" ? (
+                <>
+                  {filteredActiveBids.length > 0 && (
+                    <section>
+                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                        Active
+                      </h2>
+                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                        {filteredActiveBids.map((bid) => (
+                          <BidRow
+                            key={bid.id}
+                            bid={bid}
+                            diggerProfileId={diggerProfileId}
+                            getStatusLabel={getStatusLabel}
+                            getStatusClass={getStatusClass}
+                            formatBudget={formatBudget}
+                            formatDistanceToNow={formatDistanceToNow}
+                            onView={() => navigate(`/gig/${bid.gigs.id}`)}
+                            onDeclineSuccess={loadBids}
+                            WithdrawComponent={
+                              bid.status === "accepted" && !bid.withdrawn_at ? (
+                                <WithdrawBidDialog
+                                  bidId={bid.id}
+                                  bidAmount={bid.amount}
+                                  gigTitle={bid.gigs.title}
+                                  onSuccess={loadBids}
+                                />
+                              ) : undefined
+                            }
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {filteredPastBids.length > 0 && (
+                    <section>
+                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                        Past
+                      </h2>
+                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                        {filteredPastBids.map((bid) => (
+                          <BidRow
+                            key={bid.id}
+                            bid={bid}
+                            diggerProfileId={diggerProfileId}
+                            getStatusLabel={getStatusLabel}
+                            getStatusClass={getStatusClass}
+                            formatBudget={formatBudget}
+                            formatDistanceToNow={formatDistanceToNow}
+                            onView={() => navigate(`/gig/${bid.gigs.id}`)}
+                            onDeclineSuccess={loadBids}
+                            WithdrawComponent={undefined}
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </>
+              ) : (
+                <>
+                  {filteredBidsWhenNotAll.length > 0 ? (
+                    <section>
+                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                        {FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label} ({filteredBidsWhenNotAll.length})
+                      </h2>
+                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                        {filteredBidsWhenNotAll.map((bid) => (
+                          <BidRow
+                            key={bid.id}
+                            bid={bid}
+                            diggerProfileId={diggerProfileId}
+                            getStatusLabel={getStatusLabel}
+                            getStatusClass={getStatusClass}
+                            formatBudget={formatBudget}
+                            formatDistanceToNow={formatDistanceToNow}
+                            onView={() => navigate(`/gig/${bid.gigs.id}`)}
+                            onDeclineSuccess={loadBids}
+                            WithdrawComponent={
+                              bid.status === "accepted" && !bid.withdrawn_at ? (
+                                <WithdrawBidDialog
+                                  bidId={bid.id}
+                                  bidAmount={bid.amount}
+                                  gigTitle={bid.gigs.title}
+                                  onSuccess={loadBids}
+                                />
+                              ) : undefined
+                            }
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      No bids in this category.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -329,7 +463,7 @@ function BidRow({
   const gigStatusLabel =
     gigStatus === "completed" ? "Completed" : gigStatus === "in_progress" ? "In progress" : gigStatus === "awarded" ? "Awarded" : gigStatus === "open" ? "Open" : gigStatus;
   const gigStatusClass = cn(
-    "text-xs font-normal shrink-0",
+    "text-xs md:text-sm font-normal shrink-0",
     gigStatus === "open" && "text-violet-600 dark:text-violet-400",
     gigStatus === "in_progress" && "text-blue-600 dark:text-blue-400",
     gigStatus === "completed" && "text-green-700 dark:text-green-600",
@@ -414,30 +548,50 @@ function BidRow({
 
   return (
     <li className="border border-border rounded-lg overflow-hidden">
-      <div className="p-4 flex items-stretch justify-between gap-4">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm truncate max-w-[30ch]" title={bid.gigs.title}>
-              {bid.gigs.title.length > 30 ? `${bid.gigs.title.slice(0, 30)}…` : bid.gigs.title}
+      {/* Mobile: stack (content top, actions bottom right-aligned). Desktop: row (content left, actions right) */}
+      <div className="p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 sm:gap-4 md:gap-5">
+        <div className="min-w-0 flex-1 flex flex-col gap-1.5 md:gap-2 order-1 sm:order-none sm:self-stretch">
+          <div className="flex items-center gap-2 flex-wrap gap-y-1 shrink-0">
+            <span className="font-medium text-sm md:text-base truncate max-w-full sm:max-w-[30ch] md:max-w-[38ch] lg:max-w-[42ch]" title={bid.gigs.title}>
+              {bid.gigs.title.length > 50 ? `${bid.gigs.title.slice(0, 50)}…` : bid.gigs.title}
             </span>
             {gigStatus && (
-              <span className={gigStatusClass}>{gigStatusLabel}</span>
+              <span className={cn(gigStatusClass, "shrink-0")}>{gigStatusLabel}</span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs md:text-sm text-muted-foreground shrink-0">
             <span>Your bid: ${bid.amount.toLocaleString()}</span>
             {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max) && (
-              <span>Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
+              <span className="hidden sm:inline">Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
             )}
             <span>{formatDistanceToNow(new Date(bid.created_at), { addSuffix: true })}</span>
           </div>
           {bid.proposal && (
-            <p className="text-xs text-muted-foreground line-clamp-2 pt-0.5">{bid.proposal}</p>
+            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 lg:line-clamp-3 pt-0.5 sm:pt-0 sm:mt-auto">
+              {bid.proposal.length > 150 ? `${bid.proposal.slice(0, 150).trim()}…` : bid.proposal}
+            </p>
           )}
         </div>
-        <div className="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onView}>
+        <div className="flex flex-col items-end sm:items-end justify-between gap-3 shrink-0 order-2 sm:order-none w-full sm:w-auto min-h-0 sm:min-h-[inherit] sm:self-stretch">
+          {/* Status at top on desktop; buttons at bottom */}
+          {rightBottomTooltip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn("text-xs md:text-sm font-normal cursor-default text-right shrink-0 sm:pt-0", rightBottomClass)}>
+                  {rightBottomLabel}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-[80vw] sm:max-w-none">
+                <p className="text-xs">{rightBottomTooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className={cn("text-xs md:text-sm font-normal text-right shrink-0 sm:pt-0", rightBottomClass)}>
+              {rightBottomLabel}
+            </span>
+          )}
+          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-2.5 w-full sm:w-auto mt-auto">
+            <Button variant="outline" size="sm" className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs touch-manipulation" onClick={onView}>
               View gig
             </Button>
             {diggerProfileId && isThisBidAwarded && (
@@ -445,14 +599,14 @@ function BidRow({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "h-8 text-xs gap-1.5",
+                  "min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 touch-manipulation",
                   showOrangeChat &&
                     "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 )}
                 onClick={() => openFloatingChat(bid.gigs.id, diggerProfileId)}
                 title="Chat with client"
               >
-                <MessageSquare className="h-3.5 w-3.5" />
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
                 Chat
               </Button>
             )}
@@ -460,49 +614,33 @@ function BidRow({
               <>
                 <Button
                   size="sm"
-                  className="h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white touch-manipulation"
                   onClick={handleAcceptAward}
                   disabled={acceptLoading || declineLoading}
                   title="Accept this award and get hired"
                 >
-                  {acceptLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  {acceptLoading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                   Accept
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 text-xs gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                  className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive touch-manipulation"
                   onClick={handleDeclineAward}
                   disabled={declineLoading || acceptLoading}
                   title="Decline this award (you will be charged a $100 penalty)"
                 >
-                  {declineLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                  {declineLoading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
                   Decline
                 </Button>
               </>
             )}
             {WithdrawComponent}
           </div>
-          {rightBottomTooltip ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={cn("mt-auto text-xs font-normal cursor-default", rightBottomClass)}>
-                  {rightBottomLabel}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                <p className="text-xs">{rightBottomTooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <span className={cn("mt-auto text-xs font-normal", rightBottomClass)}>
-              {rightBottomLabel}
-            </span>
-          )}
         </div>
       </div>
       {bid.withdrawn_at != null && bid.withdrawal_penalty != null && (
-        <div className="px-4 py-2 bg-muted/40 border-t border-border text-xs text-muted-foreground">
+        <div className="px-3 sm:px-4 md:px-5 lg:px-6 py-2 md:py-2.5 bg-muted/40 border-t border-border text-xs md:text-sm text-muted-foreground">
           Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
         </div>
       )}

@@ -48,22 +48,21 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
             if (!rpcError && rpcRoles && (rpcRoles as any[]).length > 0) {
               hasRoles = true;
             } else if (rpcError) {
-              // On error, assume user has roles (safer than blocking access)
+              // On error, do NOT assume roles — keep user on register to complete setup
               console.warn('RPC function error (non-fatal):', rpcError);
-              hasRoles = true;
+              hasRoles = false;
             }
           } catch (rpcException) {
-            // RPC function might not exist, assume user has roles to prevent blocking
+            // RPC not available — do not assume roles; let user complete registration
             console.warn('RPC function not available:', rpcException);
-            hasRoles = true;
+            hasRoles = false;
           }
           
           setUserHasRoles(hasRoles);
           setHasCheckedRoles(true);
         } catch (err) {
           console.error('Error checking roles:', err);
-          // On error, assume user has roles to prevent blocking
-          setUserHasRoles(true);
+          setUserHasRoles(false);
           setHasCheckedRoles(true);
         }
       };

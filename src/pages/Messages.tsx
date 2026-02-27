@@ -14,7 +14,7 @@ import {
   ChevronDown, X, Pin, Star, Trash2, EyeOff, BellOff, Ban, UploadCloud,
   Award, CircleDollarSign, CheckCircle2, Send
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { z } from "zod";
@@ -1774,8 +1774,58 @@ export default function Messages() {
         wrapperClassName="h-[calc(100vh-var(--header-height))] max-h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col min-h-0"
         className="flex flex-1 min-h-0 overflow-hidden"
       >
-        <div className="flex flex-1 items-center justify-center">
-          <LoadingSpinner label="Loading conversations..." />
+        <div className="flex flex-1 min-h-0 min-w-0 border-t border-border/30 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 min-w-0">
+            <ResizablePanel defaultSize={35} minSize={25} className="flex flex-col min-h-0 bg-background border-r border-border/30">
+              <div className="shrink-0 p-4 pb-3 border-b border-border/40 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-7 w-24 rounded" />
+                  <Skeleton className="h-9 w-9 rounded-lg" />
+                </div>
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-8 w-12 rounded-full" />
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-14 rounded-full" />
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden p-2 space-y-1">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
+                    <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-[70%] rounded" />
+                      <Skeleton className="h-3 w-[50%] rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle className="shrink-0" />
+            <ResizablePanel defaultSize={65} minSize={40} className="flex flex-col min-h-0 bg-background">
+              <div className="shrink-0 flex items-center gap-3 p-3 sm:p-4 border-b border-border/40">
+                <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <Skeleton className="h-4 w-32 rounded" />
+                  <Skeleton className="h-3 w-24 rounded" />
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden p-4 sm:p-6 space-y-4">
+                <div className="flex justify-start">
+                  <Skeleton className="h-16 max-w-[75%] w-64 rounded-2xl rounded-bl-md" />
+                </div>
+                <div className="flex justify-end">
+                  <Skeleton className="h-14 max-w-[70%] w-52 rounded-2xl rounded-br-md" />
+                </div>
+                <div className="flex justify-start">
+                  <Skeleton className="h-12 max-w-[60%] w-44 rounded-2xl rounded-bl-md" />
+                </div>
+              </div>
+              <div className="shrink-0 p-3 sm:p-4 border-t border-border/30">
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </PageLayout>
     );

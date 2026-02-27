@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Check, Trash2, Mail, MessageSquare, DollarSign, Briefcase, Filter } from "lucide-react";
+import { Bell, Check, Trash2, Mail, MessageSquare, DollarSign, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -105,8 +106,24 @@ const Notifications = () => {
 
           {/* Notifications List */}
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Loading notifications...
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <div className="flex gap-4">
+                      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <Skeleton className="h-4 w-[60%] rounded" />
+                          <Skeleton className="h-5 w-10 rounded-md shrink-0" />
+                        </div>
+                        <Skeleton className="h-3 w-full max-w-md rounded" />
+                        <Skeleton className="h-3 w-24 rounded" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : filteredNotifications.length === 0 ? (
             <Card>

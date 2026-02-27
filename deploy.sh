@@ -20,6 +20,7 @@ echo "⚡ Step 2: Deploying Edge Functions..."
 functions=(
     "send-otp"
     "verify-custom-otp"
+    "create-auth-user"
     "send-welcome-email"
     "record-email-unsubscribe"
     "create-lead-purchase-checkout"

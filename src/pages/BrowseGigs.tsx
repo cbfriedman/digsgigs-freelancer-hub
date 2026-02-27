@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight, CheckCircle2, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -118,6 +119,7 @@ const BrowseGigs = () => {
     })
   );
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   /** Allowed gig statuses on Browse Gigs (from admin setting); used by realtime to hide gigs that move to a non-visible status */
   const browseStatusesRef = useRef<string[]>(["open"]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -311,8 +313,9 @@ const BrowseGigs = () => {
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
 
     const [
       { data: categoriesData, error: categoriesError },
@@ -395,11 +398,13 @@ const BrowseGigs = () => {
     if (error) {
       toast.error("Failed to load gigs");
       setLoading(false);
+      setRefreshing(false);
       return;
     }
 
     setGigs(data || []);
     setLoading(false);
+    setRefreshing(false);
   };
 
   const selectedProfessionIds = advancedFilters.selectedProfessionIds ?? [];
@@ -512,24 +517,41 @@ const BrowseGigs = () => {
 
       <div className="px-4 sm:px-6 pt-4 pb-8 sm:pt-6 sm:pb-10 max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">Browse Gigs</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Find gigs posted by Giggers. Bid or unlock the lead.</p>
-          {(diggerProfile as any)?.lead_limit_enabled && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
-                Leads this period: {leadsPurchasedThisPeriod} / {(diggerProfile as any).lead_limit}
-              </Badge>
-              {limitReached && (
-                <span className="text-sm text-muted-foreground">
-                  Limit reached. Older gigs (&gt;24h) at $1.{" "}
-                  <Button variant="link" className="p-0 h-auto font-normal text-sm" onClick={() => navigate("/lead-limits")}>
-                    Increase limit
-                  </Button>
-                </span>
-              )}
-            </div>
-          )}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">Browse Gigs</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Find gigs posted by Giggers. Bid or unlock the lead.</p>
+            {(diggerProfile as any)?.lead_limit_enabled && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
+                  Leads this period: {leadsPurchasedThisPeriod} / {(diggerProfile as any).lead_limit}
+                </Badge>
+                {limitReached && (
+                  <span className="text-sm text-muted-foreground">
+                    Limit reached. Older gigs (&gt;24h) at $1.{" "}
+                    <Button variant="link" className="p-0 h-auto font-normal text-sm" onClick={() => navigate("/lead-limits")}>
+                      Increase limit
+                    </Button>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-2 min-h-[44px] sm:min-h-0"
+            onClick={() => loadData(true)}
+            disabled={loading || refreshing}
+            title="Refresh to load new gigs"
+          >
+            {refreshing ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="sr-only sm:not-sr-only">{refreshing ? "Refreshing…" : "Refresh"}</span>
+          </Button>
         </div>
 
         {/* Remind Diggers to connect payout so they can receive money when awarded */}
@@ -657,11 +679,41 @@ const BrowseGigs = () => {
                 </span>
               </div>
 
-              <TabsContent value="list">
+              <TabsContent value="list" className="relative">
+                {refreshing && (
+                  <div className="h-0.5 w-full bg-primary/30 rounded-full overflow-hidden mb-3" aria-hidden>
+                    <div className="h-full w-1/3 min-w-[80px] bg-primary rounded-full animate-refresh-slide" />
+                  </div>
+                )}
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3">
-                    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                    <p className="text-muted-foreground text-sm">Loading gigs...</p>
+                  <div className="space-y-3 sm:space-y-4" aria-busy="true" aria-label="Loading gigs">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Card key={i} className="border border-border bg-card rounded-lg overflow-hidden">
+                        <CardContent className="p-4 sm:p-5 md:p-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-4 items-start">
+                            <div className="min-w-0 space-y-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Skeleton className="h-4 w-12 rounded" />
+                                <Skeleton className="h-4 w-14 rounded" />
+                              </div>
+                              <Skeleton className="h-5 w-full max-w-[85%] rounded" />
+                              <Skeleton className="h-4 w-full rounded" />
+                              <Skeleton className="h-4 w-full max-w-[95%] rounded" />
+                              <Skeleton className="h-4 w-3/4 rounded" />
+                              <div className="flex flex-wrap gap-x-3 gap-y-2">
+                                <Skeleton className="h-5 w-20 rounded-md" />
+                                <Skeleton className="h-5 w-16 rounded-md" />
+                                <Skeleton className="h-5 w-24 rounded-md" />
+                              </div>
+                            </div>
+                            <div className="hidden sm:block space-y-2">
+                              <Skeleton className="h-9 w-full rounded-md" />
+                              <Skeleton className="h-4 w-12 rounded" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 ) : displayGigs.length === 0 ? (
                   <Card className="border border-dashed bg-transparent shadow-none">
@@ -756,9 +808,11 @@ const BrowseGigs = () => {
                                 </h3>
                                 <div className="text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
                                   <p className={cn("leading-relaxed whitespace-pre-wrap", !expandedDescriptionIds.has(gig.id) && "line-clamp-3")}>
-                                    {gig.description}
+                                    {!expandedDescriptionIds.has(gig.id) && gig.description.length > 150
+                                      ? `${gig.description.slice(0, 150).trim()}…`
+                                      : gig.description}
                                   </p>
-                                  {gig.description.length > 120 && (
+                                  {gig.description.length > 150 && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
