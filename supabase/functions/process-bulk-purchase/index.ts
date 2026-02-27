@@ -84,18 +84,19 @@ serve(async (req) => {
 
     if (!gigs) throw new Error("Failed to fetch gigs");
 
-    // Fallback price when line item has no product metadata (e.g. old checkout): 8% of budget, $3–$49
+    // Fallback price when line item has no product metadata: non-exclusive formula (3%, $20 min, $69 max)
     const getFallbackPriceDollars = (gig: { budget_min?: number | null; budget_max?: number | null; calculated_price_cents?: number | null }): number => {
       if (gig.calculated_price_cents != null && gig.calculated_price_cents > 0) {
         const dollars = Math.round(gig.calculated_price_cents / 100);
-        return Math.min(49, Math.max(3, dollars));
+        return Math.min(69, Math.max(20, dollars));
       }
       const min = gig.budget_min ?? 0;
       const max = gig.budget_max ?? min;
       const avg = (min + max) / 2;
-      if (avg <= 0) return 3;
-      const priceDollars = Math.round(avg * 0.08);
-      return Math.min(49, Math.max(3, priceDollars));
+      if (avg <= 0) return 20;
+      const fromRate = Math.round(avg * 0.03);
+      const priceDollars = Math.min(69, Math.max(20, fromRate));
+      return priceDollars;
     };
 
     // Create lead purchase records with actual amount paid per lead from Stripe

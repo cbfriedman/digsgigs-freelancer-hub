@@ -32,8 +32,8 @@ const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN = 99; // $99 minimum (no cap)
 // Non-exclusive pricing for deposit calculation
 const NON_EXCLUSIVE_RATE = 0.02; // 2%
-const NON_EXCLUSIVE_MIN = 3; // $3 minimum
-const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+const NON_EXCLUSIVE_MIN = 20; // $20 minimum
+const NON_EXCLUSIVE_MAX = 69; // $69 maximum
 // Deposit: higher of (5% + non-exclusive cost) or $249
 const DEPOSIT_BASE_RATE = 0.05; // 5% base
 const DEPOSIT_MIN = 249; // $249 minimum deposit

@@ -89,23 +89,23 @@ serve(async (req) => {
       throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
     }
 
-    // Lead price: 8% of budget midpoint, $3–$49 (must match frontend @/lib/leadPrice and cart)
+    // Lead price (non-exclusive): max(round(budget avg × 3%), $20), $69 max (must match frontend @/lib/leadPrice and cart)
     const getLeadPriceCents = (gig: { budget_min?: number | null; budget_max?: number | null; calculated_price_cents?: number | null }): number => {
       if (gig.calculated_price_cents != null && gig.calculated_price_cents > 0) {
         const dollars = Math.round(gig.calculated_price_cents / 100);
-        const clamped = Math.min(49, Math.max(3, dollars));
+        const clamped = Math.min(69, Math.max(20, dollars));
         return clamped * 100;
       }
       const min = gig.budget_min ?? 0;
       const max = gig.budget_max ?? min;
       const avg = (min + max) / 2;
-      if (avg <= 0) return 300; // $3 default
-      const priceDollars = Math.round(avg * 0.08);
-      const clamped = Math.min(49, Math.max(3, priceDollars));
-      return clamped * 100;
+      if (avg <= 0) return 2000; // $20 default
+      const fromRate = Math.round(avg * 0.03);
+      const priceDollars = Math.min(69, Math.max(20, fromRate));
+      return priceDollars * 100;
     };
 
-    // Calculate prices for each lead (same rule everywhere: 8%, $3–$49)
+    // Calculate prices for each lead (non-exclusive: 3%, $20 min, $69 max)
     const lineItems = purchases.map((purchase: any) => {
       const gig = gigs.find(g => g.id === purchase.gigId);
       if (!gig) throw new Error(`Gig not found: ${purchase.gigId}`);

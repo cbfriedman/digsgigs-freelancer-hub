@@ -65,17 +65,18 @@ serve(async (req) => {
       throw new Error("Lead not found");
     }
 
-    // Lead price: 8% of budget midpoint, $3–$49 (must match frontend @/lib/leadPrice)
+    // Lead price (non-exclusive): max(round(budget avg × 3%), $20), $69 max (must match frontend @/lib/leadPrice)
     let priceCents = lead.calculated_price_cents;
     if (priceCents != null && priceCents > 0) {
-      priceCents = Math.min(4900, Math.max(300, Math.round(priceCents / 100) * 100));
+      priceCents = Math.min(6900, Math.max(2000, Math.round(priceCents / 100) * 100));
     } else if (lead.budget_min != null && lead.budget_max != null) {
       const avgBudget = (lead.budget_min + lead.budget_max) / 2;
-      const priceDollars = Math.round(avgBudget * 0.08);
-      priceCents = Math.min(4900, Math.max(300, priceDollars * 100));
+      const fromRate = Math.round(avgBudget * 0.03);
+      const priceDollars = Math.min(69, Math.max(20, fromRate));
+      priceCents = priceDollars * 100;
     }
     if (!priceCents) {
-      priceCents = 300; // Default $3
+      priceCents = 2000; // Default $20
     }
 
     console.log(`[subscriber-lead-checkout] Price: ${priceCents} cents`);

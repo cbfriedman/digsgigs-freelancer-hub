@@ -123,7 +123,7 @@ serve(async (req) => {
 
     const consumerId = user.id;
 
-    // Lead price: 8% of budget midpoint (fixed) or estimated total (hourly: rate * hours), $3–$49
+    // Lead price (non-exclusive): higher of (budget avg × 3%) or $20, rounded to nearest dollar, $69 max
     let bMin: number | null = budget_min ?? null;
     let bMax: number | null = budget_max ?? null;
     if (isHourly) {
@@ -144,9 +144,9 @@ serve(async (req) => {
     const avgBudget = (bMinNum + bMaxNum) / 2;
     let calculatedPriceCents: number | null = null;
     if (avgBudget > 0) {
-      const priceDollars = Math.round(avgBudget * 0.08);
-      const clamped = Math.min(49, Math.max(3, priceDollars));
-      calculatedPriceCents = clamped * 100;
+      const fromRate = Math.round(avgBudget * 0.03);
+      const priceDollars = Math.min(69, Math.max(20, fromRate));
+      calculatedPriceCents = priceDollars * 100;
     }
 
     const insertPayload: Record<string, unknown> = {

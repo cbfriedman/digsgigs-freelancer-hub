@@ -216,7 +216,7 @@ export default function BidTemplatePreview() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="non_exclusive">Non-Exclusive ($1-$49)</SelectItem>
+                  <SelectItem value="non_exclusive">Non-Exclusive ($20–$69)</SelectItem>
                   <SelectItem value="exclusive">Exclusive (2% Fee)</SelectItem>
                 </SelectContent>
               </Select>

@@ -7,7 +7,7 @@ interface Gig {
   budget_max: number | null;
   location: string;
   description: string;
-  /** When set, used for cart total (otherwise 8% of budget midpoint, $3–$49). */
+  /** When set, used for cart total (otherwise 3% of budget avg or $20 min, $69 max). */
   calculated_price_cents?: number | null;
 }
 

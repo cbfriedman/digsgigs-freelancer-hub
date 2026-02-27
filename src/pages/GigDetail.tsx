@@ -1445,28 +1445,28 @@ const GigDetail = () => {
             )}
             {!canViewAsOwner && !hasLeadPurchase && !isOwner && (
               <Card className="border border-primary/20 rounded-lg shadow-none bg-primary/5">
-                <CardHeader className="p-4 sm:p-5">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardHeader className="p-3 sm:p-4 pb-1">
+                  <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+                    <Unlock className="h-3.5 w-3.5 text-primary" />
                     Unlock the Gigger’s contact
                   </CardTitle>
-                  <CardDescription className="text-sm">
-                    Pay once to unlock the lead. You’ll see the Gigger’s (client’s) contact details and can reach out directly—no proposal required.
+                  <CardDescription className="text-xs">
+                    Pay once to get contact details—reach out directly, no proposal required.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-5 pt-0 flex flex-col gap-4">
+                <CardContent className="p-3 sm:p-4 pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-xl sm:text-2xl font-bold text-primary">
+                    <p className="text-lg font-semibold text-primary">
                       {getLeadPriceDisplay(
                         getLeadPriceBudget().min,
                         getLeadPriceBudget().max,
                         (gig as { calculated_price_cents?: number | null }).calculated_price_cents
                       ).label}
                     </p>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{LEAD_PRICE_CAPTION}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{LEAD_PRICE_CAPTION}</p>
                   </div>
-                  <Button onClick={handleUnlockLead} className="gap-2 w-full min-h-[44px] sm:min-h-0 sm:w-auto shrink-0">
-                    <Unlock className="h-4 w-4" />
+                  <Button onClick={handleUnlockLead} className="gap-1.5 shrink-0 h-9 w-full sm:w-auto">
+                    <Unlock className="h-3.5 w-3.5" />
                     Unlock lead
                   </Button>
                 </CardContent>
@@ -1579,156 +1579,96 @@ const GigDetail = () => {
               const p = clientProfile || gig.profiles || null;
               return (
               <Card className="border border-border rounded-lg shadow-none bg-muted/20">
-                <CardHeader className="p-4 sm:p-5 pb-2">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardHeader className="p-3 sm:p-4 pb-1">
+                  <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-primary" />
                     About the client
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-5 pt-0 space-y-4">
-                  {/* Photo + name (user-level, same for Digger/Gigger) */}
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3">
+                  {/* Photo + name + location in one compact block */}
                   {(p?.avatar_url || p?.full_name || gig.client_name) && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       {p?.avatar_url ? (
                         <img
                           src={p.avatar_url}
                           alt=""
-                          className="h-12 w-12 rounded-full object-cover shrink-0"
-                          width={48}
-                          height={48}
+                          className="h-9 w-9 rounded-full object-cover shrink-0"
+                          width={36}
+                          height={36}
                         />
                       ) : (
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <User className="h-6 w-6 text-muted-foreground" />
+                        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <User className="h-4 w-4 text-muted-foreground" />
                         </div>
                       )}
-                      <div className="min-w-0">
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Client</div>
-                        <div className="font-medium truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">
                           {p?.full_name?.trim() || gig.client_name?.trim() || "Client"}
                         </div>
-                      </div>
-                    </div>
-                  )}
-                  {/* Location (Gigger full location: city, state, country) — always shown */}
-                  <div className="space-y-1.5">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Location</div>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <MapPin className="h-4 w-4 text-primary shrink-0" />
-                      {(() => {
-                        const parts = [p?.city, p?.state, p?.country ?? gig.poster_country].filter((s) => s?.trim());
-                        const fullLocation = parts.length > 0 ? parts.join(", ") : null;
-                        const country = p?.country ?? gig.poster_country ?? null;
-                        const code = country ? getCodeForCountryName(country) : "";
-                        if (fullLocation) {
-                          return (
-                            <span className="flex items-center gap-1.5">
-                              {code ? <img src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded shrink-0" width={20} height={15} /> : null}
-                              <span>{fullLocation}</span>
-                            </span>
-                          );
-                        }
-                        if (country) {
-                          return (
-                            <span className="flex items-center gap-1.5">
-                              {code ? <img src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded shrink-0" width={20} height={15} /> : null}
-                              <span>{code ? `${code} · ${country}` : country}</span>
-                            </span>
-                          );
-                        }
-                        return <span className="text-muted-foreground">Not specified</span>;
-                      })()}
-                    </div>
-                  </div>
-                  {/* Local time (Gigger timezone, or fallback from country) — always shown */}
-                  <div className="space-y-1.5">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Local time</div>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Clock className="h-4 w-4 text-primary shrink-0" />
-                      {formatClientLocalTime(p?.timezone ?? null) ||
-                        (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null) ||
-                        <span className="text-muted-foreground">Not specified</span>}
-                    </div>
-                  </div>
-                  {/* Verification status (profile + auth fallback for email/social) — always shown */}
-                  <div className="space-y-1.5">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Verification status</div>
-                    {(() => {
-                      const emailVerified = p?.email_verified ?? clientVerificationFromAuth?.email_verified ?? false;
-                      const socialVerified = p?.social_verified ?? clientVerificationFromAuth?.social_verified ?? false;
-                      const phoneVerified = p?.phone_verified ?? false;
-                      const paymentVerified = p?.payment_verified ?? false;
-                      const idVerified = p?.id_verified ?? false;
-                      const hasAny = emailVerified || phoneVerified || paymentVerified || idVerified || socialVerified;
-                      return hasAny ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {emailVerified && (
-                            <Badge variant="secondary" className="text-xs gap-0.5">
-                              <Mail className="h-3 w-3" /> Email
-                            </Badge>
-                          )}
-                          {phoneVerified && (
-                            <Badge variant="secondary" className="text-xs gap-0.5">
-                              <Phone className="h-3 w-3" /> Phone
-                            </Badge>
-                          )}
-                          {paymentVerified && (
-                            <Badge variant="secondary" className="text-xs gap-0.5">
-                              <CreditCard className="h-3 w-3" /> Payment
-                            </Badge>
-                          )}
-                          {idVerified && (
-                            <Badge variant="secondary" className="text-xs gap-0.5">
-                              <IdCard className="h-3 w-3" /> ID
-                            </Badge>
-                          )}
-                          {socialVerified && (
-                            <Badge variant="secondary" className="text-xs gap-0.5">
-                              <Share2 className="h-3 w-3" /> Social
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium text-muted-foreground">Not specified</div>
-                      );
-                    })()}
-                  </div>
-                  {/* Joined date (user-level) — real calendar date */}
-                  <div className="space-y-1.5">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Joined</div>
-                    <div className="text-sm font-medium">
-                      {p?.created_at
-                        ? format(new Date(p.created_at), "MMMM d, yyyy")
-                        : "Not specified"}
-                    </div>
-                  </div>
-                  {/* Spent budget (total paid on platform) */}
-                  {clientSpentBudget != null && clientSpentBudget > 0 && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Spent budget</div>
-                        <div className="text-sm font-semibold text-primary">
-                          ${clientSpentBudget.toLocaleString()}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {(() => {
+                            const parts = [p?.city, p?.state, p?.country ?? gig.poster_country].filter((s) => s?.trim());
+                            const fullLocation = parts.length > 0 ? parts.join(", ") : null;
+                            const country = p?.country ?? gig.poster_country ?? null;
+                            const code = country ? getCodeForCountryName(country) : "";
+                            if (fullLocation) return <span className="truncate">{fullLocation}</span>;
+                            if (country) return <span>{code ? `${code} · ${country}` : country}</span>;
+                            return <span>Not specified</span>;
+                          })()}
                         </div>
                       </div>
                     </div>
                   )}
-                  {/* Project stats (Gigger) */}
-                  {clientGigStats && clientGigStats.total >= 0 && (
-                    <div className="rounded-md border bg-muted/30 p-2.5 space-y-1">
-                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Projects</div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                        <span>Open: <strong>{clientGigStats.open}</strong></span>
-                        <span>Active: <strong>{clientGigStats.active}</strong></span>
-                        <span>Completed: <strong>{clientGigStats.completed}</strong></span>
-                        <span>Total: <strong>{clientGigStats.total}</strong></span>
+                  {/* Single line: local time + joined (compact) */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    {(formatClientLocalTime(p?.timezone ?? null) ||
+                      (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null)) && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        {formatClientLocalTime(p?.timezone ?? null) ||
+                          (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null)}
+                      </span>
+                    )}
+                    {p?.created_at && (
+                      <span>Joined {format(new Date(p.created_at), "MMM yyyy")}</span>
+                    )}
+                  </div>
+                  {/* Verification: inline icons only when any */}
+                  {(() => {
+                    const emailVerified = p?.email_verified ?? clientVerificationFromAuth?.email_verified ?? false;
+                    const socialVerified = p?.social_verified ?? clientVerificationFromAuth?.social_verified ?? false;
+                    const phoneVerified = p?.phone_verified ?? false;
+                    const paymentVerified = p?.payment_verified ?? false;
+                    const idVerified = p?.id_verified ?? false;
+                    const hasAny = emailVerified || phoneVerified || paymentVerified || idVerified || socialVerified;
+                    return hasAny ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {emailVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Mail className="h-2.5 w-2.5" /> Email</Badge>}
+                        {phoneVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Phone className="h-2.5 w-2.5" /> Phone</Badge>}
+                        {paymentVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><CreditCard className="h-2.5 w-2.5" /> Pay</Badge>}
+                        {idVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><IdCard className="h-2.5 w-2.5" /> ID</Badge>}
+                        {socialVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Share2 className="h-2.5 w-2.5" /> Social</Badge>}
                       </div>
+                    ) : null;
+                  })()}
+                  {/* Spent + projects on one line when present */}
+                  {(clientSpentBudget != null && clientSpentBudget > 0) || (clientGigStats && clientGigStats.total >= 0) ? (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                      {clientSpentBudget != null && clientSpentBudget > 0 && (
+                        <span className="font-medium text-primary">${clientSpentBudget.toLocaleString()} spent</span>
+                      )}
+                      {clientGigStats && clientGigStats.total >= 0 && (
+                        <span className="text-muted-foreground">
+                          {clientGigStats.open} open · {clientGigStats.completed} completed
+                        </span>
+                      )}
                     </div>
-                  )}
+                  ) : null}
                   {!isOwner && gig.status === 'open' && (
-                    <p className="text-xs text-muted-foreground border-t pt-3">
-                      Submit a proposal below or buy the lead to unlock the Gigger’s contact and reach out directly.
+                    <p className="text-xs text-muted-foreground pt-1 border-t">
+                      Bid below or unlock lead to contact.
                     </p>
                   )}
                 </CardContent>
