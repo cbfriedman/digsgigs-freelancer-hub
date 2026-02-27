@@ -424,18 +424,18 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                      <div className="flex items-center justify-between px-4 py-3 border-b">
-                        <span className="font-semibold text-sm">Recent Messages</span>
+                    <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[400px] sm:min-w-[280px] sm:w-[400px] p-0 bg-popover border shadow-md z-[10000]">
+                      <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                        <span className="font-semibold text-sm truncate min-w-0">Recent Messages</span>
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); navigate("/messages"); }}
-                          className="text-primary hover:underline text-xs font-medium"
+                          className="text-primary hover:underline text-xs font-medium shrink-0 ml-2"
                         >
                           View All
                         </button>
                       </div>
-                      <ScrollArea className="h-[320px]">
+                      <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                         {recentConversationsLoading ? (
                           <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                         ) : recentConversations.length === 0 ? (
@@ -464,7 +464,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 <li key={conv.id}>
                                   <button
                                     type="button"
-                                    className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                    className="w-full flex items-start gap-3 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0"
                                     onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}
                                   >
                                     <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
@@ -531,12 +531,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                      <div className="flex items-center justify-between px-4 py-3 border-b">
-                        <span className="font-semibold text-sm">Recent Notifications</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[24rem] sm:min-w-[280px] sm:w-96 p-0 bg-popover border shadow-md z-[10000]">
+                      <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                        <span className="font-semibold text-sm truncate min-w-0">Recent Notifications</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px]">
+                      <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                         {notifications.length === 0 ? (
                           <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
                         ) : (
@@ -550,15 +550,15 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 <li key={n.id}>
                                   <button
                                     type="button"
-                                    className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors", !n.read && "bg-primary/5")}
+                                    className={cn("w-full flex flex-col items-start gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0", !n.read && "bg-primary/5")}
                                     onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}
                                   >
-                                    <div className="w-full min-w-0 flex flex-col items-start gap-0.5">
-                                      <div className="flex items-center justify-between w-full gap-2">
-                                        <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
-                                        <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    <div className="w-full min-w-0 flex flex-col items-start gap-0.5 overflow-hidden">
+                                      <div className="flex items-start justify-between w-full gap-2">
+                                        <span className={cn("font-medium text-sm break-words line-clamp-2 flex-1 min-w-0", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{timeLabel}</span>
                                       </div>
-                                      <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
+                                      <p className="text-xs text-muted-foreground break-words line-clamp-2 w-full min-w-0">{msg}</p>
                                     </div>
                                   </button>
                                 </li>
@@ -588,12 +588,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-[420px] min-w-[380px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                      <div className="flex items-center justify-between px-4 py-3 border-b">
-                        <span className="font-semibold text-sm">{projectMenuTitle}</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[420px] sm:min-w-[300px] sm:w-[420px] p-0 bg-popover border shadow-md z-[10000]">
+                      <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px]">
+                      <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                             {isDiggerMode ? (
                               recentPostedGigsLoading ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
@@ -608,7 +608,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                       <li key={g.id}>
                                         <button
                                           type="button"
-                                          className="w-full flex flex-col items-stretch gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                          className="w-full flex flex-col items-stretch gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0 justify-center"
                                           onClick={(e) => {
                                             e.preventDefault();
                                             navigate(`/gig/${g.id}`);
@@ -639,7 +639,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     <li key={g.id}>
                                       <button
                                         type="button"
-                                        className="w-full flex flex-col items-stretch gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                        className="w-full flex flex-col items-stretch gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0 justify-center"
                                         onClick={(e) => { e.preventDefault(); navigate(`/gig/${g.id}`); }}
                                       >
                                         <span className="font-medium text-sm break-words line-clamp-2" title={title}>{title}</span>
@@ -825,12 +825,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-[400px] min-w-[340px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                    <div className="flex items-center justify-between px-4 py-3 border-b">
-                      <span className="font-semibold text-sm">Recent Messages</span>
-                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                  <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[400px] sm:min-w-[280px] sm:w-[400px] p-0 bg-popover border shadow-md z-[10000]">
+                    <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                      <span className="font-semibold text-sm truncate min-w-0">Recent Messages</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                     </div>
-                    <ScrollArea className="h-[320px]">
+                    <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                       {recentConversationsLoading ? (
                         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                       ) : recentConversations.length === 0 ? (
@@ -852,7 +852,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "HH:mm")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
                             return (
                               <li key={conv.id}>
-                                <button type="button" className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60" onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}>
+                                <button type="button" className="w-full flex items-start gap-3 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 min-h-[44px] sm:min-h-0" onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}>
                                   <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
                                     <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" className="object-cover" />
                                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">{conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}</AvatarFallback>
@@ -917,12 +917,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                    <div className="flex items-center justify-between px-4 py-3 border-b">
-                      <span className="font-semibold text-sm">Recent Notifications</span>
-                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                  <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[24rem] sm:min-w-[280px] sm:w-96 p-0 bg-popover border shadow-md z-[10000]">
+                    <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                      <span className="font-semibold text-sm truncate min-w-0">Recent Notifications</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                     </div>
-                    <ScrollArea className="h-[320px]">
+                    <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                       {notifications.length === 0 ? (
                         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
                       ) : (
@@ -934,13 +934,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             const msg = (n.message || "").length > 50 ? (n.message || "").slice(0, 50) + "…" : (n.message || "—");
                             return (
                               <li key={n.id}>
-                                <button type="button" className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors", !n.read && "bg-primary/5")} onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}>
-                                  <div className="w-full min-w-0 flex flex-col items-start gap-0.5">
-                                    <div className="flex items-center justify-between w-full gap-2">
-                                      <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
-                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                <button type="button" className={cn("w-full flex flex-col items-start gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0", !n.read && "bg-primary/5")} onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}>
+                                  <div className="w-full min-w-0 flex flex-col items-start gap-0.5 overflow-hidden">
+                                    <div className="flex items-start justify-between w-full gap-2">
+                                      <span className={cn("font-medium text-sm break-words line-clamp-2 flex-1 min-w-0", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                      <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{timeLabel}</span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
+                                    <p className="text-xs text-muted-foreground break-words line-clamp-2 w-full min-w-0">{msg}</p>
                                   </div>
                                 </button>
                               </li>
@@ -971,12 +971,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-[420px] min-w-[380px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-md z-[10000]">
-                      <div className="flex items-center justify-between px-4 py-3 border-b">
-                        <span className="font-semibold text-sm">{projectMenuTitle}</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                  <HoverCardContent side="bottom" align="center" className="w-[calc(100vw-2rem)] min-w-0 max-w-[420px] sm:min-w-[300px] sm:w-[420px] p-0 bg-popover border shadow-md z-[10000]">
+                      <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
-                      <ScrollArea className="h-[320px]">
+                      <ScrollArea className="h-[min(280px,65vh)] sm:h-[320px]">
                           {isDiggerMode ? (
                             recentPostedGigsLoading ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
@@ -991,7 +991,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     <li key={g.id}>
                                       <button
                                         type="button"
-                                        className="w-full flex flex-col items-stretch gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                        className="w-full flex flex-col items-stretch gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0 justify-center"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           navigate(`/gig/${g.id}`);
@@ -1019,7 +1019,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 const title = g.title || "Untitled project";
                                 return (
                                   <li key={g.id}>
-                                    <button type="button" className="w-full flex flex-col items-stretch gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors" onClick={(e) => { e.preventDefault(); navigate(`/gig/${g.id}`); }}>
+                                    <button type="button" className="w-full flex flex-col items-stretch gap-0.5 px-3 py-2.5 sm:px-4 text-left hover:bg-muted/60 transition-colors min-h-[44px] sm:min-h-0 justify-center" onClick={(e) => { e.preventDefault(); navigate(`/gig/${g.id}`); }}>
                                       <span className="font-medium text-sm break-words line-clamp-2" title={title}>{title}</span>
                                       <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
                                         <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
