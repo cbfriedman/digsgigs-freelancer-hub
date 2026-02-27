@@ -550,7 +550,7 @@ export function DiggerProposalCard({
           )}
           {showDiggerActions && (
             <div className="flex flex-wrap items-center gap-2">
-              {gigStatus === "open" && onEditProposal && (
+              {gigStatus === "open" && !(bid.status === "accepted" && bid.awarded) && onEditProposal && (
                 <Button variant="outline" size="sm" className="gap-2" onClick={onEditProposal}>
                   <Pencil className="h-3.5 w-3.5" />
                   Edit proposal

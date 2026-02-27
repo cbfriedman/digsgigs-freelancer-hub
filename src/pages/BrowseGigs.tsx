@@ -118,6 +118,8 @@ const BrowseGigs = () => {
     })
   );
   const [loading, setLoading] = useState(true);
+  /** Allowed gig statuses on Browse Gigs (from admin setting); used by realtime to hide gigs that move to a non-visible status */
+  const browseStatusesRef = useRef<string[]>(["open"]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
@@ -172,7 +174,7 @@ const BrowseGigs = () => {
         { event: "INSERT", schema: "public", table: "gigs" },
         async (payload) => {
           const row = payload.new as { id: string; status: string };
-          if (row?.status !== "open") return;
+          if (!row?.id || !browseStatusesRef.current.includes(row.status)) return;
           try {
             const { data: newGig, error } = await (supabase
               .from("gigs") as any)
@@ -218,9 +220,12 @@ const BrowseGigs = () => {
               .eq("id", row.id)
               .single();
             if (error || !updatedGig) return;
+            const allowed = browseStatusesRef.current;
+            const visible = allowed.length > 0 && allowed.includes((updatedGig as Gig).status);
             setGigs((prev: any) => {
               const idx = prev.findIndex((g: any) => g.id === updatedGig.id);
               if (idx === -1) return prev;
+              if (!visible) return prev.filter((g: any) => g.id !== updatedGig.id);
               const next = [...prev];
               next[idx] = updatedGig as Gig;
               return next;
@@ -309,18 +314,26 @@ const BrowseGigs = () => {
   const loadData = async () => {
     setLoading(true);
 
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from("categories")
-      .select("id, name, parent_category_id")
-      .order("name");
+    const [
+      { data: categoriesData, error: categoriesError },
+      { data: browseStatuses, error: statusesError },
+    ] = await Promise.all([
+      supabase.from("categories").select("id, name, parent_category_id").order("name"),
+      (supabase.rpc as any)("get_browse_gigs_statuses"),
+    ]);
 
     if (categoriesError) {
       console.error("Error loading categories:", categoriesError);
       toast.error("Failed to load categories");
     }
+    if (statusesError) {
+      console.error("Error loading browse gigs statuses:", statusesError);
+    }
 
     const allList = categoriesData || [];
     setAllCategories(allList);
+    const allowedStatuses = Array.isArray(browseStatuses) && browseStatuses.length > 0 ? browseStatuses : ["open"];
+    browseStatusesRef.current = allowedStatuses;
 
     let query = (supabase
       .from("gigs") as any)
@@ -331,7 +344,7 @@ const BrowseGigs = () => {
         profiles!gigs_consumer_id_fkey (full_name),
         gig_skills (skills (name))
       `)
-      .in("status", ["open", "awarded", "in_progress"])
+      .in("status", allowedStatuses)
       .order("bumped_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 

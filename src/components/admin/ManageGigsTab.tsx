@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Briefcase, MoreHorizontal, RefreshCw, Search, Trash2, User, Eye, PauseCircle, PlayCircle, Edit3 } from "lucide-react";
+import BrowseGigsVisibilityCard from "./BrowseGigsVisibilityCard";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -231,6 +232,8 @@ export default function ManageGigsTab() {
           View who posted what, when; suspend, modify, or remove gigs.
         </p>
       </div>
+
+      <BrowseGigsVisibilityCard />
 
       <Card>
         <CardHeader className="pb-2">
@@ -450,7 +453,7 @@ export default function ManageGigsTab() {
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[120]">
                 {STATUS_OPTIONS.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}

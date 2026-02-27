@@ -1352,7 +1352,11 @@ const GigDetail = () => {
                 gigStatus={gig?.status}
                 onCancelAward={handleCancelAward}
                 cancelAwardLoading={cancelAwardLoading}
-                onEditProposal={existingBid && showDiggerContent ? () => setEditingProposal(true) : undefined}
+                onEditProposal={
+                  existingBid && showDiggerContent && gig?.status === "open" && !(existingBid?.status === "accepted" && existingBid?.awarded)
+                    ? () => setEditingProposal(true)
+                    : undefined
+                }
                 onMessageClient={existingBid && showDiggerContent ? handleSendMessage : undefined}
                 canMessageClient={!!(hasClientSentMessage || gig?.awarded_digger_id === diggerId)}
                 messageClientTooltip={
