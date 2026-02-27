@@ -37,10 +37,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCodeForCountryName, ALL_COUNTRY_OPTIONS, findCountryByNameOrCode } from "@/config/regionOptions";
-import { getRegionsForCountry } from "@/config/locationData";
+import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
+import { resolveLocationFromText } from "@/hooks/useLocations";
+import { getCodeForCountryName } from "@/config/regionOptions";
 import { getLocalTimeForCountry, formatJoinDate, formatRealName } from "@/pages/DiggerDetail/utils";
 import { ensureGiggerProfile } from "@/lib/ensureGiggerProfile";
 import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
@@ -150,9 +149,8 @@ export default function GiggerDetail() {
   const [aboutDraft, setAboutDraft] = useState("");
   const [savingAbout, setSavingAbout] = useState(false);
   const [profileHeaderEditOpen, setProfileHeaderEditOpen] = useState(false);
-  const [locationCountryDraft, setLocationCountryDraft] = useState("");
-  const [locationStateDraft, setLocationStateDraft] = useState("");
-  const [locationCityDraft, setLocationCityDraft] = useState("");
+  const emptyLocationValue: LocationValue = { countryId: null, regionId: null, cityId: null, countryName: "", regionName: "", cityName: "", countryCode: "" };
+  const [locationEditValue, setLocationEditValue] = useState<LocationValue>(emptyLocationValue);
   const [savingHeader, setSavingHeader] = useState(false);
   const [previewGig, setPreviewGig] = useState<GigRow | null>(null);
   const [showAllRecentProjects, setShowAllRecentProjects] = useState(false);
@@ -451,15 +449,24 @@ export default function GiggerDetail() {
   };
 
   const openProfileHeaderEdit = () => {
-    const countryName = findCountryByNameOrCode(profile?.country ?? "")?.name ?? profile?.country?.trim() ?? "";
-    setLocationCountryDraft(countryName);
-    setLocationStateDraft(profile?.state?.trim() ?? "");
-    setLocationCityDraft(profile?.city?.trim() ?? "");
+    setLocationEditValue({
+      ...emptyLocationValue,
+      countryName: (profile?.country ?? "").trim(),
+      regionName: (profile?.state ?? "").trim(),
+      cityName: (profile?.city ?? "").trim(),
+    });
     setProfileHeaderEditOpen(true);
   };
-  const normalizedDraftCountry =
-    findCountryByNameOrCode(locationCountryDraft)?.name ?? locationCountryDraft.trim();
-  const locationStateOptions = normalizedDraftCountry ? getRegionsForCountry(normalizedDraftCountry) : [];
+
+  useEffect(() => {
+    if (!profileHeaderEditOpen || !profile) return;
+    let cancelled = false;
+    resolveLocationFromText(profile.country ?? null, profile.state ?? null, profile.city ?? null).then((resolved) => {
+      if (!cancelled) setLocationEditValue(resolved);
+    });
+    return () => { cancelled = true; };
+  }, [profileHeaderEditOpen, profile?.country, profile?.state, profile?.city]);
+
   const saveProfileHeaderEdit = async () => {
     if (!userId || !profile) return;
     setSavingHeader(true);
@@ -468,10 +475,9 @@ export default function GiggerDetail() {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) await ensureProfileFromAuth(authUser);
       }
-      const normalizedCountryName = findCountryByNameOrCode(locationCountryDraft)?.name;
-      const countryVal = normalizedCountryName || locationCountryDraft.trim() || null;
-      const stateVal = locationStateDraft.trim() || null;
-      const cityVal = locationCityDraft.trim() || null;
+      const countryVal = locationEditValue.countryName?.trim() || null;
+      const stateVal = locationEditValue.regionName?.trim() || null;
+      const cityVal = locationEditValue.cityName?.trim() || null;
       const updatePayload = {
         country: countryVal,
         state: stateVal,
@@ -603,39 +609,15 @@ export default function GiggerDetail() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Edit profile</DialogTitle><DialogDescription>Update your location, photo, and cover.</DialogDescription></DialogHeader>
           <div className="flex flex-col gap-6 py-2">
-            <div className="space-y-2">
-              <label htmlFor="gigger-location-country" className="text-sm font-medium">Country</label>
-              <Select
-                value={normalizedDraftCountry || "__none__"}
-                onValueChange={(v) => {
-                  const next = v === "__none__" ? "" : v;
-                  setLocationCountryDraft(next);
-                  if (next !== normalizedDraftCountry) setLocationStateDraft("");
-                }}
-              >
-                <SelectTrigger id="gigger-location-country" className="w-full"><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectItem value="__none__"><span className="text-muted-foreground">No country</span></SelectItem>
-                  {ALL_COUNTRY_OPTIONS.map((c) => (<SelectItem key={c.code} value={c.name}><span className="flex items-center gap-2"><span>{c.flag}</span><span>{c.name}</span></span></SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-            {normalizedDraftCountry && locationStateOptions.length > 0 && (
-              <div className="space-y-2">
-                <label htmlFor="gigger-location-state" className="text-sm font-medium">State / Region</label>
-                <Select value={locationStateDraft.trim() || "__none__"} onValueChange={(v) => setLocationStateDraft(v === "__none__" ? "" : v)}>
-                  <SelectTrigger id="gigger-location-state" className="w-full"><SelectValue placeholder="Select state or region" /></SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="__none__"><span className="text-muted-foreground">None</span></SelectItem>
-                    {locationStateOptions.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-2">
-              <label htmlFor="gigger-location-city" className="text-sm font-medium">City</label>
-              <Input id="gigger-location-city" value={locationCityDraft} onChange={(e) => setLocationCityDraft(e.target.value)} placeholder="e.g. Honolulu" className="w-full" />
-            </div>
+            <LocationSelector
+              value={locationEditValue}
+              onChange={setLocationEditValue}
+              countryPlaceholder="Select country"
+              regionPlaceholder="Select state/region"
+              regionLabel="State / Region"
+              cityPlaceholder="Select city"
+              cityLabel="City"
+            />
             <div className="space-y-2">
               <label className="text-sm font-medium">Profile photo</label>
               <div className="flex items-center gap-3">

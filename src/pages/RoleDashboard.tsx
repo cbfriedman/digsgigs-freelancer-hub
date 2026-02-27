@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { FirstProfileDialog } from "@/components/FirstProfileDialog";
 
 interface RoleStats {
   digger?: {
@@ -34,6 +35,7 @@ interface RoleStats {
     gigsCount: number;
     activeBidsCount: number;
     awardedGigsCount: number;
+    hasGiggerProfile: boolean;
   };
 }
 
@@ -48,6 +50,7 @@ export default function RoleDashboard() {
   const [diggerExperienceCount, setDiggerExperienceCount] = useState(0);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [firstProfileDialogRole, setFirstProfileDialogRole] = useState<"digger" | "gigger" | null>(null);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
@@ -151,19 +154,24 @@ export default function RoleDashboard() {
         }));
       }
 
-      // Fetch Gigger stats
+      // Fetch Gigger stats (gigs count + whether profile is complete for create-first-profile)
       if (userRoles.includes('gigger')) {
-        const { count } = await supabase
-          .from('gigs')
-          .select('id', { count: 'exact', head: true })
-          .eq('consumer_id', user.id);
+        const [gigsRes, gpRes, profileRes] = await Promise.all([
+          supabase.from('gigs').select('id', { count: 'exact', head: true }).eq('consumer_id', user.id),
+          (supabase.from('gigger_profiles') as any).select('user_id').eq('user_id', user.id).limit(1).maybeSingle(),
+          (supabase.from('profiles') as any).select('profile_title').eq('id', user.id).single(),
+        ]);
+        const giggerRow = (gpRes.data as { user_id?: string } | null);
+        const profileTitle = (profileRes.data as { profile_title?: string } | null)?.profile_title?.trim();
+        const hasGiggerProfile = !!giggerRow?.user_id && !!profileTitle;
 
         setStats(prev => ({
           ...prev,
           gigger: {
-            gigsCount: count || 0,
+            gigsCount: gigsRes.count || 0,
             activeBidsCount: 0,
             awardedGigsCount: 0,
+            hasGiggerProfile,
           }
         }));
       }
@@ -331,7 +339,7 @@ export default function RoleDashboard() {
         .limit(1);
 
       if (!existingProfiles || existingProfiles.length === 0) {
-        navigate('/create-first-profile');
+        setFirstProfileDialogRole("digger");
       } else {
         goToProfileWorkspace(navigate);
       }
@@ -347,7 +355,7 @@ export default function RoleDashboard() {
     try {
       if (userRoles.includes('gigger')) {
         await switchRole('gigger');
-        navigate('/post-gig');
+        setFirstProfileDialogRole("gigger");
         return;
       }
       
@@ -374,7 +382,7 @@ export default function RoleDashboard() {
       
       if (hasGiggerRole) {
         await switchRole('gigger');
-        navigate('/post-gig');
+        setFirstProfileDialogRole("gigger");
       } else {
         let roleError = null;
         
@@ -418,9 +426,9 @@ export default function RoleDashboard() {
         await switchRole('gigger');
         toast({
           title: "Success",
-          description: "Gigger role added! You can now post gigs.",
+          description: "Gigger role added! Complete your profile to post gigs.",
         });
-        navigate('/post-gig');
+        setFirstProfileDialogRole("gigger");
       }
     } catch (err) {
       console.error('Exception in gigger role check:', err);
@@ -454,6 +462,7 @@ export default function RoleDashboard() {
   const hasRoles = userRoles.length > 0;
   const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
   const hasDiggerProfile = diggerProfilesCount > 0;
+  const hasGiggerProfile = stats.gigger?.hasGiggerProfile ?? false;
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
   const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
 
@@ -474,7 +483,19 @@ export default function RoleDashboard() {
         ctaLabel: "Set Up Profile",
         onClick: () => {
           void handleSwitchRole("digger");
-          navigate("/create-first-profile");
+          setFirstProfileDialogRole("digger");
+        },
+      };
+    }
+
+    if (userRoles.includes("gigger") && !hasGiggerProfile) {
+      return {
+        title: "Set up your Gigger profile",
+        description: "Add a profile title and location so professionals can find you when you post gigs.",
+        ctaLabel: "Set Up Profile",
+        onClick: () => {
+          void handleSwitchRole("gigger");
+          setFirstProfileDialogRole("gigger");
         },
       };
     }
@@ -573,8 +594,12 @@ export default function RoleDashboard() {
                         <span className="text-muted-foreground shrink-0">{score}%</span>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs shrink-0 -mr-1"
+                          variant={score >= 100 ? "ghost" : "default"}
+                          className={
+                            score >= 100
+                              ? "h-7 text-xs shrink-0 -mr-1"
+                              : "h-7 text-xs shrink-0 -mr-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
+                          }
                           onClick={() => {
                             handleSwitchRole('digger');
                             const path = getCanonicalDiggerProfilePath({
@@ -613,7 +638,7 @@ export default function RoleDashboard() {
                       className="flex-1 min-w-0"
                       onClick={() => {
                         handleSwitchRole('digger');
-                        if (!hasDiggerProfile) navigate('/create-first-profile');
+                        if (!hasDiggerProfile) setFirstProfileDialogRole("digger");
                         else {
                           const path = getCanonicalDiggerProfilePath({
                             handle: stats.digger?.primaryProfileHandle ?? null,
@@ -699,11 +724,12 @@ export default function RoleDashboard() {
                       className="flex-1 min-w-0"
                       onClick={() => {
                         handleSwitchRole('gigger');
-                        if (user?.id) navigate(getCanonicalGiggerProfilePath(user.id));
+                        if (!hasGiggerProfile) setFirstProfileDialogRole("gigger");
+                        else if (user?.id) navigate(getCanonicalGiggerProfilePath(user.id));
                       }}
                     >
                       <User className="h-3.5 w-3.5 mr-1" />
-                      Profile
+                      {hasGiggerProfile ? 'Profile' : 'Set up profile'}
                     </Button>
                   </div>
                 </>
@@ -723,6 +749,16 @@ export default function RoleDashboard() {
 
       </div>
 
+      {firstProfileDialogRole && (
+        <FirstProfileDialog
+          open={true}
+          onOpenChange={(open) => !open && setFirstProfileDialogRole(null)}
+          role={firstProfileDialogRole}
+          user={user}
+          onSuccess={() => fetchStats(true)}
+        />
+      )}
+
       <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -734,9 +770,19 @@ export default function RoleDashboard() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
-            {userRoles.includes('digger') ? (
-              <Button size="sm" onClick={() => { setShowWelcomeModal(false); if (diggerProfilesCount === 0) navigate('/create-first-profile'); else goToProfileWorkspace(navigate); }}>
-                Complete profile
+            {userRoles.includes('digger') && !hasDiggerProfile ? (
+              <Button size="sm" onClick={() => { setShowWelcomeModal(false); setFirstProfileDialogRole("digger"); }}>
+                Complete Digger profile
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            ) : userRoles.includes('gigger') && !hasGiggerProfile ? (
+              <Button size="sm" onClick={() => { setShowWelcomeModal(false); setFirstProfileDialogRole("gigger"); }}>
+                Complete Gigger profile
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            ) : userRoles.includes('digger') ? (
+              <Button size="sm" onClick={() => { setShowWelcomeModal(false); goToProfileWorkspace(navigate); }}>
+                Go to profile
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             ) : userRoles.includes('gigger') ? (

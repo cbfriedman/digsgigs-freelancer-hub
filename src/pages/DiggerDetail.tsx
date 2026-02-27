@@ -37,11 +37,11 @@ import { PortfolioEditor } from "@/components/portfolio/PortfolioEditor";
 import { PortfolioDisplay } from "@/components/portfolio/PortfolioDisplay";
 import type { DiggerPortfolioItem, DiggerPortfolioItemDraft } from "@/types/portfolio";
 import { CountryFlagIcon } from "@/components/CountryFlagIcon";
-import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getCodeForCountryName } from "@/config/regionOptions";
+import { getCodeForCountryName } from "@/config/regionOptions";
 import { useProfessions } from "@/hooks/useProfessions";
 import { useSkillsByCategory } from "@/hooks/useSkills";
-import { SEO_CITIES } from "@/config/seoCities";
-import { getRegionsForCountry } from "@/config/locationData";
+import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
+import { resolveLocationFromText, useCountriesSearch } from "@/hooks/useLocations";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { Progress } from "@/components/ui/progress";
 import type { Digger, Reference, ReferenceRequest } from "./DiggerDetail/types";
@@ -137,12 +137,9 @@ const DiggerDetail = () => {
   }>({ open: false, section: null });
   const [aboutDraft, setAboutDraft] = useState("");
   const [availabilityDraft, setAvailabilityDraft] = useState<string>("");
-  const [locationDraft, setLocationDraft] = useState("");
-  const [locationStateDraft, setLocationStateDraft] = useState("");
-  const [locationCityDraft, setLocationCityDraft] = useState("");
+  const emptyLocationValue: LocationValue = { countryId: null, regionId: null, cityId: null, countryName: "", regionName: "", cityName: "", countryCode: "" };
+  const [locationEditValue, setLocationEditValue] = useState<LocationValue>(emptyLocationValue);
   const [serviceLocationDraft, setServiceLocationDraft] = useState<string[]>([]);
-  const [locationSearchDraft, setLocationSearchDraft] = useState("");
-  const [locationStateSearchDraft, setLocationStateSearchDraft] = useState("");
   const [serviceLocationSearchDraft, setServiceLocationSearchDraft] = useState("");
   const [websiteDraft, setWebsiteDraft] = useState("");
   const [socialLinksDraft, setSocialLinksDraft] = useState<Record<string, string>>({});
@@ -518,11 +515,12 @@ const DiggerDetail = () => {
     if (section === "about") setAboutDraft(digger.bio || "");
     if (section === "availability") setAvailabilityDraft(digger.availability || "");
     if (section === "location") {
-      setLocationDraft(digger.country || "");
-      setLocationStateDraft((digger.state || "").split(",")[0]?.trim() || "");
-      setLocationCityDraft(digger.city || "");
-      setLocationSearchDraft("");
-      setLocationStateSearchDraft("");
+      setLocationEditValue({
+        ...emptyLocationValue,
+        countryName: (digger.country ?? "").trim(),
+        regionName: (digger.state ?? "").split(",")[0]?.trim() || "",
+        cityName: (digger.city ?? "").trim(),
+      });
     }
     if (section === "service_location") {
       setServiceLocationDraft((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : (digger.country ? [digger.country] : []));
@@ -552,6 +550,18 @@ const DiggerDetail = () => {
     if (section === "references") setRefForm({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
     setSectionEditor({ open: true, section });
   };
+
+  useEffect(() => {
+    if (sectionEditor.section !== "location" || !sectionEditor.open || !digger) return;
+    let cancelled = false;
+    resolveLocationFromText(digger.country ?? null, digger.state ?? null, digger.city ?? null).then((resolved) => {
+      if (!cancelled) setLocationEditValue(resolved);
+    });
+    return () => { cancelled = true; };
+  }, [sectionEditor.section, sectionEditor.open, digger?.id, digger?.country, digger?.state, digger?.city]);
+
+  const serviceLocationCountries = useCountriesSearch(serviceLocationSearchDraft);
+  const serviceLocationCountryList = serviceLocationCountries.data ?? [];
 
   const scrollToProfileSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -640,54 +650,6 @@ const DiggerDetail = () => {
     () => new Set(dbProfessionGroups.flatMap((group) => group.items)),
     [dbProfessionGroups]
   );
-
-  const filteredLocationOptions = useMemo(() => {
-    const q = locationSearchDraft.trim().toLowerCase();
-    if (!q) return ALL_COUNTRY_OPTIONS;
-    return ALL_COUNTRY_OPTIONS.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-    );
-  }, [locationSearchDraft]);
-
-  const locationStateOptions = useMemo(
-    () => (locationDraft ? getRegionsForCountry(locationDraft) : []),
-    [locationDraft]
-  );
-
-  const filteredLocationStateOptions = useMemo(() => {
-    const q = locationStateSearchDraft.trim().toLowerCase();
-    if (!q) return locationStateOptions;
-    return locationStateOptions.filter((s) => s.toLowerCase().includes(q));
-  }, [locationStateOptions, locationStateSearchDraft]);
-
-  const filteredCitySuggestions = useMemo(() => {
-    if (locationDraft !== "United States" || !locationStateDraft) return [];
-    const q = locationCityDraft.trim().toLowerCase();
-    const usStateNameToCode: Record<string, string> = {
-      Alabama: "AL", Alaska: "AK", Arizona: "AZ", Arkansas: "AR", California: "CA", Colorado: "CO", Connecticut: "CT", Delaware: "DE",
-      Florida: "FL", Georgia: "GA", Hawaii: "HI", Idaho: "ID", Illinois: "IL", Indiana: "IN", Iowa: "IA", Kansas: "KS", Kentucky: "KY",
-      Louisiana: "LA", Maine: "ME", Maryland: "MD", Massachusetts: "MA", Michigan: "MI", Minnesota: "MN", Mississippi: "MS", Missouri: "MO",
-      Montana: "MT", Nebraska: "NE", Nevada: "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
-      "North Carolina": "NC", "North Dakota": "ND", Ohio: "OH", Oklahoma: "OK", Oregon: "OR", Pennsylvania: "PA", "Rhode Island": "RI",
-      "South Carolina": "SC", "South Dakota": "SD", Tennessee: "TN", Texas: "TX", Utah: "UT", Vermont: "VT", Virginia: "VA",
-      Washington: "WA", "West Virginia": "WV", Wisconsin: "WI", Wyoming: "WY", "Washington D.C.": "DC",
-    };
-    const targetCode = usStateNameToCode[locationStateDraft] || locationStateDraft;
-    const cities = SEO_CITIES.filter((c) => c.state === targetCode).map((c) => c.city);
-    const unique = Array.from(new Set(cities));
-    if (!q) return unique.slice(0, 20);
-    return unique.filter((city) => city.toLowerCase().includes(q)).slice(0, 20);
-  }, [locationDraft, locationStateDraft, locationCityDraft]);
-
-  const filteredServiceLocationGroups = useMemo(() => {
-    const q = serviceLocationSearchDraft.trim().toLowerCase();
-    return REGION_OPTIONS.map((region) => ({
-      ...region,
-      countries: region.countries.filter((c) =>
-        !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-      ),
-    })).filter((region) => region.countries.length > 0);
-  }, [serviceLocationSearchDraft]);
 
   const profileDetailCompletion = useMemo(() => {
     if (!digger) return { score: 0, items: [] };
@@ -954,14 +916,9 @@ const DiggerDetail = () => {
         const val = availabilityDraft.trim() || null;
         await supabase.from("digger_profiles").update({ availability: val }).eq("id", digger.id);
       } else if (sectionEditor.section === "location") {
-        if (locationStateOptions.length > 0 && locationStateDraft && !locationStateOptions.includes(locationStateDraft)) {
-          toast.error("Please select a valid state/region from the list.");
-          setIsSectionSaving(false);
-          return;
-        }
-        const cityVal = locationCityDraft.trim() || null;
-        const stateVal = locationStateDraft.trim() || null;
-        const countryVal = locationDraft.trim() || null;
+        const countryVal = locationEditValue.countryName?.trim() || null;
+        const stateVal = locationEditValue.regionName?.trim() || null;
+        const cityVal = locationEditValue.cityName?.trim() || null;
         const locationText = [cityVal, stateVal, countryVal].filter(Boolean).join(", ") || "Not specified";
         // Keep base location shared across all profiles for this digger user.
         await supabase
@@ -2880,108 +2837,16 @@ const DiggerDetail = () => {
             )}
             {sectionEditor.section === "location" && (
               <>
-                <p className="text-sm text-muted-foreground">Search and select your base country and city.</p>
-                {(locationDraft || locationStateDraft || locationCityDraft) && (
-                  <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-                    <span className="text-xs font-semibold text-muted-foreground shrink-0">Current location:</span>
-                    <span className="text-sm font-medium text-foreground">
-                      {[locationCityDraft, locationStateDraft, locationDraft].filter(Boolean).join(", ") || "Not specified"}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => {
-                        setLocationDraft("");
-                        setLocationStateDraft("");
-                        setLocationCityDraft("");
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                )}
-                <Input
-                  value={locationSearchDraft}
-                  onChange={(e) => setLocationSearchDraft(e.target.value)}
-                  placeholder="Search by country or code (e.g. United, US)"
+                <p className="text-sm text-muted-foreground">Select your base country, state/region, and city from the database.</p>
+                <LocationSelector
+                  value={locationEditValue}
+                  onChange={setLocationEditValue}
+                  countryPlaceholder="Select country"
+                  regionPlaceholder="Select state/region"
+                  regionLabel="State / Region"
+                  cityPlaceholder="Select city"
+                  cityLabel="City"
                 />
-                <div className="max-h-[300px] overflow-y-auto space-y-1.5 border rounded-md p-2">
-                  <button
-                    type="button"
-                    className={`w-full text-left rounded px-2 py-1.5 text-sm ${!locationDraft ? "bg-muted" : "hover:bg-muted/50"}`}
-                    onClick={() => setLocationDraft("")}
-                  >
-                    🌍 Not specified
-                  </button>
-                  {filteredLocationOptions.map((c) => (
-                    <button
-                      key={c.code}
-                      type="button"
-                      className={`w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm text-left ${locationDraft === c.name ? "bg-muted" : "hover:bg-muted/50"}`}
-                      onClick={() => {
-                        const changed = locationDraft !== c.name;
-                        setLocationDraft(c.name);
-                        if (changed) {
-                          setLocationStateDraft("");
-                          setLocationCityDraft("");
-                        }
-                      }}
-                    >
-                      <CountryFlagIcon countryNameOrCode={c.code} size="sm" />
-                      <span>{c.name}</span>
-                    </button>
-                  ))}
-                  {filteredLocationOptions.length === 0 && (
-                    <p className="text-sm text-muted-foreground px-2 py-1.5">No countries found.</p>
-                  )}
-                </div>
-                {locationDraft && locationStateOptions.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground">State / Region</p>
-                    <Input
-                      value={locationStateSearchDraft}
-                      onChange={(e) => setLocationStateSearchDraft(e.target.value)}
-                      placeholder="Search state/region"
-                    />
-                    <div className="max-h-[180px] overflow-y-auto space-y-1.5 border rounded-md p-2">
-                      {filteredLocationStateOptions.map((stateName) => (
-                        <button
-                          key={stateName}
-                          type="button"
-                          className={`w-full text-left rounded px-2 py-1.5 text-sm ${locationStateDraft === stateName ? "bg-muted" : "hover:bg-muted/50"}`}
-                          onClick={() => {
-                            setLocationStateDraft(stateName);
-                            setLocationCityDraft("");
-                          }}
-                        >
-                          {stateName}
-                        </button>
-                      ))}
-                      {filteredLocationStateOptions.length === 0 && (
-                        <p className="text-sm text-muted-foreground px-2 py-1.5">No matching state/region.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground">City</p>
-                  <Input
-                    value={locationCityDraft}
-                    onChange={(e) => setLocationCityDraft(e.target.value)}
-                    placeholder={locationDraft === "United States" && !locationStateDraft ? "Select state first" : "Search or type your city"}
-                    disabled={locationDraft === "United States" && !locationStateDraft}
-                    list="location-city-suggestions"
-                  />
-                  {filteredCitySuggestions.length > 0 && (
-                    <datalist id="location-city-suggestions">
-                      {filteredCitySuggestions.map((city) => (
-                        <option key={city} value={city} />
-                      ))}
-                    </datalist>
-                  )}
-                </div>
                 <div className="flex justify-end">
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>
                     {isSectionSaving ? "Saving..." : "Save"}
@@ -3019,36 +2884,28 @@ const DiggerDetail = () => {
                 <Input
                   value={serviceLocationSearchDraft}
                   onChange={(e) => setServiceLocationSearchDraft(e.target.value)}
-                  placeholder="Search service countries (e.g. Canada, CA)"
+                  placeholder="Search countries (e.g. Canada, CA)"
                 />
-                <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-md p-3">
-                  {filteredServiceLocationGroups.map((region) => (
-                    <details key={region.value} className="rounded border border-border/70 bg-background/30">
-                      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">
-                        {region.label} ({region.countries.length})
-                      </summary>
-                      <div className="px-2 pb-2 space-y-1.5">
-                        {region.countries.map((c) => {
-                          const checked = serviceLocationDraft.includes(c.name);
-                          return (
-                            <label key={c.code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
-                                className="rounded"
-                              />
-                              <CountryFlagIcon countryNameOrCode={c.code} size="sm" />
-                              <span>{c.name}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </details>
-                  ))}
-                  {filteredServiceLocationGroups.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No matching countries found.</p>
+                <div className="max-h-[300px] overflow-y-auto space-y-1.5 border rounded-md p-2">
+                  {serviceLocationCountries.isLoading && <p className="text-sm text-muted-foreground px-2 py-2">Loading countries...</p>}
+                  {!serviceLocationCountries.isLoading && serviceLocationCountryList.length === 0 && (
+                    <p className="text-sm text-muted-foreground px-2 py-2">No countries found. Try a different search.</p>
                   )}
+                  {!serviceLocationCountries.isLoading && serviceLocationCountryList.map((c) => {
+                    const checked = serviceLocationDraft.includes(c.name);
+                    return (
+                      <label key={c.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
+                          className="rounded"
+                        />
+                        <CountryFlagIcon countryNameOrCode={c.code_alpha2} size="sm" />
+                        <span>{c.name}</span>
+                      </label>
+                    );
+                  })}
                 </div>
                 <div className="flex justify-end">
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>

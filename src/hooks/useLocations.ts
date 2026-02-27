@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { LocationValue } from "@/components/LocationSelector";
 
 export interface CountryRow {
   id: string;
@@ -16,6 +17,95 @@ export interface RegionRow {
 export interface CityRow {
   id: string;
   name: string;
+}
+
+/** Resolve profile text (country, state, city) to LocationValue using DB lookups. */
+export async function resolveLocationFromText(
+  countryName: string | null | undefined,
+  stateName: string | null | undefined,
+  cityName: string | null | undefined
+): Promise<LocationValue> {
+  const empty: LocationValue = {
+    countryId: null,
+    regionId: null,
+    cityId: null,
+    countryName: "",
+    regionName: "",
+    cityName: "",
+    countryCode: "",
+  };
+  const c = (countryName ?? "").trim();
+  if (!c) return empty;
+
+  let country: CountryRow | null = null;
+  const { data: byName } = await (supabase
+    .from("countries" as any))
+    .select("id, code_alpha2, name")
+    .ilike("name", c)
+    .limit(1);
+  country = (byName as CountryRow[] | null)?.[0] ?? null;
+  if (!country && c.length === 2) {
+    const { data: byCode } = await (supabase
+      .from("countries" as any))
+      .select("id, code_alpha2, name")
+      .eq("code_alpha2", c.toUpperCase())
+      .limit(1);
+    country = (byCode as CountryRow[] | null)?.[0] ?? null;
+  }
+  if (!country) {
+    return { ...empty, countryName: c };
+  }
+
+  const state = (stateName ?? "").trim();
+  let regionId: string | null = null;
+  let regionName = "";
+  if (state) {
+    const { data: regions } = await (supabase
+      .from("regions" as any))
+      .select("id, name")
+      .eq("country_id", country.id)
+      .ilike("name", state)
+      .limit(1);
+    const region = (regions as { id: string; name: string }[] | null)?.[0];
+    if (region) {
+      regionId = region.id;
+      regionName = region.name;
+    } else {
+      regionName = state;
+    }
+  }
+
+  const city = (cityName ?? "").trim();
+  let cityId: string | null = null;
+  let resolvedCityName = "";
+  if (city) {
+    let q = (supabase
+      .from("cities" as any))
+      .select("id, name")
+      .eq("country_id", country.id)
+      .ilike("name", city)
+      .limit(1);
+    if (regionId) q = q.eq("region_id", regionId);
+    else q = q.is("region_id", null);
+    const { data: cities } = await q;
+    const cityRow = (cities as { id: string; name: string }[] | null)?.[0];
+    if (cityRow) {
+      cityId = cityRow.id;
+      resolvedCityName = cityRow.name;
+    } else {
+      resolvedCityName = city;
+    }
+  }
+
+  return {
+    countryId: country.id,
+    regionId,
+    cityId,
+    countryName: country.name,
+    regionName,
+    cityName: resolvedCityName,
+    countryCode: country.code_alpha2,
+  };
 }
 
 const COUNTRIES_QUERY_KEY = "locations-countries";

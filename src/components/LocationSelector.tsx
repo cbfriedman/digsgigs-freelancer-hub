@@ -17,6 +17,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { useCountriesSearch, useRegionsByCountry, useCitiesByLocation } from "@/hooks/useLocations";
 import type { CountryRow, RegionRow, CityRow } from "@/hooks/useLocations";
 
@@ -145,7 +146,7 @@ export function LocationSelector({
                 className="h-10 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               <CommandList className="max-h-[280px] py-1">
-                <CommandEmpty className="py-4 text-sm text-muted-foreground">
+                <CommandEmpty className="py-4 px-4 text-sm text-muted-foreground">
                   {countriesLoading ? "Loading..." : "No country found."}
                 </CommandEmpty>
                 <CommandGroup className="p-0">
@@ -202,7 +203,7 @@ export function LocationSelector({
                   className="h-10 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 <CommandList className="max-h-[280px] py-1">
-                  <CommandEmpty className="py-4 text-sm text-muted-foreground">
+                  <CommandEmpty className="py-4 px-4 text-sm text-muted-foreground">
                     {regionsLoading ? "Loading..." : "No result found."}
                   </CommandEmpty>
                   <CommandGroup className="p-0">
@@ -260,7 +261,7 @@ export function LocationSelector({
                   className="h-10 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 <CommandList className="max-h-[280px] py-1">
-                  <CommandEmpty className="py-4 text-sm text-muted-foreground">
+                  <CommandEmpty className="py-4 px-4 text-sm text-muted-foreground">
                     {citiesLoading ? "Loading..." : "No city found."}
                   </CommandEmpty>
                   <CommandGroup className="p-0">
@@ -288,16 +289,70 @@ export function LocationSelector({
         </div>
       )}
 
+      {/* When country has no regions in DB: allow manual state & city */}
       {value.countryId && !regionsLoading && !hasRegions && (
-        <p className="text-xs text-muted-foreground">
-          No states/territories for this country. Location is set by country only.
-        </p>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            No state/city data for this country in our system. Enter state and city below so your full location is saved.
+          </p>
+          <div>
+            <label className="text-sm font-medium mb-1 block">{regionLabel}</label>
+            <Input
+              placeholder="e.g. State or territory"
+              value={value.regionName}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  regionId: null,
+                  regionName: e.target.value.trim(),
+                })
+              }
+              disabled={disabled}
+              className="h-11 bg-background"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">{cityLabel}</label>
+            <Input
+              placeholder="e.g. City name"
+              value={value.cityName}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  cityId: null,
+                  cityName: e.target.value.trim(),
+                })
+              }
+              disabled={disabled}
+              className="h-11 bg-background"
+            />
+          </div>
+        </div>
       )}
 
-      {canSelectCity && !citiesLoading && !hasCities && (
-        <p className="text-xs text-muted-foreground">
-          No cities in the list for this location. You can leave city unset or add it later.
-        </p>
+      {/* When state has no cities in DB: allow manual city */}
+      {canSelectCity && !citiesLoading && !hasCities && hasRegions && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            No cities in the list for this state/region. Enter your city below so your full location is saved.
+          </p>
+          <div>
+            <label className="text-sm font-medium mb-1 block">{cityLabel}</label>
+            <Input
+              placeholder="e.g. City name"
+              value={value.cityName}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  cityId: null,
+                  cityName: e.target.value.trim(),
+                })
+              }
+              disabled={disabled}
+              className="h-11 bg-background"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

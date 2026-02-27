@@ -1895,14 +1895,8 @@ const Register = () => {
     }
   };
 
-  const toggleRole = (role: UserAppRole) => {
-    const newRoles = new Set(selectedRoles);
-    if (newRoles.has(role)) {
-      newRoles.delete(role);
-    } else {
-      newRoles.add(role);
-    }
-    setSelectedRoles(newRoles);
+  const selectRoleOnly = (role: UserAppRole) => {
+    setSelectedRoles(new Set([role]));
   };
 
   const currentRole = profileSetupRoles[currentRoleIndex];
@@ -1938,7 +1932,7 @@ const Register = () => {
                     : selectedRoles.has('digger')
                       ? "Get matched with jobs tailored to your skills, passions, and experience – all for free."
                       : ""
-                  : step === 3 ? "Digger = freelancer (get leads). Gigger = client (post gigs). Pick one or both." : `Set up your ${currentRole} profile`}
+                  : step === 3 ? "Digger = freelancer (get leads). Gigger = client (post gigs). Pick one." : `Set up your ${currentRole} profile`}
               </CardDescription>
             </CardHeader>
 
@@ -2556,24 +2550,21 @@ const Register = () => {
                     You're registering as a Gigger to post your gig.
                   </p>
                 )}
-                <div className="space-y-3">
+                <RadioGroup
+                  value={selectedRoles.has('digger') ? 'digger' : selectedRoles.has('gigger') ? 'gigger' : ''}
+                  onValueChange={(v) => { if (v === 'digger' || v === 'gigger') selectRoleOnly(v); }}
+                  className="space-y-3"
+                >
                   {!isFromGigPosting && (
-                    <button
-                      type="button"
-                      onClick={() => toggleRole('digger')}
-                      className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                    <label
+                      className={`flex w-full cursor-pointer text-left rounded-lg border p-3 transition-colors ${
                         selectedRoles.has('digger')
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:bg-muted/50'
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedRoles.has('digger')}
-                          onCheckedChange={() => toggleRole('digger')}
-                          className="mt-0.5"
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                        <RadioGroupItem value="digger" id="role-digger" className="mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-foreground">Find work (Digger)</h3>
                           <p className="text-sm text-muted-foreground mt-0.5">
@@ -2581,25 +2572,18 @@ const Register = () => {
                           </p>
                         </div>
                       </div>
-                    </button>
+                    </label>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => toggleRole('gigger')}
-                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                  <label
+                    className={`flex w-full cursor-pointer text-left rounded-lg border p-3 transition-colors ${
                       selectedRoles.has('gigger')
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:bg-muted/50'
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <Checkbox
-                        checked={selectedRoles.has('gigger')}
-                        onCheckedChange={() => toggleRole('gigger')}
-                        className="mt-0.5"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <RadioGroupItem value="gigger" id="role-gigger" className="mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-foreground">Hire talent (Gigger)</h3>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -2607,8 +2591,8 @@ const Register = () => {
                         </p>
                       </div>
                     </div>
-                  </button>
-                </div>
+                  </label>
+                </RadioGroup>
 
                 <div className="flex gap-3 pt-1">
                   <Button

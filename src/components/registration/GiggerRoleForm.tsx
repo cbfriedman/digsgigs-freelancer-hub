@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
+import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
+import { useRegionsByCountry, resolveLocationFromText } from "@/hooks/useLocations";
 
 const giggerSchema = z.object({
   profileTitle: z.string()
@@ -16,22 +17,6 @@ const giggerSchema = z.object({
     .max(100, "Profile title must be less than 100 characters"),
   country: z.string().min(1, "Please select a country"),
 });
-
-const COUNTRY_OPTIONS = [
-  { value: "", label: "Select a country..." },
-  { value: "United States", label: "🇺🇸 United States" },
-  { value: "Canada", label: "🇨🇦 Canada" },
-  { value: "United Kingdom", label: "🇬🇧 United Kingdom" },
-  { value: "Australia", label: "🇦🇺 Australia" },
-  { value: "Germany", label: "🇩🇪 Germany" },
-  { value: "France", label: "🇫🇷 France" },
-  { value: "Spain", label: "🇪🇸 Spain" },
-  { value: "Italy", label: "🇮🇹 Italy" },
-  { value: "Mexico", label: "🇲🇽 Mexico" },
-  { value: "Brazil", label: "🇧🇷 Brazil" },
-  { value: "India", label: "🇮🇳 India" },
-  { value: "Other", label: "🌍 Other" },
-];
 
 interface GiggerRoleFormProps {
   onComplete: (data: any) => void;
@@ -42,8 +27,8 @@ interface GiggerRoleFormProps {
 
 const GiggerRoleForm = ({ onComplete, onBack, existingLocation }: GiggerRoleFormProps) => {
   const [profileTitle, setProfileTitle] = useState("");
-  const [country, setCountry] = useState("");
-  const [selectedState, setSelectedState] = useState("");
+  const emptyLocation: LocationValue = { countryId: null, regionId: null, cityId: null, countryName: "", regionName: "", cityName: "", countryCode: "" };
+  const [locationValue, setLocationValue] = useState<LocationValue>(emptyLocation);
   const [preferences, setPreferences] = useState({
     receiveDiggerRecommendations: true,
     receiveNewBidNotifications: true,
@@ -53,39 +38,41 @@ const GiggerRoleForm = ({ onComplete, onBack, existingLocation }: GiggerRoleForm
   const locationLocked = !!(existingLocation?.country);
   useEffect(() => {
     if (existingLocation?.country) {
-      setCountry(existingLocation.country);
-      setSelectedState(existingLocation.state ?? "");
+      resolveLocationFromText(existingLocation.country, existingLocation.state ?? null, null).then((resolved) => {
+        setLocationValue(resolved);
+      });
     }
   }, [existingLocation?.country, existingLocation?.state]);
 
-  const regions = country ? getRegionsForCountry(country) : [];
-  const showStateField = country && country !== "Other" && regions.length > 0;
+  const { data: regions = [] } = useRegionsByCountry(locationValue.countryId, "");
+  const regionRequired = regions.length > 0;
   const canSubmit =
     profileTitle.trim().length >= 2 &&
-    country &&
-    (!showStateField || selectedState);
+    !!locationValue.countryName &&
+    (!regionRequired || !!locationValue.regionName);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      giggerSchema.parse({ profileTitle, country });
+      giggerSchema.parse({ profileTitle, country: locationValue.countryName });
 
-      if (showStateField && !selectedState) {
-        toast.error(`Please select a ${getRegionLabel(country)} / Territory`);
+      if (regionRequired && !locationValue.regionName) {
+        toast.error("Please select a state/region from the list.");
         return;
       }
 
       const locationParts = [
-        selectedState || null,
-        country || null,
+        locationValue.cityName || null,
+        locationValue.regionName || null,
+        locationValue.countryName || null,
       ].filter(Boolean);
       const location = locationParts.length > 0 ? locationParts.join(", ") : "Not specified";
 
       onComplete({
         profileTitle: profileTitle.trim(),
-        country: country || null,
-        state: selectedState || null,
+        country: locationValue.countryName || null,
+        state: locationValue.regionName || null,
         location,
         preferences,
       });
@@ -131,52 +118,16 @@ const GiggerRoleForm = ({ onComplete, onBack, existingLocation }: GiggerRoleForm
         <p className="text-xs text-muted-foreground mb-2">
           {locationLocked ? "Your location was set when you registered as Digger. One user, one location." : "Where are you located? Helps professionals understand your timezone and availability."}
         </p>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="country" className="text-sm">
-              Country
-            </Label>
-            <select
-              id="country"
-              value={country}
-              onChange={(e) => {
-                setCountry(e.target.value);
-                setSelectedState("");
-              }}
-              required
-              disabled={locationLocked}
-              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-1 disabled:opacity-60 disabled:pointer-events-none"
-            >
-              {COUNTRY_OPTIONS.map((opt) => (
-                <option key={opt.value || "empty"} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {showStateField && (
-            <div>
-              <Label htmlFor="state" className="text-sm">
-                {getRegionLabel(country)} / Territory
-              </Label>
-              <select
-                id="state"
-                value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
-                required={showStateField}
-                disabled={locationLocked}
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-1 disabled:opacity-60 disabled:pointer-events-none"
-              >
-                <option value="">Select...</option>
-                {regions.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+        <LocationSelector
+          value={locationValue}
+          onChange={setLocationValue}
+          disabled={locationLocked}
+          countryPlaceholder="Select country"
+          regionPlaceholder="Select state/region"
+          regionLabel="State / Region"
+          cityPlaceholder="Select city (optional)"
+          cityLabel="City"
+        />
       </div>
 
       <Card className="bg-accent/50">

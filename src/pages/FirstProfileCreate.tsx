@@ -19,15 +19,13 @@ import { PageLayout } from "@/components/layout/PageLayout";
 
 type SetupMode = "digger" | "gigger" | null;
 
-/** Role-specific theme and copy so Digger vs Gigger feel clearly different */
+/** Role-specific theme and copy — minimal for both Digger and Gigger */
 const ROLE_CONFIG: Record<
   "digger" | "gigger",
   {
     cardClass: string;
     iconClass: string;
     buttonClass: string;
-    taglineClass: string;
-    tagline: string;
     title: string;
     description: string;
     profileLabel: string;
@@ -42,36 +40,32 @@ const ROLE_CONFIG: Record<
   }
 > = {
   digger: {
-    cardClass: "border-l-4 border-l-primary",
+    cardClass: "border-l-4 border-l-primary shadow-sm",
     iconClass: "text-primary",
     buttonClass: "",
-    taglineClass: "text-primary",
-    tagline: "Find work you love. Get matched with gigs and grow your business.",
     title: "Create Your Digger Profile",
-    description: "Start with a professional headline and your service area. You can add professions, keywords, and more later.",
+    description: "Headline and your location. You can add more later.",
     profileLabel: "Professional Headline",
-    profilePlaceholder: "e.g., Full Stack Development, Mobile App Development, DevOps Consulting",
-    profileHint: "A short name for this profile. Helps clients find you.",
-    locationLabel: "Service Location",
-    locationHint: "Where do you offer your services? This is your digger location.",
+    profilePlaceholder: "e.g., Full Stack Development, DevOps Consulting",
+    profileHint: "Short headline so clients can find you.",
+    locationLabel: "Location",
+    locationHint: "Your location.",
     locationLockedHint: "Your location was set when you registered as Gigger. One user, one location.",
     submitLabel: "Create Profile & Continue",
     submitLoadingLabel: "Creating profile...",
-    footerHint: "You can add professions, keywords, and more in the next step.",
+    footerHint: "",
   },
   gigger: {
-    cardClass: "border-l-4 border-l-emerald-500/80 dark:border-l-emerald-400/60",
+    cardClass: "border-l-4 border-l-emerald-500/80 dark:border-l-emerald-400/60 shadow-sm",
     iconClass: "text-emerald-600 dark:text-emerald-400",
     buttonClass: "bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
-    taglineClass: "text-emerald-600 dark:text-emerald-400",
-    tagline: "You’ll use this when posting gigs and reviewing bids.",
     title: "Create Your Gigger Profile",
-    description: "Add a profile title and location so professionals can find you when you post gigs.",
+    description: "Profile title and your location.",
     profileLabel: "Profile Title",
     profilePlaceholder: "e.g., Acme Co., Marketing Team, Sarah’s Studio",
-    profileHint: "How you’ll appear to professionals when you post gigs.",
+    profileHint: "How you’ll appear when you post gigs.",
     locationLabel: "Location",
-    locationHint: "Where you’re based. Helps professionals understand your timezone and availability.",
+    locationHint: "Your location.",
     locationLockedHint: "Your location was set when you registered as Digger. One user, one location.",
     submitLabel: "Continue",
     submitLoadingLabel: "Saving...",
@@ -163,14 +157,19 @@ export default function FirstProfileCreate() {
         }
         setHasDiggerProfile(diggerProfileExists);
 
-        let giggerProfileExists = false;
+        let giggerProfileComplete = false;
         if (hasGigger) {
-          const { data: gp } = await (supabase.from("gigger_profiles" as any)).select("user_id").eq("user_id", user.id).limit(1).maybeSingle();
-          giggerProfileExists = !!(gp as any)?.user_id;
+          const [{ data: gp }, { data: profileRow }] = await Promise.all([
+            (supabase.from("gigger_profiles" as any)).select("user_id").eq("user_id", user.id).limit(1).maybeSingle(),
+            (supabase.from("profiles") as any).select("profile_title").eq("id", user.id).single(),
+          ]);
+          const hasGiggerRow = !!(gp as any)?.user_id;
+          const hasProfileTitle = !!((profileRow as { profile_title?: string } | null)?.profile_title?.trim());
+          giggerProfileComplete = hasGiggerRow && hasProfileTitle;
         }
 
         const needDiggerSetup = hasDigger && !diggerProfileExists;
-        const needGiggerSetup = hasGigger && !giggerProfileExists;
+        const needGiggerSetup = hasGigger && !giggerProfileComplete;
 
         // Show Digger first if needed, then Gigger only if needed; otherwise go to dashboard
         if (needDiggerSetup && !diggerCompleted) {
@@ -384,20 +383,19 @@ export default function FirstProfileCreate() {
 
   return (
     <PageLayout>
-      <div className="max-w-lg mx-auto py-8 px-4">
+      <div className="max-w-md mx-auto py-6 px-4">
         {cfg && (
           <Card className={cfg.cardClass}>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-xl">{cfg.title}</CardTitle>
-              <CardDescription>{cfg.description}</CardDescription>
-              <p className={`text-xs mt-1 ${cfg.taglineClass}`}>{cfg.tagline}</p>
+            <CardHeader className="pb-3 pt-6 px-6">
+              <CardTitle className="text-lg font-medium">{cfg.title}</CardTitle>
+              <CardDescription className="text-sm">{cfg.description}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-6 pt-0">
               {setupMode === "digger" && (
-                <form onSubmit={handleDiggerSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-title" className="flex items-center gap-2">
-                      <Briefcase className={`h-4 w-4 ${cfg.iconClass}`} />
+                <form onSubmit={handleDiggerSubmit} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="profile-title" className="flex items-center gap-2 text-sm">
+                      <Briefcase className={`h-3.5 w-3.5 ${cfg.iconClass}`} />
                       {cfg.profileLabel} <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -408,14 +406,14 @@ export default function FirstProfileCreate() {
                       minLength={2}
                       maxLength={100}
                       required
-                      className="h-11"
+                      className="h-10"
                     />
                     <p className="text-xs text-muted-foreground">{cfg.profileHint}</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <MapPin className={`h-4 w-4 ${cfg.iconClass}`} />
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-2 text-sm">
+                      <MapPin className={`h-3.5 w-3.5 ${cfg.iconClass}`} />
                       {cfg.locationLabel} <span className="text-destructive">*</span>
                       {locationLocked && (
                         <span className="text-xs text-muted-foreground font-normal">
@@ -423,7 +421,7 @@ export default function FirstProfileCreate() {
                         </span>
                       )}
                     </Label>
-                    <p className="text-xs text-muted-foreground mb-2">
+                    <p className="text-xs text-muted-foreground">
                       {locationLocked ? cfg.locationLockedHint : cfg.locationHint}
                     </p>
                     <LocationSelector
@@ -434,11 +432,11 @@ export default function FirstProfileCreate() {
                     />
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <Button
                       type="submit"
                       disabled={!diggerCanSubmit || isSubmitting}
-                      className={`w-full h-11 ${cfg.buttonClass}`}
+                      className={`w-full h-10 ${cfg.buttonClass}`}
                     >
                       {isSubmitting ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {cfg.submitLoadingLabel}</>
@@ -446,18 +444,15 @@ export default function FirstProfileCreate() {
                         cfg.submitLabel
                       )}
                     </Button>
-                    {cfg.footerHint && (
-                      <p className="text-xs text-muted-foreground text-center mt-3">{cfg.footerHint}</p>
-                    )}
                   </div>
                 </form>
               )}
 
               {setupMode === "gigger" && (
-                <form onSubmit={handleGiggerSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="gigger-profile-title" className="flex items-center gap-2">
-                      <Briefcase className={`h-4 w-4 ${cfg.iconClass}`} />
+                <form onSubmit={handleGiggerSubmit} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="gigger-profile-title" className="flex items-center gap-2 text-sm">
+                      <Briefcase className={`h-3.5 w-3.5 ${cfg.iconClass}`} />
                       {cfg.profileLabel} <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -468,20 +463,20 @@ export default function FirstProfileCreate() {
                       minLength={2}
                       maxLength={100}
                       required
-                      className="h-11 placeholder:text-muted-foreground/70"
+                      className="h-10 placeholder:text-muted-foreground/70"
                     />
                     <p className="text-xs text-muted-foreground">{cfg.profileHint}</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <MapPin className={`h-4 w-4 ${cfg.iconClass}`} />
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-2 text-sm">
+                      <MapPin className={`h-3.5 w-3.5 ${cfg.iconClass}`} />
                       {cfg.locationLabel} <span className="text-destructive">*</span>
                       {locationLocked && (
                         <span className="text-xs text-muted-foreground font-normal">(from your Digger profile)</span>
                       )}
                     </Label>
-                    <p className="text-xs text-muted-foreground mb-2">
+                    <p className="text-xs text-muted-foreground">
                       {locationLocked ? cfg.locationLockedHint : cfg.locationHint}
                     </p>
                     <LocationSelector
@@ -492,11 +487,11 @@ export default function FirstProfileCreate() {
                     />
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <Button
                       type="submit"
                       disabled={!giggerCanSubmit || isSubmitting}
-                      className={`w-full h-11 ${cfg.buttonClass}`}
+                      className={`w-full h-10 ${cfg.buttonClass}`}
                     >
                       {isSubmitting ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {cfg.submitLoadingLabel}</>
