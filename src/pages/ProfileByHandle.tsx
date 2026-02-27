@@ -307,8 +307,13 @@ export default function ProfileByHandle() {
     }
     if (safeRole === "gigger" && !canShowGiggerRole) {
       navigate(`/profile/${canonicalHandle}`, { replace: true });
+      return;
     }
-  }, [resolved, loading, safeRole, canShowDiggerRole, canShowGiggerRole, navigate, canonicalHandle]);
+    // Visitors to /profile/:handle/digger see the full Digger profile page (same as /digger/:id)
+    if (safeRole === "digger" && canShowDiggerRole && digger?.id) {
+      navigate(`/digger/${digger.id}`, { replace: true });
+    }
+  }, [resolved, loading, safeRole, canShowDiggerRole, canShowGiggerRole, navigate, canonicalHandle, digger?.id]);
 
   if (loading) {
     return (
@@ -358,11 +363,17 @@ export default function ProfileByHandle() {
                 <span className="text-sm text-muted-foreground truncate">@{canonicalHandle}</span>
               </div>
             </div>
-            {isOwner && profileCompletion && (
-              <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm shrink-0">
+            {isOwner && profileCompletion && digger?.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 h-auto rounded-lg border bg-muted/30 px-3 py-2 text-sm font-normal hover:bg-muted/50"
+                onClick={() => navigate(`/digger/${digger.id}`)}
+              >
                 <span className="font-medium text-muted-foreground">Profile completion</span>
                 <span className="font-semibold tabular-nums text-foreground ml-2">{profileCompletion.score}%</span>
-              </div>
+                <ArrowRight className="h-3.5 w-3.5 ml-2 text-muted-foreground shrink-0" />
+              </Button>
             )}
           </div>
         </CardContent>

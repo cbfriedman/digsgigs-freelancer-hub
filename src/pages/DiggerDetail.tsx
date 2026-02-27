@@ -30,7 +30,7 @@ import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection, CertificationsSection, CertificationEditorModal, ExperienceSection, ExperienceEditorModal, type DiggerCertification, type DiggerExperience } from "@/components/digger-profile";
+import { ProfileHeader, ProfileAbout, ReferencesSection, CertificationsSection, CertificationEditorModal, ExperienceSection, ExperienceEditorModal, type DiggerCertification, type DiggerExperience } from "@/components/digger-profile";
 import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEditor";
 import { PortfolioEditor } from "@/components/portfolio/PortfolioEditor";
@@ -1557,19 +1557,14 @@ const DiggerDetail = () => {
   };
   const completionRate = digger.completion_rate != null ? Math.min(100, Math.max(0, Number(digger.completion_rate))) : null;
   const JobSuccessDisplay = () => (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <CheckCircle2 className={`h-5 w-5 shrink-0 ${completionRate == null ? "text-muted-foreground" : completionRate >= 90 ? "text-emerald-600" : completionRate >= 70 ? "text-amber-600" : "text-rose-600"}`} />
-        <span className="font-semibold text-foreground tabular-nums">
-          {completionRate != null ? `${completionRate}%` : "—"}
-        </span>
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1">
+        <CheckCircle2 className={`h-4 w-4 shrink-0 ${completionRate == null ? "text-muted-foreground" : completionRate >= 90 ? "text-emerald-600" : completionRate >= 70 ? "text-amber-600" : "text-rose-600"}`} />
+        <span className="text-sm font-medium tabular-nums">{completionRate != null ? `${completionRate}%` : "—"}</span>
       </div>
       {completionRate != null ? (
-        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden" title={`${completionRate}% jobs completed`}>
-          <div
-            className={`h-full rounded-full transition-all ${getJobSuccessColor(completionRate)}`}
-            style={{ width: `${completionRate}%` }}
-          />
+        <div className="w-full h-1 rounded-full bg-muted overflow-hidden" title={`${completionRate}% jobs completed`}>
+          <div className={`h-full rounded-full transition-all ${getJobSuccessColor(completionRate)}`} style={{ width: `${completionRate}%` }} />
         </div>
       ) : (
         <p className="text-[10px] text-muted-foreground">No data yet</p>
@@ -1577,22 +1572,16 @@ const DiggerDetail = () => {
     </div>
   );
 
-  /** 5-star display: blank outline stars for new freelancers, filled for rated */
   const StarRatingDisplay = () => {
     const rating = digger.average_rating ?? 0;
     const total = digger.total_ratings ?? 0;
     const isNew = total === 0;
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Star
-            key={i}
-            className={`h-5 w-5 shrink-0 ${isNew ? "text-muted-foreground/50" : i <= Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}`}
-          />
+          <Star key={i} className={`h-4 w-4 shrink-0 ${isNew ? "text-muted-foreground/50" : i <= Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}`} />
         ))}
-        <span className="ml-1.5 font-semibold text-foreground tabular-nums">
-          {isNew ? "New" : rating.toFixed(1)}
-        </span>
+        <span className="ml-1 text-sm font-medium tabular-nums">{isNew ? "New" : rating.toFixed(1)}</span>
       </div>
     );
   };
@@ -1774,49 +1763,43 @@ const DiggerDetail = () => {
         })}
       />
 
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 sm:gap-8 lg:gap-10">
-          {/* Main content - Himalayas-style left column */}
-          <div className="lg:col-span-7 space-y-6 order-2 lg:order-1 min-w-0">
+      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:gap-6">
+          <div className="lg:col-span-7 space-y-4 order-2 lg:order-1 min-w-0">
             {(!isOwnProfile || viewAsClient) ? (
               <>
-                {/* Hero: clean Himalayas-style header */}
-                <Card id="profile-header-section" className="overflow-hidden border border-border/70 rounded-xl bg-card">
+                {/* Hero: minimal header */}
+                <Card id="profile-header-section" className="overflow-hidden border shadow-none bg-card">
                   <div className="relative">
-                    <div 
-                      className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
-                      style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                    <div
+                      className="h-28 sm:h-32 md:h-36 w-full bg-muted"
+                      style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                     />
-                    <div className="absolute left-4 sm:left-6 -bottom-10 sm:-bottom-12">
+                    <div className="absolute left-3 sm:left-4 -bottom-8">
                       <div className="relative">
-                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow">
+                        <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
                           <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
-                          <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
+                          <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">
                             {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {/* Online = green, Offline = grey (from useDiggerPresence / Realtime) */}
-                        <div className={`absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-background ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
                       </div>
                     </div>
                   </div>
-                  <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+                  <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-baseline gap-2">
-                          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{displayName}</h1>
-                          {handleDisplay && (
-                            <span className="text-lg sm:text-xl font-semibold text-primary">{handleDisplay}</span>
-                          )}
+                        <div className="flex flex-wrap items-baseline gap-1.5">
+                          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+                          {handleDisplay && <span className="text-sm font-medium text-muted-foreground">{handleDisplay}</span>}
                         </div>
-                        <div className="mt-2 flex items-center justify-between gap-4">
-                          <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
-                          <span className="text-base font-semibold text-muted-foreground shrink-0">
-                            {formatHourlyRate() || "Contact for pricing"}
-                          </span>
+                        <div className="mt-1 flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
+                          <span className="text-xs font-medium text-muted-foreground shrink-0">{formatHourlyRate() || "Contact for pricing"}</span>
                         </div>
-                        {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
-                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        {digger.tagline && <p className="mt-0.5 text-xs text-muted-foreground">{digger.tagline}</p>}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                           {(displayLocationText || getBaseLocationDisplay()) && (
                             <span className="flex items-center gap-2">
                               {getLocationCountryCode() ? (
@@ -1860,62 +1843,54 @@ const DiggerDetail = () => {
                         </Button>
                       </div>
                     </div>
-                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="flex flex-col gap-0">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">Rating</span>
                         <StarRatingDisplay />
                       </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
-                        <div className="flex items-center gap-1.5">
-                          <MessageSquare className="h-5 w-5 text-orange-500" />
-                          <span className="font-semibold text-foreground tabular-nums">{digger.total_ratings ?? 0}</span>
+                      <div className="flex flex-col gap-0">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">Reviews</span>
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium tabular-nums">{digger.total_ratings ?? 0}</span>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Earnings</span>
-                        <div className="flex items-center gap-1.5">
-                          <DollarSign className="h-5 w-5 text-green-600" />
-                          <span className="font-semibold text-foreground tabular-nums">{formatEarningsCompact(totalEarnings)}</span>
+                      <div className="flex flex-col gap-0">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">Earnings</span>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium tabular-nums">{formatEarningsCompact(totalEarnings)}</span>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Success</span>
+                      <div className="flex flex-col gap-0">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">Job Success</span>
                         <JobSuccessDisplay />
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      {references.length > 0 && (
-                        <span className="text-sm text-muted-foreground">• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>
-                      )}
-                    </div>
+                    {references.length > 0 && (
+                      <p className="mt-2 text-xs text-muted-foreground">{references.length} Recommendation{references.length !== 1 ? "s" : ""}</p>
+                    )}
                   </CardContent>
                 </Card>
 
                 {digger.bio && (
-                  <Card className="rounded-xl border-border/70">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
-                        About
-                      </CardTitle>
+                  <Card className="border shadow-none">
+                    <CardHeader className="py-2 px-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">About</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{digger.bio}</p>
+                    <CardContent className="pt-0 px-3 pb-3">
+                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{digger.bio}</p>
                     </CardContent>
                   </Card>
                 )}
 
                 {/* Portfolio */}
                 {(portfolioItems.length > 0 || digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
-                  <Card className="rounded-xl border-border/70">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-primary" />
-                        Portfolio
-                      </CardTitle>
+                  <Card className="border shadow-none">
+                    <CardHeader className="py-2 px-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-0 px-3 pb-3">
                       {portfolioItems.length > 0 ? (
                         <PortfolioDisplay items={portfolioItems} legacyPortfolioUrl={digger.portfolio_url} />
                       ) : (
@@ -1947,14 +1922,11 @@ const DiggerDetail = () => {
                   <ExperienceSection experiences={experiences} isOwnProfile={false} />
                 )}
 
-                <Card>
-                  <CardHeader className="px-4 sm:px-6">
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Star className="h-5 w-5 text-primary shrink-0" />
-                      Reviews & ratings
-                    </CardTitle>
+                <Card className="border shadow-none">
+                  <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Reviews & ratings</CardTitle>
                   </CardHeader>
-                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+                  <CardContent className="pt-0 px-3 pb-3">
                     <RatingsList diggerId={digger.id} isDigger={false} diggerName={digger.business_name} />
                   </CardContent>
                 </Card>
@@ -1964,225 +1936,137 @@ const DiggerDetail = () => {
               <>
               <section id="profile-header-section" className="overflow-hidden border-b border-border bg-card">
                 <div className="relative">
-                  <div 
-                    className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
-                    style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                  <div
+                    className="h-28 sm:h-32 md:h-36 w-full bg-muted"
+                    style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                   />
-                  <div className="absolute left-4 sm:left-6 -bottom-10 sm:-bottom-12">
+                  <div className="absolute left-3 sm:left-4 -bottom-8">
                     <div className="relative">
-                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow">
+                      <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
                         <AvatarImage src={effectiveAvatarUrl} />
-                        <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
-                          {getInitials(digger.handle || digger.business_name)}
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{getInitials(digger.handle || digger.business_name)}</AvatarFallback>
                       </Avatar>
-                      {/* Online = green, Offline = grey (from useDiggerPresence / Realtime) */}
-                      <div className={`absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-background ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
                     </div>
                   </div>
                 </div>
-                <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
+                <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{displayName}</h1>
-                        {handleDisplay && (
-                          <span className="text-lg sm:text-xl font-semibold text-primary">{handleDisplay}</span>
-                        )}
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+                        {handleDisplay && <span className="text-sm font-medium text-muted-foreground">{handleDisplay}</span>}
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-4">
-                        <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
-                        <span className="text-base font-semibold text-muted-foreground shrink-0">
-                          {formatHourlyRate() || "Contact for pricing"}
-                        </span>
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
+                        <span className="text-xs font-medium text-muted-foreground shrink-0">{formatHourlyRate() || "Contact for pricing"}</span>
                       </div>
-                      {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
-                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      {digger.tagline && <p className="mt-0.5 text-xs text-muted-foreground">{digger.tagline}</p>}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                         {(displayLocationText || getBaseLocationDisplay()) && (
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-1.5">
                             {getLocationCountryCode() ? (
                               <>
-                                <img
-                                  src={`https://flagcdn.com/w20/${getLocationCountryCode().toLowerCase()}.png`}
-                                  alt=""
-                                  className="h-4 w-5 object-cover rounded-sm shrink-0"
-                                  width={20}
-                                  height={15}
-                                />
-                                <span className="uppercase font-medium text-foreground text-sm">{getLocationCountryCode()}</span>
+                                <img src={`https://flagcdn.com/w20/${getLocationCountryCode().toLowerCase()}.png`} alt="" className="h-3.5 w-4 object-cover rounded-sm shrink-0" width={20} height={15} />
+                                <span className="uppercase font-medium text-foreground text-xs">{getLocationCountryCode()}</span>
                               </>
                             ) : null}
                             <span>{displayLocationText || getBaseLocationDisplay()}</span>
                           </span>
                         )}
-                        {localTimeStr && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-muted-foreground/70">•</span>
-                            <span>{localTimeStr} local</span>
-                          </span>
-                        )}
-                        {digger.created_at && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-muted-foreground/70">•</span>
-                            <span>Joined {formatJoinDate(digger.created_at)}</span>
-                          </span>
-                        )}
+                        {localTimeStr && <span className="flex items-center gap-1"><span className="text-muted-foreground/70">·</span><span>{localTimeStr} local</span></span>}
+                        {digger.created_at && <span className="flex items-center gap-1"><span className="text-muted-foreground/70">·</span><span>Joined {formatJoinDate(digger.created_at)}</span></span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal} className="text-muted-foreground">
-                        <Pencil className="h-4 w-4 mr-1.5" />
-                        Edit
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal} className="text-xs h-8">
+                        <Pencil className="h-3.5 w-3.5 mr-1" />Edit
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
-                        <Share2 className="h-4 w-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile"><Share2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
-                      <StarRatingDisplay />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
-                      <div className="flex items-center gap-1.5">
-                        <MessageSquare className="h-5 w-5 text-orange-500" />
-                        <span className="font-semibold text-foreground tabular-nums">{digger.total_ratings ?? 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Earnings</span>
-                      <div className="flex items-center gap-1.5">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-foreground tabular-nums">{formatEarningsCompact(totalEarnings)}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Success</span>
-                      <JobSuccessDisplay />
-                    </div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="flex flex-col gap-0"><span className="text-[10px] font-medium text-muted-foreground uppercase">Rating</span><StarRatingDisplay /></div>
+                    <div className="flex flex-col gap-0"><span className="text-[10px] font-medium text-muted-foreground uppercase">Reviews</span><div className="flex items-center gap-1"><MessageSquare className="h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium tabular-nums">{digger.total_ratings ?? 0}</span></div></div>
+                    <div className="flex flex-col gap-0"><span className="text-[10px] font-medium text-muted-foreground uppercase">Earnings</span><div className="flex items-center gap-1"><DollarSign className="h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium tabular-nums">{formatEarningsCompact(totalEarnings)}</span></div></div>
+                    <div className="flex flex-col gap-0"><span className="text-[10px] font-medium text-muted-foreground uppercase">Job Success</span><JobSuccessDisplay /></div>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
-                    {references.length > 0 && (
-                      <span className="text-sm text-muted-foreground">• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>
-                    )}
-                  </div>
+                  {references.length > 0 && <p className="mt-2 text-xs text-muted-foreground">{references.length} Recommendation{references.length !== 1 ? "s" : ""}</p>}
                 </CardContent>
               </section>
 
-              <section id="about-section" className="py-6 border-b border-border">
-                <div className="pb-2 flex flex-row items-center justify-between">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    About
-                  </h2>
-                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("about")} title="Edit About">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+              <section id="about-section" className="py-4 border-b border-border">
+                <div className="pb-1.5 flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-muted-foreground">About</h2>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSectionModal("about")} title="Edit About"><Pencil className="h-3.5 w-3.5" /></Button>
                 </div>
                 <div>
                   {digger.bio ? (
-                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
                   ) : (
-                    <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                      <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                      <p className="text-muted-foreground mb-4">Add a bio to help Giggers learn about your services</p>
-                      <Button onClick={() => openSectionModal("about")}>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Add Bio with AI Assistance
-                      </Button>
+                    <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-2">Add a bio to help Giggers learn about your services</p>
+                      <Button size="sm" onClick={() => openSectionModal("about")} className="text-xs"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Add Bio</Button>
                     </div>
                   )}
                 </div>
               </section>
 
-              <section id="portfolio-section" className="py-6 border-b border-border">
-                <div className="pb-2 flex flex-row items-center justify-between">
-                  <h2 className="text-lg font-semibold">Portfolio</h2>
-                  {isOwnProfile && (
-                    <Button variant="ghost" size="icon" onClick={() => openSectionModal("portfolio")} title="Edit Portfolio">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+              <section id="portfolio-section" className="py-4 border-b border-border">
+                <div className="pb-1.5 flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-muted-foreground">Portfolio</h2>
+                  {isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSectionModal("portfolio")} title="Edit Portfolio"><Pencil className="h-3.5 w-3.5" /></Button>}
                 </div>
                 <div>
                   {portfolioItems.length > 0 || digger.portfolio_url ? (
-                    <PortfolioDisplay
-                      items={portfolioItems}
-                      legacyPortfolioUrl={digger.portfolio_url}
-                    />
+                    <PortfolioDisplay items={portfolioItems} legacyPortfolioUrl={digger.portfolio_url} />
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      {isOwnProfile ? (
-                        <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                          <p className="mb-3">Add work samples so Giggers can see your experience.</p>
-                          <Button onClick={() => openSectionModal("portfolio")}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add portfolio
-                          </Button>
-                        </div>
-                      ) : (
-                        <p>No portfolio added yet.</p>
-                      )}
-                    </div>
+                    isOwnProfile ? (
+                      <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
+                        <p className="text-xs text-muted-foreground mb-2">Add work samples.</p>
+                        <Button size="sm" onClick={() => openSectionModal("portfolio")} className="text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" />Add portfolio</Button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No portfolio yet.</p>
+                    )
                   )}
                 </div>
               </section>
 
-              <section className="py-6 border-b border-border" id="references-section">
-                <div className="pb-2 flex flex-row items-center justify-between">
-                  <h2 className="text-lg font-semibold">Prior Job References</h2>
-                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("references")} title="Edit References">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+              <section className="py-4 border-b border-border" id="references-section">
+                <div className="pb-1.5 flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-muted-foreground">Prior Job References</h2>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSectionModal("references")} title="Edit References"><Pencil className="h-3.5 w-3.5" /></Button>
                 </div>
                 <div>
                   {references.length > 0 ? (
-                    <div className="space-y-4 min-w-0 overflow-hidden">
+                    <div className="space-y-2 min-w-0 overflow-hidden">
                       {references.map((ref) => (
-                        <div key={ref.id} className="p-4 rounded-lg border bg-accent/20 hover:bg-accent/30 transition-colors overflow-hidden min-w-0">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                <span className="font-semibold text-foreground truncate">{ref.reference_name}</span>
-                                {ref.verification_tier === "platform" ? (
-                                  <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 text-xs shrink-0">
-                                    <ShieldCheck className="h-3 w-3 mr-0.5" />
-                                    Verified on DigsandGigs
-                                  </Badge>
-                                ) : ref.verification_tier === "email" || ref.is_verified ? (
-                                  <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs shrink-0">
-                                    <CheckCircle2 className="h-3 w-3 mr-0.5" />
-                                    Email verified
-                                  </Badge>
-                                ) : null}
-                              </div>
-                              {ref.project_description && (
-                                <p className="text-sm text-muted-foreground mt-1 leading-relaxed break-all">{ref.project_description}</p>
-                              )}
-                            </div>
+                        <div key={ref.id} className="p-3 rounded-md border border-border/60 bg-muted/10 overflow-hidden min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <span className="text-sm font-medium text-foreground truncate">{ref.reference_name}</span>
+                            {ref.verification_tier === "platform" ? (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-600 border-0">Verified</Badge>
+                            ) : ref.verification_tier === "email" || ref.is_verified ? (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-600 border-0">Email verified</Badge>
+                            ) : null}
                           </div>
+                          {ref.project_description && <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed break-all">{ref.project_description}</p>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                      <p className="text-muted-foreground mb-2">Add references from past Giggers to build trust</p>
-                      <p className="text-sm text-muted-foreground mb-4">References help clients feel confident in your experience.</p>
-                      <Button variant="outline" onClick={() => openSectionModal("references")}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add your first reference
-                      </Button>
+                    <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-2">Add references from past Giggers</p>
+                      <Button size="sm" variant="outline" onClick={() => openSectionModal("references")} className="text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" />Add reference</Button>
                     </div>
                   )}
                 </div>
               </section>
 
-            {/* Reviews for Owner */}
-            <section className="py-6">
-              <div className="pb-3">
-                <h2 className="text-lg sm:text-xl font-semibold">Reviews & Ratings</h2>
+            <section className="py-4">
+              <div className="pb-1.5">
+                <h2 className="text-sm font-medium text-muted-foreground">Reviews & Ratings</h2>
               </div>
               <div>
                 <RatingsList 
@@ -2193,8 +2077,7 @@ const DiggerDetail = () => {
               </div>
             </section>
 
-            {/* Certifications with evidence */}
-            <section className="py-6 border-t border-border" id="certifications-section">
+            <section className="py-4 border-t border-border" id="certifications-section">
               <CertificationsSection
                 certifications={certifications}
                 isOwnProfile={isOwnProfile}
@@ -2209,8 +2092,7 @@ const DiggerDetail = () => {
               />
             </section>
 
-            {/* Experience */}
-            <section className="py-6 border-t border-border" id="experience-section">
+            <section className="py-4 border-t border-border" id="experience-section">
               <ExperienceSection
                 experiences={experiences}
                 isOwnProfile={isOwnProfile}
@@ -2271,38 +2153,53 @@ const DiggerDetail = () => {
 
           {/* Sidebar - 30% width on desktop */}
           <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
-            <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
-              <Card className="w-full">
-                  <CardHeader className="py-3 px-4 sm:px-5">
-                    <CardTitle className="text-sm font-medium">Verifications</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-4 pb-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      {verificationItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                            <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
-                          </div>
-                          <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+            <div className="space-y-3 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
+              <Card className="w-full border shadow-none">
+                <CardHeader className="py-2 px-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Verifications</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-3 pb-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {verificationItems.map((item) => (
+                      <div key={item.label} className="flex items-center gap-1.5">
+                        <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                          <item.icon className={`h-3 w-3 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <span className={`text-[10px] font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              {hasViewAccess && (
+                <DiggerPricingSelector
+                  diggerId={digger.id}
+                  gigId=""
+                  pricingModel={digger.pricing_model || 'both'}
+                  subscriptionTier={digger.subscription_tier || 'free'}
+                  hourlyRateMin={digger.hourly_rate_min}
+                  hourlyRateMax={digger.hourly_rate_max}
+                  offersFreEstimates={digger.offers_free_estimates}
+                  businessName={digger.business_name}
+                  onSelectPricing={(model) => {
+                    toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
+                  }}
+                />
+              )}
               {isOwnProfile && (
-                <Card className="w-full">
-                  <CardHeader className="py-3 px-4 sm:px-5">
-                    <CardTitle className="text-sm font-medium">Profile completion</CardTitle>
+                <Card className="w-full border shadow-none">
+                  <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground">Profile completion</CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0 px-4 pb-4">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-2xl font-semibold tabular-nums text-foreground">{profileDetailCompletion.score}%</span>
-                      <span className="text-xs text-muted-foreground">
-                        {profileDetailCompletion.items.filter((i) => i.completed).length}/10 complete
+                  <CardContent className="pt-0 px-3 pb-3">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-lg font-semibold tabular-nums text-foreground">{profileDetailCompletion.score}%</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {profileDetailCompletion.items.filter((i) => i.completed).length}/10
                       </span>
                     </div>
-                    <Progress value={profileDetailCompletion.score} className="h-2.5 mb-3" />
-                    <ul className="space-y-1.5 text-xs">
+                    <Progress value={profileDetailCompletion.score} className="h-1.5 mb-2" />
+                    <ul className="space-y-0.5 text-[10px]">
                       {profileDetailCompletion.items.map((item) => (
                         <li key={item.id}>
                           <button
@@ -2323,35 +2220,32 @@ const DiggerDetail = () => {
                   </CardContent>
                 </Card>
               )}
-              <Card className="rounded-xl border-border/70 w-full">
-                <CardHeader className="py-3 px-4 sm:px-5">
-                  <CardTitle className="text-sm font-medium">Profile Details</CardTitle>
+              <Card className="w-full border shadow-none">
+                <CardHeader className="py-2 px-3 sm:px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Profile Details</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 px-4 sm:px-5 pb-4 space-y-4">
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Availability</p>
-                      {isOwnProfile && (
-                        <button type="button" onClick={() => openSectionModal("availability")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
-                      onClick={() => isOwnProfile && openSectionModal("availability")}
-                    >
-                      <span className={`h-2 w-2 rounded-full shrink-0 ${isOnline ? "bg-green-500" : "bg-gray-400"}`} title={isOnline ? "Online now" : "Offline"} />
-                      <span>{getAvailabilityLabel(digger.availability)}</span>
-                      {isOnline && <span className="text-xs text-green-600 dark:text-green-400 font-medium"> · Online now</span>}
-                    </button>
+                <CardContent className="pt-0 px-3 sm:px-4 pb-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Availability</span>
+                    {isOwnProfile && (
+                      <button type="button" onClick={() => openSectionModal("availability")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Location</p>
-                    </div>
-                    <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className={`w-full inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs text-left ${isOwnProfile ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
+                    onClick={() => isOwnProfile && openSectionModal("availability")}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isOnline ? "bg-green-500" : "bg-gray-400"}`} title={isOnline ? "Online now" : "Offline"} />
+                    <span>{getAvailabilityLabel(digger.availability)}</span>
+                    {isOnline && <span className="text-green-600 dark:text-green-400">· Online</span>}
+                  </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Location</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                       {(() => {
                         const locationCountry = digger.country || getServiceLocationCountry() || "";
                         const locationCode = getCodeForCountryName(locationCountry?.trim() || "") || (locationCountry?.trim().length === 2 ? locationCountry.trim().toUpperCase() : "");
@@ -2361,7 +2255,7 @@ const DiggerDetail = () => {
                             alt=""
                             width={32}
                             height={24}
-                            className="h-6 w-8 shrink-0 rounded object-cover"
+                            className="h-5 w-6 shrink-0 rounded object-cover"
                             loading="lazy"
                             title="Location"
                           />
@@ -2370,330 +2264,221 @@ const DiggerDetail = () => {
                             countryNameOrCode={locationCountry}
                             size="md"
                             title="Location"
-                            className="shrink-0"
+                            className="shrink-0 h-5 w-6"
                           />
                         );
                       })()}
-                      <p className="text-sm font-medium text-foreground min-w-0">
+                      <p className="text-xs text-foreground min-w-0">
                         {getBaseLocationDisplay() || "Not specified"}
                       </p>
                     </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Service location</span>
+                    {isOwnProfile && ((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) && (
+                      <button type="button" onClick={() => openSectionModal("service_location")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Service location</p>
-                      {isOwnProfile && ((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) && (
-                        <button type="button" onClick={() => openSectionModal("service_location")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
                     {((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1 -mt-0.5">
                         {((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : [digger.country!]).map((c, idx) => {
                           const serviceCountryCode = getCodeForCountryName(c?.trim() || "") || (c?.trim().length === 2 ? c.trim().toUpperCase() : "");
                           return (
                             <button
                               key={idx}
                               type="button"
-                              className={`flex w-full items-center gap-3 text-left ${isOwnProfile ? "cursor-pointer hover:bg-muted/50 rounded-md -mx-1 px-1 py-0.5" : "cursor-default"}`}
+                              className={`flex w-full items-center gap-2 text-left ${isOwnProfile ? "cursor-pointer hover:bg-muted/30 rounded py-0.5" : "cursor-default"}`}
                               onClick={() => isOwnProfile && openSectionModal("service_location")}
                             >
                               {serviceCountryCode ? (
                                 <img
                                   src={`https://flagcdn.com/w40/${serviceCountryCode.toLowerCase()}.png`}
                                   alt=""
-                                  width={32}
-                                  height={24}
-                                  className="h-6 w-8 shrink-0 rounded object-cover"
+                                  width={24}
+                                  height={18}
+                                  className="h-4 w-6 shrink-0 rounded object-cover"
                                   loading="lazy"
                                 />
                               ) : (
-                                <CountryFlagIcon countryNameOrCode={c} size="md" className="shrink-0" />
+                                <CountryFlagIcon countryNameOrCode={c} size="md" className="shrink-0 h-4 w-6" />
                               )}
-                              <p className="text-sm font-medium text-foreground">
-                                {c}
-                              </p>
+                              <span className="text-xs text-foreground">{c}</span>
                             </button>
                           );
                         })}
                       </div>
                     ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("service_location")}>
-                        <Plus className="h-4 w-4 shrink-0" /> Add service location
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("service_location")}>
+                        <Plus className="h-3 w-3 shrink-0" /> Add
+                      </button>
+                    )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Website</span>
+                    {isOwnProfile && digger.website_url && (
+                      <button type="button" onClick={() => openSectionModal("website")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
                       </button>
                     )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Website</p>
-                      {isOwnProfile && digger.website_url && (
-                        <button type="button" onClick={() => openSectionModal("website")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {digger.website_url ? (
-                      <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline">
-                        <Globe className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{digger.website_url}</span>
+                  {digger.website_url ? (
+                    <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline truncate -mt-0.5">
+                      <Globe className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{digger.website_url}</span>
+                    </a>
+                  ) : (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("website")}>
+                      <Plus className="h-3 w-3 shrink-0" /> Add
+                    </button>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">GitHub</span>
+                    {isOwnProfile && githubUrl && (
+                      <button type="button" onClick={openGithubModal} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  {githubUrl ? (
+                    <div className="flex items-center justify-between gap-2 -mt-0.5">
+                      <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-1 text-xs text-primary hover:underline truncate">
+                        <Code2 className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{githubUrl}</span>
                       </a>
-                    ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("website")}>
-                        <Plus className="h-4 w-4 shrink-0" /> Add website
-                      </button>
-                    )}
-                  </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">GitHub</p>
-                      {isOwnProfile && githubUrl && (
-                        <button type="button" onClick={openGithubModal} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {githubUrl ? (
-                      <div className="flex items-center justify-between gap-3">
-                        <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-1.5 text-sm text-primary hover:underline truncate">
-                          <Code2 className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{githubUrl}</span>
+                      {githubAvatarUrl ? (
+                        <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full ring border-border overflow-hidden bg-muted" title={`GitHub: ${githubUsername}`}>
+                          <img src={githubAvatarUrl} alt={`${githubUsername} on GitHub`} className="h-8 w-8 object-cover" />
                         </a>
-                        {githubAvatarUrl ? (
-                          <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full ring-2 ring-border overflow-hidden bg-muted" title={`GitHub: ${githubUsername}`}>
-                            <img src={githubAvatarUrl} alt={`${githubUsername} on GitHub`} className="h-10 w-10 object-cover" />
-                          </a>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openGithubModal()}>
-                        <Plus className="h-4 w-4 shrink-0" /> Connect GitHub
+                      ) : null}
+                    </div>
+                  ) : (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openGithubModal()}>
+                      <Plus className="h-3 w-3 shrink-0" /> Connect
+                    </button>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Profession</span>
+                    {isOwnProfile && getDisplayedProfessions().length > 0 && (
+                      <button type="button" onClick={() => openSectionModal("profession")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
                       </button>
                     )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Profession</p>
-                      {isOwnProfile && getDisplayedProfessions().length > 0 && (
-                        <button type="button" onClick={() => openSectionModal("profession")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {getDisplayedProfessions().length > 0 ? (
-                      <button
-                        type="button"
-                        className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
-                        onClick={() => isOwnProfile && openSectionModal("profession")}
-                      >
-                        {getDisplayedProfessions().map((name, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                            <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
-                            {name}
-                          </span>
-                        ))}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => isOwnProfile && openSectionModal("profession")}
-                      >
-                        <Plus className="h-4 w-4 shrink-0" />
-                        Add profession
+                  {getDisplayedProfessions().length > 0 ? (
+                    <button
+                      type="button"
+                      className={`flex flex-wrap gap-1 text-left -mt-0.5 ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
+                      onClick={() => isOwnProfile && openSectionModal("profession")}
+                    >
+                      {getDisplayedProfessions().map((name, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 rounded border border-border bg-muted/20 px-1.5 py-0.5 text-xs">
+                          <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-violet-500" />
+                          {name}
+                        </span>
+                      ))}
+                    </button>
+                  ) : (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("profession")}>
+                      <Plus className="h-3 w-3 shrink-0" /> Add
+                    </button>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Skills</span>
+                    {isOwnProfile && getDiggerSkillNames(digger).length > 0 && (
+                      <button type="button" onClick={() => openSectionModal("skills")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
                       </button>
                     )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Skills</p>
-                      {isOwnProfile && getDiggerSkillNames(digger).length > 0 && (
-                        <button type="button" onClick={() => openSectionModal("skills")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {getDiggerSkillNames(digger).length > 0 ? (
-                      <div className="space-y-2">
-                        <button
-                          type="button"
-                          className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
-                          onClick={() => isOwnProfile && openSectionModal("skills")}
-                        >
-                          {getDiggerSkillNames(digger).map((skill, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                              {skill}
-                            </span>
-                          ))}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => isOwnProfile && openSectionModal("skills")}
-                      >
-                        <Plus className="h-4 w-4 shrink-0" />
-                        Add skills
+                  {getDiggerSkillNames(digger).length > 0 ? (
+                    <button
+                      type="button"
+                      className={`flex flex-wrap gap-1 text-left -mt-0.5 ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
+                      onClick={() => isOwnProfile && openSectionModal("skills")}
+                    >
+                      {getDiggerSkillNames(digger).map((skill, idx) => (
+                        <span key={idx} className="rounded border border-border/60 bg-muted/20 px-1.5 py-0.5 text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                    </button>
+                  ) : (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("skills")}>
+                      <Plus className="h-3 w-3 shrink-0" /> Add
+                    </button>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Social</span>
+                    {isOwnProfile && digger.social_links && Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim())).length > 0 && (
+                      <button type="button" onClick={() => openSectionModal("social")} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <Pencil className="h-3 w-3" />
                       </button>
                     )}
                   </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Social media</p>
-                      {isOwnProfile && digger.social_links && Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim())).length > 0 && (
-                        <button type="button" onClick={() => openSectionModal("social")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {(() => {
-                      const socialExcludingGithub = digger.social_links && typeof digger.social_links === "object"
-                        ? Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim()))
-                        : [];
-                      return socialExcludingGithub.length > 0 ? (
-                      <div className="flex flex-col gap-2">
+                  {(() => {
+                    const socialExcludingGithub = digger.social_links && typeof digger.social_links === "object"
+                      ? Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim()))
+                      : [];
+                    return socialExcludingGithub.length > 0 ? (
+                      <div className="flex flex-col gap-1 -mt-0.5">
                         {socialExcludingGithub.map(([platform, url]) => {
-                            const href = String(url).trim();
-                            const label = socialPlatforms.find((p) => p.key === platform)?.label || platform;
-                            const faviconUrl = getSocialFaviconUrl(href);
-                            return (
-                              <div key={platform} className="flex items-center justify-between gap-3">
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="min-w-0 flex items-center gap-1.5 text-sm text-primary hover:underline"
-                                  title={href}
-                                >
-                                  <span className="font-medium text-foreground shrink-0">{label}:</span>
-                                  <span className="truncate">{href}</span>
+                          const href = String(url).trim();
+                          const label = socialPlatforms.find((p) => p.key === platform)?.label || platform;
+                          const faviconUrl = getSocialFaviconUrl(href);
+                          return (
+                            <div key={platform} className="flex items-center justify-between gap-2">
+                              <a href={href} target="_blank" rel="noopener noreferrer" className="min-w-0 flex items-center gap-1 text-xs text-primary hover:underline truncate" title={href}>
+                                <span className="text-foreground shrink-0">{label}</span>
+                                <span className="truncate">{href}</span>
+                              </a>
+                              {faviconUrl ? (
+                                <a href={href} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded border border-border overflow-hidden bg-muted" title={label}>
+                                  <img src={faviconUrl} alt="" className="h-6 w-6 object-cover" />
                                 </a>
-                                {faviconUrl ? (
-                                  <a href={href} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full ring-2 ring-border overflow-hidden bg-muted" title={label}>
-                                    <img src={faviconUrl} alt="" className="h-10 w-10 object-cover" />
-                                  </a>
-                                ) : null}
-                              </div>
-                            );
-                          })}
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => isOwnProfile && openSectionModal("social")}
-                      >
-                        <Plus className="h-4 w-4 shrink-0" />
-                        Add social links
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("social")}>
+                        <Plus className="h-3 w-3 shrink-0" /> Add links
                       </button>
                     );
-                    })()}
-                  </div>
+                  })()}
                 </CardContent>
               </Card>
               {relatedDiggers.length > 0 && (
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-sm font-medium">People also viewed</CardTitle>
+                <Card className="border shadow-none">
+                  <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground">People also viewed</CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0 px-4 pb-4">
-                    <ul className="space-y-3">
+                  <CardContent className="pt-0 px-3 pb-3">
+                    <ul className="space-y-1">
                       {relatedDiggers.slice(0, 6).map((d) => {
                         const displayName = formatRealName(d.profiles?.full_name) || d.profile_name || d.business_name;
                         const profileTitle = d.custom_occupation_title || d.digger_categories?.[0]?.categories?.name || d.profession || null;
                         return (
                           <li key={d.id}>
-                            <div className="flex items-center gap-3 w-full text-left rounded-lg p-2 -mx-2 cursor-default">
-                              <Avatar className="h-9 w-9 shrink-0 opacity-60 blur-md saturate-0 ring-2 ring-primary/70 dark:ring-primary/60 border-2 border-primary/50 dark:border-primary/40 box-border">
-                                <AvatarImage src={d.profile_image_url || DEFAULT_AVATAR} />
-                                <AvatarFallback className="text-base bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                  🐸
-                                </AvatarFallback>
+                            <div className="flex items-center gap-2 w-full text-left rounded p-1.5 cursor-default">
+                              <Avatar className="h-7 w-7 shrink-0 overflow-hidden">
+                                <AvatarImage src={d.profile_image_url || DEFAULT_AVATAR} alt="" className="blur-md scale-110 saturate-0 select-none" />
+                                <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">?</AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
-                                <p className="font-medium text-sm truncate">{displayName}</p>
-                                {profileTitle ? (
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {profileTitle}
-                                  </p>
-                                ) : null}
+                                <p className="font-medium text-xs truncate">{displayName}</p>
+                                {profileTitle ? <p className="text-[10px] text-muted-foreground truncate">{profileTitle}</p> : null}
                               </div>
                             </div>
                           </li>
                         );
                       })}
                     </ul>
-                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/browse-diggers")}>
-                      View all talent
-                    </Button>
                   </CardContent>
                 </Card>
               )}
               {(!isOwnProfile || viewAsClient) && (
                 <>
-                  <Card>
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <div className={`flex items-center gap-2 font-medium ${isOnline ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}>
-                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online now" : "Offline"} />
-                          <span>{getAvailabilityLabel(digger.availability)}</span>
-                        </div>
-                        {isOnline && <span className="text-xs font-medium text-green-600 dark:text-green-400">Online now</span>}
-                      </div>
-                      {getBaseLocationDisplay() && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Location</p>
-                          <div className="flex items-center gap-3 text-sm">
-                            {(() => {
-                              const locationCountry = digger.country || getServiceLocationCountry() || "";
-                              const locationCode = getCodeForCountryName(locationCountry?.trim() || "") || (locationCountry?.trim().length === 2 ? locationCountry.trim().toUpperCase() : "");
-                              return locationCode ? (
-                                <img
-                                  src={`https://flagcdn.com/w40/${locationCode.toLowerCase()}.png`}
-                                  alt=""
-                                  width={32}
-                                  height={24}
-                                  className="h-6 w-8 shrink-0 rounded object-cover"
-                                  loading="lazy"
-                                  title="Location"
-                                />
-                              ) : (
-                                <CountryFlagIcon
-                                  countryNameOrCode={locationCountry}
-                                  size="md"
-                                  title="Location"
-                                  className="shrink-0"
-                                />
-                              );
-                            })()}
-                            <p className="font-medium text-foreground min-w-0">
-                              {getBaseLocationDisplay()}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      {digger.website_url && (
-                        <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                          <Globe className="h-4 w-4 shrink-0" />
-                          Website
-                        </a>
-                      )}
-                      {(portfolioItems.length > 0 || digger.portfolio_url) && (
-                        portfolioItems.length > 0 ? (
-                          <button type="button" onClick={() => document.getElementById("portfolio-section")?.scrollIntoView({ behavior: "smooth" })} className="flex items-center gap-2 text-sm text-primary hover:underline">
-                            <Globe className="h-4 w-4 shrink-0" />
-                            Portfolio
-                          </button>
-                        ) : (
-                          <a href={digger.portfolio_url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                            <Globe className="h-4 w-4 shrink-0" />
-                            Portfolio
-                          </a>
-                        )
-                      )}
-                    </CardContent>
-                  </Card>
                   {(digger.digger_categories?.length ?? 0) > 0 && (
                     <Card className="rounded-xl border-border/70">
                       <CardHeader className="py-3 px-4">
@@ -2726,33 +2511,6 @@ const DiggerDetail = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  )}
-                  <QuickContactCard
-                    hasViewAccess={hasViewAccess}
-                    isUnlocking={isUnlocking}
-                    isCallingDigger={isCallingDigger}
-                    phone={digger.phone}
-                    offersFreEstimates={digger.offers_free_estimates}
-                    hourlyRateDisplay={formatHourlyRate()}
-                    onSendMessage={handleSendMessage}
-                    onCallDigger={handleCallDigger}
-                    onUnlockContact={handleUnlockContact}
-                  />
-
-                  {hasViewAccess && (
-                    <DiggerPricingSelector
-                      diggerId={digger.id}
-                      gigId=""
-                      pricingModel={digger.pricing_model || 'both'}
-                      subscriptionTier={digger.subscription_tier || 'free'}
-                      hourlyRateMin={digger.hourly_rate_min}
-                      hourlyRateMax={digger.hourly_rate_max}
-                      offersFreEstimates={digger.offers_free_estimates}
-                      businessName={digger.business_name}
-                      onSelectPricing={(model) => {
-                        toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
-                      }}
-                    />
                   )}
                 </>
               )}

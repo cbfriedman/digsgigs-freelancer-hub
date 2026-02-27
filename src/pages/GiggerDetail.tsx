@@ -663,125 +663,105 @@ export default function GiggerDetail() {
 
       <SEOHead title={`${displayName} - Gigger Profile`} description={profile.about_me?.slice(0, 160) || `Client profile for ${displayName}.`} ogType="profile" ogImage={avatarUrl} />
 
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 sm:gap-8 lg:gap-10">
-          <div className="lg:col-span-7 space-y-6 order-2 lg:order-1 min-w-0">
-            <Card className="overflow-hidden border border-border/70 rounded-xl bg-card">
+      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:gap-6">
+          <div className="lg:col-span-7 space-y-4 order-2 lg:order-1 min-w-0">
+            <Card className="overflow-hidden border shadow-none bg-card">
               <div className="relative">
-                <div className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70" style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined} />
-                <div className="absolute left-4 sm:left-6 -bottom-10 sm:-bottom-12">
-                  <div className="relative">
-                    <button type="button" className={isOwner ? "cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-primary ring-offset-2 ring-offset-background block" : "cursor-default block"} onClick={isOwner ? () => setProfilePhotoDialogOpen(true) : undefined} aria-label={isOwner ? "Change profile photo" : undefined}>
-                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow">
-                        <AvatarImage src={avatarUrl} alt={displayName} />
-                        <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">{initials}</AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </div>
+                <div className="h-28 sm:h-32 md:h-36 w-full bg-muted" style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined} />
+                <div className="absolute left-3 sm:left-4 -bottom-8">
+                  <button type="button" className={isOwner ? "cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-primary ring-offset-2 ring-offset-background block" : "cursor-default block"} onClick={isOwner ? () => setProfilePhotoDialogOpen(true) : undefined} aria-label={isOwner ? "Change profile photo" : undefined}>
+                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
+                      <AvatarImage src={avatarUrl} alt={displayName} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{initials}</AvatarFallback>
+                    </Avatar>
+                  </button>
                 </div>
               </div>
-              <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+              <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{displayName}</h1>
-                      {handleDisplay && <span className="text-lg sm:text-xl font-semibold text-primary">{handleDisplay}</span>}
+                    <div className="flex flex-wrap items-baseline gap-1.5">
+                      <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+                      {handleDisplay && <span className="text-sm font-medium text-muted-foreground">{handleDisplay}</span>}
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-4">
-                      <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profile.profile_title?.trim() || "Client / Project owner"}</p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-2">
-                        {countryCode ? (<><img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-4 w-5 object-cover rounded-sm shrink-0" width={20} height={15} /><span className="uppercase font-medium text-foreground text-sm">{countryCode}</span></>) : null}
-                        <span>{displayLocationText || "Not specified"}</span>
-                      </span>
-                      <span className="flex items-center gap-1"><span className="text-muted-foreground/70">•</span><span>{localTime ? `${localTime} local` : "Local time: Not specified"}</span></span>
-                      {profile.created_at && (<span className="flex items-center gap-1"><span className="text-muted-foreground/70">•</span><span>Joined {formatJoinDate(profile.created_at)}</span></span>)}
+                    <p className="mt-0.5 text-sm font-medium text-foreground/90 min-w-0">{profile.profile_title?.trim() || "Client / Project owner"}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      {countryCode ? (<><img src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`} alt="" className="h-3.5 w-4 object-cover rounded-sm shrink-0" width={20} height={15} /><span className="uppercase font-medium text-foreground">{countryCode}</span></>) : null}
+                      <span>{displayLocationText || "Not specified"}</span>
+                      <span className="text-muted-foreground/70">·</span>
+                      <span>{localTime ? `${localTime} local` : "—"}</span>
+                      {profile.created_at && (<><span className="text-muted-foreground/70">·</span><span>Joined {formatJoinDate(profile.created_at)}</span></>)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isOwner && (<Button variant="outline" size="sm" onClick={openProfileHeaderEdit} className="gap-1.5"><Pencil className="h-4 w-4 mr-1.5" />Edit</Button>)}
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile"><Share2 className="h-4 w-4" /></Button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isOwner && <Button variant="outline" size="sm" onClick={openProfileHeaderEdit} className="text-xs h-8"><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>}
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile"><Share2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
-                <div className="mt-6 grid grid-cols-3 gap-4 sm:gap-6">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
-                    <div className="flex items-center gap-1.5">
-                      <Star className="h-5 w-5 text-primary fill-primary" />
-                      <span className="font-semibold text-foreground tabular-nums">
-                        {giggerProfile?.average_rating != null && giggerProfile.average_rating > 0
-                          ? Number(giggerProfile.average_rating).toFixed(1)
-                          : "—"}
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-0">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Rating</span>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 text-primary fill-primary shrink-0" />
+                      <span className="text-sm font-medium tabular-nums">
+                        {giggerProfile?.average_rating != null && giggerProfile.average_rating > 0 ? Number(giggerProfile.average_rating).toFixed(1) : "—"}
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
-                    <div className="flex items-center gap-1.5">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-foreground tabular-nums">{giggerProfile?.total_ratings ?? 0}</span>
+                  <div className="flex flex-col gap-0">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Reviews</span>
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-medium tabular-nums">{giggerProfile?.total_ratings ?? 0}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-0.5" title="Total paid on reviewed projects (matches sum of Paid on review cards)">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Spent</span>
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign className="h-5 w-5 text-green-600" />
-                      <span className="font-semibold text-foreground tabular-nums">
-                        {totalSpent != null ? `$${Math.round(totalSpent).toLocaleString()}` : "—"}
-                      </span>
+                  <div className="flex flex-col gap-0" title="Total paid on reviewed projects">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Spent</span>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-medium tabular-nums">{totalSpent != null ? `$${Math.round(totalSpent).toLocaleString()}` : "—"}</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
             {(profile.about_me?.trim() || isOwner) && (
-              <Card className="rounded-xl border border-border/70">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />About</CardTitle>
-                  {isOwner && <Button variant="ghost" size="sm" onClick={openAboutEdit} className="gap-1.5"><Pencil className="h-4 w-4" />Edit</Button>}
+              <Card className="border shadow-none">
+                <CardHeader className="py-2 px-3 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">About</CardTitle>
+                  {isOwner && <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={openAboutEdit}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>}
                 </CardHeader>
-                <CardContent><p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{profile.about_me?.trim() || "No bio yet."}</p></CardContent>
+                <CardContent className="pt-0 px-3 pb-3"><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{profile.about_me?.trim() || "No bio yet."}</p></CardContent>
               </Card>
             )}
-            <Card className="rounded-xl border border-border/70">
-              <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />Recent projects</CardTitle></CardHeader>
-              <CardContent>
-                {gigs.length === 0 ? <p className="text-sm text-muted-foreground">No projects posted yet.</p> : (
-                  <div className="space-y-3">
+            <Card className="border shadow-none">
+              <CardHeader className="py-2 px-3"><CardTitle className="text-sm font-medium text-muted-foreground">Recent projects</CardTitle></CardHeader>
+              <CardContent className="pt-0 px-3 pb-3">
+                {gigs.length === 0 ? <p className="text-xs text-muted-foreground">No projects posted yet.</p> : (
+                  <div className="space-y-2">
                     {gigs.slice(0, showAllRecentProjects ? gigs.length : 5).map((gig) => {
                       const descTrim = gig.description?.trim() ?? "";
-                      const descPreview = descTrim.length > 300 ? `${descTrim.slice(0, 300)}…` : descTrim;
+                      const descPreview = descTrim.length > 200 ? `${descTrim.slice(0, 200)}…` : descTrim;
                       return (
-                      <button type="button" key={gig.id} className={`w-full rounded-lg border p-4 text-left transition-colors ${isOwner ? "hover:bg-muted/50 flex items-start justify-between gap-4" : "border-border/70 bg-muted/20 hover:bg-muted/30"}`} onClick={() => setPreviewGig(gig)}>
+                      <button type="button" key={gig.id} className={`w-full rounded-md border border-border/60 p-3 text-left transition-colors ${isOwner ? "hover:bg-muted/30 flex items-start justify-between gap-3" : "bg-muted/10 hover:bg-muted/20"}`} onClick={() => setPreviewGig(gig)}>
                         <div className="min-w-0 flex-1 text-left">
-                          <p className="font-medium text-foreground line-clamp-1">{gig.title || "Untitled"}</p>
-                          {descPreview && <p className="mt-1.5 text-sm text-muted-foreground line-clamp-4">{descPreview}</p>}
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {(gig.skills_required && gig.skills_required.length > 0)
-                              ? gig.skills_required.map((s) => (
-                                  <Badge key={s} variant="secondary" className="text-xs font-normal">{s}</Badge>
-                                ))
-                              : null}
+                          <p className="font-medium text-sm text-foreground line-clamp-1">{gig.title || "Untitled"}</p>
+                          {descPreview && <p className="mt-0.5 text-xs text-muted-foreground line-clamp-3">{descPreview}</p>}
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(gig.skills_required && gig.skills_required.length > 0) ? gig.skills_required.slice(0, 4).map((s) => <Badge key={s} variant="secondary" className="text-[10px] font-normal px-1 py-0">{s}</Badge>) : null}
                           </div>
                           {paidByGigId[gig.id] != null && paidByGigId[gig.id] > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1.5">
-                              Paid so far: ${Number(paidByGigId[gig.id]).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-1">Paid: ${Number(paidByGigId[gig.id]).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                           )}
                         </div>
-                        {isOwner && (
-                          <>
-                            <Badge variant={gig.status === "open" ? "default" : "secondary"} className="shrink-0 capitalize">{gig.status || "—"}</Badge>
-                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                          </>
-                        )}
+                        {isOwner && <Badge variant={gig.status === "open" ? "default" : "secondary"} className="shrink-0 capitalize text-[10px]">{gig.status || "—"}</Badge>}
                       </button>
                     ); })}
                     {gigs.length > 5 && (
-                      <div className="pt-1">
-                        <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAllRecentProjects((v) => !v)}>
-                          {showAllRecentProjects ? "Show less" : `Load more (${gigs.length - 5} more)`}
+                      <div className="pt-0.5">
+                        <Button variant="outline" size="sm" className="w-full text-xs h-8" onClick={() => setShowAllRecentProjects((v) => !v)}>
+                          {showAllRecentProjects ? "Show less" : `+${gigs.length - 5} more`}
                         </Button>
                       </div>
                     )}
@@ -799,48 +779,36 @@ export default function GiggerDetail() {
             )}
           </div>
           <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
-            <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
+            <div className="space-y-3 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
               {stats && (
-                <Card className="w-full">
-                  <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />Projects</CardTitle></CardHeader>
-                  <CardContent className="pt-0 px-4 pb-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Open</span>
-                        <span className="font-semibold text-foreground tabular-nums">{stats.open}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</span>
-                        <span className="font-semibold text-foreground tabular-nums">{stats.active}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Completed</span>
-                        <span className="font-semibold text-foreground tabular-nums">{stats.completed}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total</span>
-                        <span className="font-semibold text-foreground tabular-nums">{stats.total}</span>
-                      </div>
+                <Card className="w-full border shadow-none">
+                  <CardHeader className="py-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" />Projects</CardTitle></CardHeader>
+                  <CardContent className="pt-0 px-3 pb-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-0"><span className="text-[10px] text-muted-foreground uppercase">Open</span><span className="text-sm font-medium tabular-nums">{stats.open}</span></div>
+                      <div className="flex flex-col gap-0"><span className="text-[10px] text-muted-foreground uppercase">Active</span><span className="text-sm font-medium tabular-nums">{stats.active}</span></div>
+                      <div className="flex flex-col gap-0"><span className="text-[10px] text-muted-foreground uppercase">Completed</span><span className="text-sm font-medium tabular-nums">{stats.completed}</span></div>
+                      <div className="flex flex-col gap-0"><span className="text-[10px] text-muted-foreground uppercase">Total</span><span className="text-sm font-medium tabular-nums">{stats.total}</span></div>
                     </div>
                   </CardContent>
                 </Card>
               )}
-              <Card className="w-full">
-                <CardHeader className="py-3 px-4 sm:px-5"><CardTitle className="text-sm font-medium">Verification</CardTitle></CardHeader>
-                <CardContent className="pt-0 px-4 pb-4">
+              <Card className="w-full border shadow-none">
+                <CardHeader className="py-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">Verification</CardTitle></CardHeader>
+                <CardContent className="pt-0 px-3 pb-3">
                   {hasAnyVerification ? (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       {verificationItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                            <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                        <div key={item.label} className="flex items-center gap-1.5">
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                            <item.icon className={`h-3 w-3 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
                           </div>
-                          <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                          <span className={`text-[10px] font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Not specified</p>
+                    <p className="text-xs text-muted-foreground">Not specified</p>
                   )}
                 </CardContent>
               </Card>

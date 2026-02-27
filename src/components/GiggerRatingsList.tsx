@@ -101,16 +101,10 @@ export const GiggerRatingsList = ({
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-24 w-full" />
-            ))}
-          </div>
+      <Card className="border shadow-none">
+        <CardHeader className="py-2 px-3"><CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle></CardHeader>
+        <CardContent className="pt-0 px-3 pb-3">
+          <div className="space-y-2">{[1, 2].map((i) => (<Skeleton key={i} className="h-16 w-full" />))}</div>
         </CardContent>
       </Card>
     );
@@ -120,74 +114,51 @@ export const GiggerRatingsList = ({
   const count = totalRatings ?? ratings.length;
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border shadow-none">
+      <CardHeader className="py-2 px-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
           {count > 0 && (
-            <div className="flex items-center gap-2 text-sm">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold">{displayRating}</span>
-              <span className="text-muted-foreground">({count} review{count !== 1 ? "s" : ""})</span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-medium">{displayRating}</span>
+              <span className="text-muted-foreground">({count})</span>
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0 px-3 pb-3">
         {ratings.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No reviews from freelancers yet.</p>
+          <p className="text-xs text-muted-foreground py-3">No reviews yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {ratings.map((r) => (
-              <div key={r.id} className="border rounded-lg p-4 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
-                      <AvatarImage src={r.digger_profiles?.profile_image_url ?? undefined} alt="" />
-                      <AvatarFallback className="bg-muted text-muted-foreground">
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {r.digger_profiles?.profession ?? "Freelancer"}
-                        {r.gigs?.title && (
-                          <span className="text-muted-foreground font-normal"> · {r.gigs.title}</span>
-                        )}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="flex">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-3.5 w-3.5 ${
-                                i < r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
-                      </div>
-                      {((r.paidAmount != null && r.paidAmount > 0) || (r.gigs && (r.gigs.budget_min != null || r.gigs.budget_max != null))) && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {r.paidAmount != null && r.paidAmount > 0
-                            ? `Paid: $${Number(r.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                            : `Budget: ${formatBudgetRange(r.gigs?.budget_min ?? null, r.gigs?.budget_max ?? null)}`}
-                        </p>
-                      )}
+              <div key={r.id} className="rounded-md border border-border/60 p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={r.digger_profiles?.profile_image_url ?? undefined} alt="" />
+                    <AvatarFallback className="bg-muted text-muted-foreground"><User className="h-4 w-4" /></AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{r.digger_profiles?.profession ?? "Freelancer"}{r.gigs?.title ? ` · ${r.gigs.title}` : ""}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`h-3 w-3 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                      ))}
+                      <span>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
                     </div>
-                  </div>
-                </div>
-                {r.review_text && <p className="text-sm">{r.review_text}</p>}
-                {r.gigger_response && (
-                  <div className="pl-4 border-l-2 border-muted">
-                    <p className="text-xs font-medium text-muted-foreground mb-0.5">Your response</p>
-                    <p className="text-sm">{r.gigger_response}</p>
-                    {r.responded_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(r.responded_at), { addSuffix: true })}
+                    {((r.paidAmount != null && r.paidAmount > 0) || (r.gigs && (r.gigs.budget_min != null || r.gigs.budget_max != null))) && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {r.paidAmount != null && r.paidAmount > 0 ? `Paid: $${Number(r.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : `Budget: ${formatBudgetRange(r.gigs?.budget_min ?? null, r.gigs?.budget_max ?? null)}`}
                       </p>
                     )}
+                  </div>
+                </div>
+                {r.review_text && <p className="text-xs text-foreground pl-10">{r.review_text}</p>}
+                {r.gigger_response && (
+                  <div className="pl-2 border-l border-muted mt-1">
+                    <p className="text-[10px] font-medium text-muted-foreground">Response</p>
+                    <p className="text-xs">{r.gigger_response}</p>
                   </div>
                 )}
               </div>
