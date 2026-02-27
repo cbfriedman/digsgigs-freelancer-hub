@@ -426,7 +426,11 @@ serve(async (req) => {
         if (bidData) {
           await supabaseClient
             .from('gigs')
-            .update({ status: 'open' })
+            .update({
+              status: 'open',
+              awarded_bid_id: null,
+              awarded_digger_id: null,
+            })
             .eq('id', bidData.gig_id);
         }
 

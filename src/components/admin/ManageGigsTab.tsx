@@ -41,6 +41,7 @@ import { Briefcase, MoreHorizontal, RefreshCw, Search, Trash2, User, Eye, PauseC
 import BrowseGigsVisibilityCard from "./BrowseGigsVisibilityCard";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface GigRow {
   id: string;
@@ -330,9 +331,18 @@ export default function ManageGigsTab() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={g.status === "open" ? "default" : g.status === "suspended" ? "destructive" : "secondary"}>
-                          {g.status}
-                        </Badge>
+                        <span className={cn(
+                          "text-xs font-normal",
+                          g.status === "open" && "text-violet-600 dark:text-violet-400",
+                          g.status === "in_progress" && "text-blue-600 dark:text-blue-400",
+                          g.status === "completed" && "text-green-700 dark:text-green-600",
+                          (g.status === "pending" || g.status === "pending_confirmation") && "text-gray-500 dark:text-gray-400",
+                          g.status === "awarded" && "text-green-500 dark:text-green-400",
+                          g.status === "suspended" && "text-red-600 dark:text-red-400",
+                          g.status === "cancelled" && "text-gray-500 dark:text-gray-400"
+                        )}>
+                          {g.status.replace(/_/g, " ")}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm">

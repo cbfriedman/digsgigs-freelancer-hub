@@ -132,9 +132,9 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
-            <Badge variant={contract.status === "funded" ? "default" : "secondary"}>
-              {contract.status}
-            </Badge>
+            <span className={cn("text-xs font-normal", contract.status === "funded" ? "text-green-700 dark:text-green-600" : "text-gray-500 dark:text-gray-400")}>
+              {contract.status === "funded" ? "Funded" : contract.status}
+            </span>
           </div>
         </div>
 
@@ -147,15 +147,14 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-semibold">Milestone {milestone.milestone_number}</span>
-                      <Badge
-                        variant={
-                          milestone.status === "released" ? "default" :
-                          milestone.status === "pending" ? "secondary" :
-                          "outline"
-                        }
-                      >
-                        {milestone.status}
-                      </Badge>
+                      <span className={cn(
+                        "text-xs font-normal",
+                        milestone.status === "released" && "text-green-700 dark:text-green-600",
+                        milestone.status === "pending" && "text-gray-500 dark:text-gray-400",
+                        milestone.status !== "released" && milestone.status !== "pending" && "text-blue-600 dark:text-blue-400"
+                      )}>
+                        {milestone.status === "released" ? "Released" : milestone.status}
+                      </span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
                       {milestone.description}

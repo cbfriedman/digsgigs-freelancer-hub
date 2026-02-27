@@ -2,13 +2,17 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
+import { openFloatingChat } from "@/lib/openFloatingChat";
+import { cn } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawBidDialog } from "@/components/WithdrawBidDialog";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { XCircle, Loader2, CheckCircle2 } from "lucide-react";
 
 interface Bid {
   id: string;
@@ -30,6 +34,7 @@ interface Bid {
     budget_max: number | null;
     location: string;
     status: string;
+    awarded_bid_id?: string | null;
   };
 }
 
@@ -38,10 +43,28 @@ const MyBids = () => {
   const [searchParams] = useSearchParams();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
+  const [diggerProfileId, setDiggerProfileId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for withdrawal success/cancel params
+    // Check for withdrawal success/cancel params and complete withdrawal flow if needed
     const withdrawal = searchParams.get("withdrawal");
+    const penaltyId = searchParams.get("penalty_id");
+    if (withdrawal === "success" && penaltyId) {
+      (async () => {
+        try {
+          await invokeEdgeFunction(supabase, "process-withdrawal-payment", {
+            body: { penaltyId },
+          });
+          toast.success("Bid withdrawn successfully. The penalty has been paid.");
+          loadBids();
+        } catch (e: any) {
+          toast.error(e?.message || "Failed to complete withdrawal");
+        } finally {
+          window.history.replaceState({}, "", "/my-bids");
+        }
+      })();
+      return;
+    }
     if (withdrawal === "success") {
       toast.success("Bid withdrawn successfully. The penalty has been paid.");
       window.history.replaceState({}, "", "/my-bids");
@@ -85,6 +108,7 @@ const MyBids = () => {
       navigate("/digger-registration");
       return;
     }
+    setDiggerProfileId(diggerProfile.id);
 
     // Get all bids (with nested gig via gig_id; use hint because gigs also has awarded_bid_id -> bids)
     const { data, error } = await supabase
@@ -108,7 +132,8 @@ const MyBids = () => {
           budget_min,
           budget_max,
           location,
-          status
+          status,
+          awarded_bid_id
         )
       `)
       .eq("digger_id", diggerProfile.id)
@@ -132,22 +157,32 @@ const MyBids = () => {
     setLoading(false);
   };
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: "secondary" | "default" | "destructive" | "outline"; label: string; icon?: typeof CheckCircle }> = {
-      pending: { variant: "secondary", label: "Pending" },
-      accepted: { variant: "default", label: "Accepted" },
-      rejected: { variant: "destructive", label: "Rejected" },
-      completed: { variant: "default", label: "Completed", icon: CheckCircle },
-      withdrawn: { variant: "outline", label: "Withdrawn", icon: XCircle },
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: "Pending",
+      accepted: "Accepted",
+      rejected: "Rejected",
+      completed: "Completed",
+      withdrawn: "Withdrawn",
     };
-    const c = config[status] || { variant: "secondary" as const, label: status };
-    const Icon = c.icon;
-    return (
-      <Badge variant={c.variant} className="gap-1 w-fit text-xs font-normal">
-        {Icon && <Icon className="h-3 w-3" />}
-        {c.label}
-      </Badge>
-    );
+    return labels[status] ?? status;
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "accepted":
+        return "text-green-500 dark:text-green-400";
+      case "completed":
+        return "text-green-700 dark:text-green-600";
+      case "rejected":
+        return "text-red-600 dark:text-red-400";
+      case "withdrawn":
+        return "text-gray-500 dark:text-gray-400";
+      case "pending":
+        return "text-gray-500 dark:text-gray-400";
+      default:
+        return "text-gray-500 dark:text-gray-400";
+    }
   };
 
   const formatBudget = (min: number | null, max: number | null) => {
@@ -211,10 +246,13 @@ const MyBids = () => {
                       <BidRow
                         key={bid.id}
                         bid={bid}
-                        getStatusBadge={getStatusBadge}
+                        diggerProfileId={diggerProfileId}
+                        getStatusLabel={getStatusLabel}
+                        getStatusClass={getStatusClass}
                         formatBudget={formatBudget}
                         formatDistanceToNow={formatDistanceToNow}
                         onView={() => navigate(`/gig/${bid.gigs.id}`)}
+                        onDeclineSuccess={loadBids}
                         WithdrawComponent={
                           bid.status === "accepted" && !bid.withdrawn_at ? (
                             <WithdrawBidDialog
@@ -240,10 +278,13 @@ const MyBids = () => {
                       <BidRow
                         key={bid.id}
                         bid={bid}
-                        getStatusBadge={getStatusBadge}
+                        diggerProfileId={diggerProfileId}
+                        getStatusLabel={getStatusLabel}
+                        getStatusClass={getStatusClass}
                         formatBudget={formatBudget}
                         formatDistanceToNow={formatDistanceToNow}
                         onView={() => navigate(`/gig/${bid.gigs.id}`)}
+                        onDeclineSuccess={loadBids}
                         WithdrawComponent={undefined}
                       />
                     ))}
@@ -260,24 +301,129 @@ const MyBids = () => {
 
 function BidRow({
   bid,
-  getStatusBadge,
+  diggerProfileId,
+  getStatusLabel,
+  getStatusClass,
   formatBudget,
   formatDistanceToNow,
   onView,
   WithdrawComponent,
+  onDeclineSuccess,
 }: {
   bid: Bid;
-  getStatusBadge: (s: string) => JSX.Element;
+  diggerProfileId: string | null;
+  getStatusLabel: (s: string) => string;
+  getStatusClass: (s: string) => string;
   formatBudget: (a: number | null, b: number | null) => string | null;
   formatDistanceToNow: (date: Date, opts: { addSuffix: boolean }) => string;
   onView: () => void;
   WithdrawComponent?: ReactNode;
+  onDeclineSuccess?: () => void;
 }) {
+  const [declineLoading, setDeclineLoading] = useState(false);
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  const gigStatus = bid.gigs?.status ?? "";
+  const showOrangeChat =
+    diggerProfileId &&
+    (gigStatus === "in_progress" || gigStatus === "awarded" || gigStatus === "completed");
+  const gigStatusLabel =
+    gigStatus === "completed" ? "Completed" : gigStatus === "in_progress" ? "In progress" : gigStatus === "awarded" ? "Awarded" : gigStatus === "open" ? "Open" : gigStatus;
+  const gigStatusClass = cn(
+    "text-xs font-normal shrink-0",
+    gigStatus === "open" && "text-violet-600 dark:text-violet-400",
+    gigStatus === "in_progress" && "text-blue-600 dark:text-blue-400",
+    gigStatus === "completed" && "text-green-700 dark:text-green-600",
+    (gigStatus === "pending_confirmation" || gigStatus === "pending") && "text-gray-500 dark:text-gray-400",
+    gigStatus === "awarded" && "text-green-500 dark:text-green-400",
+    !["open", "in_progress", "completed", "awarded", "pending", "pending_confirmation"].includes(gigStatus) && "text-gray-500 dark:text-gray-400"
+  );
+  const awardedBidId = (bid.gigs as { awarded_bid_id?: string | null }).awarded_bid_id ?? null;
+  const isThisBidAwarded = awardedBidId !== null && awardedBidId === bid.id;
+  const isAwarded = isThisBidAwarded && gigStatus === "awarded";
+  const isHired =
+    isThisBidAwarded && (gigStatus === "in_progress" || gigStatus === "completed");
+  const isLose =
+    bid.status === "rejected" ||
+    (awardedBidId !== null && awardedBidId !== bid.id);
+  const rightBottomLabel = isHired
+    ? "Hired"
+    : isAwarded
+      ? "Awarded"
+      : isLose
+        ? "Lose"
+        : getStatusLabel(bid.status);
+  const rightBottomClass = isHired
+    ? "text-green-600 dark:text-green-500 font-medium"
+    : isAwarded
+      ? "text-amber-600 dark:text-amber-400 font-medium"
+      : isLose
+        ? "text-red-600 dark:text-red-400 font-medium"
+        : getStatusClass(bid.status);
+  const rightBottomTooltip = isHired
+    ? "You were hired for this gig."
+    : isAwarded
+      ? "You were awarded this gig. Accept to get hired."
+      : isLose
+        ? "This gig was awarded to another digger."
+        : null;
+
+  const handleDeclineAward = async () => {
+    if (!diggerProfileId || !onDeclineSuccess) return;
+    if (!window.confirm("Decline this award? The client can choose someone else. You will be charged a $100 penalty.")) return;
+    setDeclineLoading(true);
+    try {
+      await invokeEdgeFunction(supabase, "digger-decline-award", {
+        body: { bidId: bid.id, gigId: bid.gigs.id, diggerId: diggerProfileId, reason: "Declined from My Bids" },
+      });
+      toast.success("Award declined. The client has been notified.");
+      onDeclineSuccess();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to decline.");
+    } finally {
+      setDeclineLoading(false);
+    }
+  };
+
+  const handleAcceptAward = async () => {
+    if (!diggerProfileId || !onDeclineSuccess) return;
+    setAcceptLoading(true);
+    try {
+      const data = await invokeEdgeFunction<{
+        success?: boolean;
+        alreadyAccepted?: boolean;
+        requiresPayment?: boolean;
+        checkoutUrl?: string;
+        message?: string;
+      }>(supabase, "digger-accept-award", {
+        body: { bidId: bid.id, gigId: bid.gigs.id, diggerId: diggerProfileId },
+      });
+      if (data?.requiresPayment && data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      if (data?.success || data?.alreadyAccepted) {
+        toast.success(data?.alreadyAccepted ? "Already accepted" : "You accepted the job! The client has been notified.");
+        onDeclineSuccess();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to accept the award.");
+    } finally {
+      setAcceptLoading(false);
+    }
+  };
+
   return (
     <li className="border border-border rounded-lg overflow-hidden">
       <div className="p-4 flex items-stretch justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-1.5">
-          <span className="font-medium text-sm block">{bid.gigs.title}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm truncate max-w-[30ch]" title={bid.gigs.title}>
+              {bid.gigs.title.length > 30 ? `${bid.gigs.title.slice(0, 30)}…` : bid.gigs.title}
+            </span>
+            {gigStatus && (
+              <span className={gigStatusClass}>{gigStatusLabel}</span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             <span>Your bid: ${bid.amount.toLocaleString()}</span>
             {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max) && (
@@ -294,9 +440,65 @@ function BidRow({
             <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onView}>
               View gig
             </Button>
+            {diggerProfileId && isThisBidAwarded && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 text-xs gap-1.5",
+                  showOrangeChat &&
+                    "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
+                )}
+                onClick={() => openFloatingChat(bid.gigs.id, diggerProfileId)}
+                title="Chat with client"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Chat
+              </Button>
+            )}
+            {isAwarded && onDeclineSuccess && (
+              <>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleAcceptAward}
+                  disabled={acceptLoading || declineLoading}
+                  title="Accept this award and get hired"
+                >
+                  {acceptLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Accept
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={handleDeclineAward}
+                  disabled={declineLoading || acceptLoading}
+                  title="Decline this award (you will be charged a $100 penalty)"
+                >
+                  {declineLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                  Decline
+                </Button>
+              </>
+            )}
             {WithdrawComponent}
           </div>
-          <div className="mt-auto">{getStatusBadge(bid.status)}</div>
+          {rightBottomTooltip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn("mt-auto text-xs font-normal cursor-default", rightBottomClass)}>
+                  {rightBottomLabel}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p className="text-xs">{rightBottomTooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className={cn("mt-auto text-xs font-normal", rightBottomClass)}>
+              {rightBottomLabel}
+            </span>
+          )}
         </div>
       </div>
       {bid.withdrawn_at != null && bid.withdrawal_penalty != null && (

@@ -36,12 +36,12 @@ export const WithdrawBidDialog = ({
     setLoading(true);
     try {
       const data = await invokeEdgeFunction<{ url?: string }>(supabase, "withdraw-bid", {
-        body: { bidId },
+        body: { bidId, origin: window.location.origin },
       });
 
       if (data?.url) {
-        window.open(data.url, "_blank");
         toast.info("Complete the penalty payment to withdraw your bid");
+        window.location.href = data.url;
       }
 
       if (onSuccess) {

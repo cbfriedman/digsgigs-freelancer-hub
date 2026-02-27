@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare, Star } from "lucide-react";
+import { DollarSign, Calendar, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare, Star, MoreVertical, MapPin, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -21,8 +21,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { RatingDialog } from "@/components/RatingDialog";
+import { cn } from "@/lib/utils";
+import { openFloatingChat } from "@/lib/openFloatingChat";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Gig {
   id: string;
@@ -58,10 +68,20 @@ interface LeadIssue {
 
 type BidStats = { count: number; avgPrice: number };
 
+export type AwardedDiggerInfo = {
+  profile_image_url: string | null;
+  full_name: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  timezone: string | null;
+};
+
 const MyGigs = () => {
   const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [bidStatsByGigId, setBidStatsByGigId] = useState<Record<string, BidStats>>({});
+  const [awardedDiggerByGigId, setAwardedDiggerByGigId] = useState<Record<string, AwardedDiggerInfo>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [gigIssues, setGigIssues] = useState<LeadIssue[]>([]);
@@ -106,13 +126,60 @@ const MyGigs = () => {
     } else {
       setGigs(data || []);
       if ((data || []).length > 0) {
-        loadBidStats(data.map((g: Gig) => g.id));
-        loadPlatformRefGigIds(data as Gig[]);
-        loadReviewedGigIds(data as Gig[]);
+        const gigList = data as Gig[];
+        loadBidStats(gigList.map((g: Gig) => g.id));
+        loadPlatformRefGigIds(gigList);
+        loadReviewedGigIds(gigList);
+        loadAwardedDiggers(gigList);
       }
     }
 
     setLoading(false);
+  };
+
+  const loadAwardedDiggers = async (gigList: Gig[]) => {
+    const gigsWithDigger = gigList.filter(
+      (g) => (g as Gig & { awarded_digger_id?: string | null }).awarded_digger_id
+    );
+    if (gigsWithDigger.length === 0) {
+      setAwardedDiggerByGigId({});
+      return;
+    }
+    const diggerIds = [...new Set(gigsWithDigger.map((g) => (g as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!))];
+    const { data: diggers, error } = await supabase
+      .from("digger_profiles")
+      .select(`
+        id,
+        profile_image_url,
+        city,
+        state,
+        country,
+        profiles!digger_profiles_user_id_fkey (full_name, timezone)
+      `)
+      .in("id", diggerIds);
+    if (error) {
+      console.error("Error loading awarded diggers:", error);
+      setAwardedDiggerByGigId({});
+      return;
+    }
+    const byDiggerId: Record<string, AwardedDiggerInfo> = {};
+    for (const d of diggers || []) {
+      const p = (d as any).profiles;
+      byDiggerId[d.id] = {
+        profile_image_url: d.profile_image_url ?? null,
+        full_name: p?.full_name ?? null,
+        city: d.city ?? null,
+        state: d.state ?? null,
+        country: d.country ?? null,
+        timezone: p?.timezone ?? null,
+      };
+    }
+    const byGigId: Record<string, AwardedDiggerInfo> = {};
+    for (const g of gigsWithDigger) {
+      const diggerId = (g as Gig & { awarded_digger_id?: string | null }).awarded_digger_id;
+      if (diggerId && byDiggerId[diggerId]) byGigId[g.id] = byDiggerId[diggerId];
+    }
+    setAwardedDiggerByGigId(byGigId);
   };
 
   const loadPlatformRefGigIds = async (gigList: Gig[]) => {
@@ -457,7 +524,6 @@ const MyGigs = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => navigate("/post-gig?quick=1")}>Post a gig</Button>
             <Button variant="outline" onClick={() => navigate("/transactions")}>
               View Transactions
             </Button>
@@ -476,39 +542,142 @@ const MyGigs = () => {
         ) : (
           <div className="space-y-4">
             {gigs.map((gig) => (
-              <Card key={gig.id} className="overflow-hidden">
+              <Card key={gig.id} className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20">
                 <CardContent className="p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <h3 className="text-xl font-semibold">{gig.title}</h3>
-                        <Badge
-                          variant={gig.status === "open" ? "secondary" : gig.status === "completed" ? "default" : "outline"}
-                          className={gig.status === "completed" ? "bg-green-600 hover:bg-green-600" : ""}
-                        >
-                          {gig.status === "completed"
-                            ? "Completed"
-                            : gig.status === "in_progress"
-                              ? "In progress"
-                              : gig.status === "awarded"
-                                ? "Awarded"
-                                : gig.status}
-                        </Badge>
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <h3 className="text-xl font-semibold truncate max-w-[30ch]" title={gig.title}>
+                            {gig.title.length > 30 ? `${gig.title.slice(0, 30)}…` : gig.title}
+                          </h3>
+                          <span className={cn(
+                            "text-xs font-normal shrink-0",
+                            gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                            gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
+                            gig.status === "completed" && "text-green-700 dark:text-green-600",
+                            (gig.status === "pending_confirmation" || gig.status === "pending") && "text-gray-500 dark:text-gray-400",
+                            gig.status === "awarded" && "text-green-500 dark:text-green-400",
+                            !["open", "in_progress", "completed", "awarded", "pending", "pending_confirmation"].includes(gig.status) && "text-gray-500 dark:text-gray-400"
+                          )}>
+                            {gig.status === "completed" ? "Completed" : gig.status === "in_progress" ? "In progress" : gig.status === "awarded" ? "Awarded" : gig.status}
+                          </span>
+                        </div>
                         {gig.purchase_count > 0 && (
-                          <Badge variant="outline" className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {gig.purchase_count} {gig.purchase_count === 1 ? "purchase" : "purchases"}
-                          </Badge>
+                          </span>
                         )}
                         {bidStatsByGigId[gig.id]?.count != null && bidStatsByGigId[gig.id].count > 0 && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <FileText className="h-3 w-3" />
                             {bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "bid" : "bids"}
                             {bidStatsByGigId[gig.id].avgPrice > 0 && (
                               <span className="opacity-80"> · Avg ${Math.round(bidStatsByGigId[gig.id].avgPrice).toLocaleString()}</span>
                             )}
-                          </Badge>
+                          </span>
                         )}
+                        <div className="ml-auto flex items-center gap-2 shrink-0">
+                          {(gig.status === "open" || gig.status === "closed") && (
+                            <>
+                              <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
+                                {gig.status === "open" ? "Active" : "Closed"}
+                              </Label>
+                              <Switch
+                                id={`status-${gig.id}`}
+                                checked={gig.status === "open"}
+                                onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
+                              />
+                            </>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="More actions">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              {gig.status !== "completed" && (
+                                <DropdownMenuItem onClick={() => navigate(`/gig/${gig.id}/edit`)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+                              {gig.status === "completed" &&
+                                (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
+                                (platformRefGigIds.has(gig.id) ? (
+                                  <DropdownMenuItem disabled>
+                                    <MessageSquare className="mr-2 h-4 w-4 opacity-60" />
+                                    Reference left
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setLeaveRefGig(gig);
+                                      setLeaveRefDescription("");
+                                    }}
+                                  >
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    Leave reference
+                                  </DropdownMenuItem>
+                                ))}
+                              {gig.status === "completed" &&
+                                (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
+                                !reviewedGigIds.has(gig.id) && (
+                                  <DropdownMenuItem onClick={() => setLeaveReviewGig(gig)}>
+                                    <Star className="mr-2 h-4 w-4" />
+                                    Leave review
+                                  </DropdownMenuItem>
+                                )}
+                              {gig.status === "open" && (
+                                <DropdownMenuItem
+                                  onClick={() => handleBump(gig.id)}
+                                  disabled={!!bumpingId}
+                                >
+                                  {bumpingId === gig.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                  )}
+                                  Bump
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => setRepostConfirmGig(gig)}
+                                disabled={!!repostingId || !(gig as Gig & { consumer_id?: string | null }).consumer_id}
+                              >
+                                {repostingId === gig.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Copy className="mr-2 h-4 w-4" />
+                                )}
+                                Repost
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => viewIssues(gig)}>
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                View Issues
+                              </DropdownMenuItem>
+                              {!(gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setRemoveConfirmGig(gig)}
+                                    disabled={!!removingId}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    {removingId === gig.id ? (
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                    )}
+                                    Remove
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       
                       <p className="text-muted-foreground mb-4 line-clamp-2">
@@ -516,12 +685,6 @@ const MyGigs = () => {
                       </p>
 
                       <div className="flex flex-wrap gap-4 text-sm">
-                        {gig.categories && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Tag className="h-4 w-4" />
-                            <span>{gig.categories.name}</span>
-                          </div>
-                        )}
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <DollarSign className="h-4 w-4" />
                           <span>{formatGigPrice(gig)}</span>
@@ -532,141 +695,81 @@ const MyGigs = () => {
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {(gig.status === "open" || gig.status === "closed") ? (
-                        <>
-                          <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
-                            {gig.status === "open" ? "Active" : "Closed"}
-                          </Label>
-                          <Switch
-                            id={`status-${gig.id}`}
-                            checked={gig.status === "open"}
-                            onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
-                          />
-                        </>
-                      ) : (
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {gig.status === "completed"
-                            ? "Completed"
-                            : gig.status === "in_progress"
-                              ? "In progress"
-                              : gig.status === "awarded"
-                                ? "Awarded"
-                                : gig.status}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
-                  {/* Action row: View, Edit, Bump, Repost, Issues, Remove */}
-                  <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2 flex-wrap">
-                    <Button
-                      onClick={() => navigate(`/gig/${gig.id}`)}
-                      className="flex-1 min-w-0"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
-                    </Button>
-                    {gig.status !== "completed" && (
+                  {/* Action row: hired digger info (left) + View bids & Chat (right) */}
+                  <div className="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-4">
+                    {(gig.status === "in_progress" || gig.status === "awarded" || gig.status === "completed") &&
+                      awardedDiggerByGigId[gig.id] && (() => {
+                        const info = awardedDiggerByGigId[gig.id];
+                        const localTimeStr = info.timezone?.trim()
+                          ? (() => {
+                              try {
+                                return new Intl.DateTimeFormat("en-US", {
+                                  timeZone: info.timezone.trim(),
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                  timeZoneName: "short",
+                                }).format(new Date());
+                              } catch {
+                                return null;
+                              }
+                            })()
+                          : null;
+                        const locationParts = [info.city, info.state, info.country].filter(Boolean);
+                        const locationStr = locationParts.length > 0 ? locationParts.join(", ") : null;
+                        return (
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="h-10 w-10 shrink-0">
+                              <AvatarImage src={info.profile_image_url ?? undefined} alt="" />
+                              <AvatarFallback className="text-sm bg-muted">
+                                {(info.full_name || "D").slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex flex-col gap-0.5 text-sm">
+                              <span className="font-medium truncate">{info.full_name || "Hired Digger"}</span>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                {localTimeStr != null && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3 shrink-0" />
+                                    {localTimeStr}
+                                  </span>
+                                )}
+                                {locationStr && (
+                                  <span className="flex items-center gap-1 truncate">
+                                    <MapPin className="h-3 w-3 shrink-0" />
+                                    {locationStr}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
                       <Button
                         variant="outline"
-                        onClick={() => navigate(`/gig/${gig.id}/edit`)}
+                        onClick={() => navigate(`/gig/${gig.id}`)}
                         className="min-w-0"
-                        title="Edit gig details"
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
+                        <FileText className="mr-2 h-4 w-4" />
+                        {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
                       </Button>
-                    )}
-                    {gig.status === "completed" &&
-                      (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
-                      (platformRefGigIds.has(gig.id) ? (
-                        <Button variant="outline" className="min-w-0" disabled title="Reference already left">
-                          <MessageSquare className="mr-2 h-4 w-4 opacity-60" />
-                          Reference left
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setLeaveRefGig(gig);
-                            setLeaveRefDescription("");
-                          }}
-                          className="min-w-0"
-                          title="Leave a reference for the Digger who completed this gig"
-                        >
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          Leave reference
-                        </Button>
-                      ))}
-                    {gig.status === "completed" &&
-                      (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
-                      !reviewedGigIds.has(gig.id) && (
-                        <Button
-                          variant="outline"
-                          onClick={() => setLeaveReviewGig(gig)}
-                          className="min-w-0"
-                          title="Leave a review for the Digger who completed this gig"
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          Leave review
-                        </Button>
-                      )}
-                    {gig.status === "open" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => handleBump(gig.id)}
-                        disabled={!!bumpingId}
-                        className="min-w-0"
-                        title="Bump this listing to the top so more diggers see it"
-                      >
-                        {bumpingId === gig.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="mr-2 h-4 w-4" />
+                      {(gig.status === "in_progress" || gig.status === "awarded" || gig.status === "completed") &&
+                        (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="min-w-0 gap-1.5 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
+                            onClick={() => openFloatingChat(gig.id, (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!)}
+                            title="Chat with the hired Digger"
+                          >
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Chat
+                          </Button>
                         )}
-                        Bump
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      onClick={() => setRepostConfirmGig(gig)}
-                      disabled={!!repostingId || !(gig as Gig & { consumer_id?: string | null }).consumer_id}
-                      className="min-w-0"
-                      title="Create a new listing with the same details (diggers will be notified)"
-                    >
-                      {repostingId === gig.id ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Copy className="mr-2 h-4 w-4" />
-                      )}
-                      Repost
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => viewIssues(gig)}
-                      className="flex-1 min-w-0"
-                    >
-                      <AlertCircle className="mr-2 h-4 w-4" />
-                      View Issues
-                    </Button>
-                    {!(gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setRemoveConfirmGig(gig)}
-                        disabled={!!removingId}
-                        className="min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Permanently remove this project from the site (only when not awarded)"
-                      >
-                        {removingId === gig.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="mr-2 h-4 w-4" />
-                        )}
-                        Remove
-                      </Button>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

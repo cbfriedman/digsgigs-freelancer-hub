@@ -26,6 +26,7 @@ import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOp
 import { getLocalTimeForCountry } from "@/pages/DiggerDetail/utils";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
+import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
 import { openFloatingChat } from "@/lib/openFloatingChat";
@@ -918,37 +919,24 @@ const GigDetail = () => {
               <CardHeader className="p-4 sm:p-5 md:p-6">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   {hasBothRoles && (
-                    <Badge
-                      variant="outline"
-                      className={
-                        activeRole === "gigger"
-                          ? "border-accent/60 bg-accent/10 text-accent-foreground"
-                          : "border-primary/60 bg-primary/10 text-primary"
-                      }
-                    >
-                      {activeRole === "gigger" ? "📋 Gigger mode" : "🔧 Digger mode"}
-                    </Badge>
+                    <span className={cn(
+                      "text-xs font-normal",
+                      activeRole === "gigger" ? "text-accent-foreground" : "text-primary"
+                    )}>
+                      {activeRole === "gigger" ? "Gigger mode" : "Digger mode"}
+                    </span>
                   )}
-                  <Badge
-                    variant={
-                      gig.status === "completed"
-                        ? "default"
-                        : gig.status === "open"
-                          ? "default"
-                          : "secondary"
-                    }
-                    className={gig.status === "completed" ? "bg-green-600 hover:bg-green-600" : ""}
-                  >
-                    {gig.status === "completed"
-                      ? "Completed"
-                      : gig.status === "in_progress"
-                        ? "In progress"
-                        : gig.status === "awarded"
-                          ? "Awarded"
-                          : gig.status === "open"
-                            ? "Open"
-                            : gig.status}
-                  </Badge>
+                  <span className={cn(
+                    "text-xs font-normal",
+                    gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                    gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
+                    gig.status === "completed" && "text-green-700 dark:text-green-600",
+                    gig.status === "awarded" && "text-green-500 dark:text-green-400",
+                    (gig.status === "pending_confirmation" || gig.status === "pending") && "text-gray-500 dark:text-gray-400",
+                    !["open", "completed", "in_progress", "awarded", "pending", "pending_confirmation"].includes(gig.status) && "text-gray-500 dark:text-gray-400"
+                  )}>
+                    {gig.status === "completed" ? "Completed" : gig.status === "in_progress" ? "In progress" : gig.status === "awarded" ? "Awarded" : gig.status === "open" ? "Open" : gig.status}
+                  </span>
                   <span className="text-sm text-muted-foreground">
                     Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
                   </span>
@@ -959,7 +947,7 @@ const GigDetail = () => {
                     <span className="text-xl font-semibold text-primary shrink-0 flex items-center gap-2">
                       {formatGigPrice(gig)}
                       {gig.project_type === "hourly" && (
-                        <Badge variant="secondary" className="text-xs">Hourly</Badge>
+                        <span className="text-xs text-muted-foreground">Hourly</span>
                       )}
                     </span>
                   )}
@@ -975,7 +963,7 @@ const GigDetail = () => {
                 {canViewAsOwner && (
                   <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-border">
                     {isAdmin && (
-                      <Badge variant="outline" className="text-xs">Viewing as admin</Badge>
+                      <span className="text-xs text-muted-foreground">Viewing as admin</span>
                     )}
                     {isOwner && gig.status === "awarded" && (
                       <Button
@@ -1103,7 +1091,17 @@ const GigDetail = () => {
               <StripeConnectBanner />
             )}
 
-            {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum) */}
+            {/* Withdrawn: cannot bid again, edit, or chat */}
+            {showDiggerContent && diggerId && existingBid && (existingBid.status === "withdrawn" || existingBid.withdrawn_at) && (
+              <Card id="bid" className="border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 shadow-none">
+                <CardContent className="p-4 sm:p-6 pt-6">
+                  <p className="text-center text-muted-foreground text-sm sm:text-base">
+                    You withdrew from this gig. You cannot place a new bid, edit your proposal, or message the client for this gig. Other diggers can still bid.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum); never if digger has withdrawn */}
             {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
               <div id="bid">
                 <BidSubmissionTemplate
@@ -1129,7 +1127,7 @@ const GigDetail = () => {
                 />
               </div>
             )}
-            {showDiggerContent && diggerId && gig.status === 'open' && existingBid && editingProposal && (
+            {showDiggerContent && diggerId && gig.status === 'open' && existingBid && !(existingBid.status === "withdrawn" || existingBid.withdrawn_at) && editingProposal && (
               <div id="bid">
                 <BidSubmissionTemplate
                   gigId={id!}
@@ -1353,11 +1351,11 @@ const GigDetail = () => {
                 onCancelAward={handleCancelAward}
                 cancelAwardLoading={cancelAwardLoading}
                 onEditProposal={
-                  existingBid && showDiggerContent && gig?.status === "open" && !(existingBid?.status === "accepted" && existingBid?.awarded)
+                  existingBid && showDiggerContent && gig?.status === "open" && !(existingBid?.status === "accepted" && existingBid?.awarded) && !(existingBid?.status === "withdrawn" || existingBid?.withdrawn_at)
                     ? () => setEditingProposal(true)
                     : undefined
                 }
-                onMessageClient={existingBid && showDiggerContent ? handleSendMessage : undefined}
+                onMessageClient={existingBid && showDiggerContent && !(existingBid?.status === "withdrawn" || existingBid?.withdrawn_at) ? handleSendMessage : undefined}
                 canMessageClient={!!(hasClientSentMessage || gig?.awarded_digger_id === diggerId)}
                 messageClientTooltip={
                   gig?.awarded_digger_id === diggerId

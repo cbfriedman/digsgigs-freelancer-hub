@@ -29,11 +29,15 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { bidId } = await req.json();
-    
+    const body = (await req.json()) as { bidId: string; origin?: string };
+    const { bidId, origin: originFromBody } = body;
+
     if (!bidId) {
       throw new Error("Bid ID is required");
     }
+
+    // Base URL for redirect: client-provided origin is most reliable (avoids null when header missing)
+    const baseUrl = (originFromBody || req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://digsandgigs.net").replace(/\/$/, "");
 
     // Get bid details and verify it's accepted
     const { data: bid, error: bidError } = await supabaseClient
@@ -118,8 +122,8 @@ serve(async (req) => {
         bid_id: bidId,
         digger_id: bid.digger_id,
       },
-      success_url: `${req.headers.get("origin")}/my-leads?withdrawal=success`,
-      cancel_url: `${req.headers.get("origin")}/my-leads?withdrawal=cancelled`,
+      success_url: `${baseUrl}/my-bids?withdrawal=success&penalty_id=${penalty.id}`,
+      cancel_url: `${baseUrl}/my-bids?withdrawal=cancelled`,
     });
 
     return new Response(

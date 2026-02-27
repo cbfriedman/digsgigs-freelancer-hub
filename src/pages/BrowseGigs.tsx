@@ -729,47 +729,26 @@ const BrowseGigs = () => {
                               <div className="min-w-0 space-y-3">
                                 <div className="flex flex-wrap items-center gap-2">
                                   {isNew && (
-                                    <Badge variant="default" className="bg-primary text-primary-foreground text-xs">
-                                      New
-                                    </Badge>
+                                    <span className="text-xs text-primary">New</span>
                                   )}
-                                  <Badge
-                                    variant={gig.status === "open" ? "default" : "secondary"}
-                                    className={cn(
-                                      "text-xs",
-                                      gig.status === "awarded" && "border-amber-500/50 text-amber-700 dark:text-amber-400",
-                                      gig.status === "in_progress" && "border-blue-500/50 text-blue-700 dark:text-blue-400",
-                                      gig.status === "completed" && "border-green-600/50 text-green-700 dark:text-green-400",
-                                      gig.status === "cancelled" && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {gig.status === "open"
-                                      ? "Open"
-                                      : gig.status === "awarded"
-                                        ? "Awarded"
-                                        : gig.status === "in_progress"
-                                          ? "In progress"
-                                          : gig.status === "completed"
-                                            ? "Completed"
-                                            : gig.status === "cancelled"
-                                              ? "Cancelled"
-                                              : gig.status === "pending_confirmation"
-                                                ? "Pending"
-                                                : gig.status}
-                                  </Badge>
+                                  <span className={cn(
+                                    "text-xs font-normal",
+                                    gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                                    gig.status === "awarded" && "text-green-500 dark:text-green-400",
+                                    gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
+                                    gig.status === "completed" && "text-green-700 dark:text-green-600",
+                                    (gig.status === "cancelled" || gig.status === "pending_confirmation") && "text-gray-500 dark:text-gray-400"
+                                  )}>
+                                    {gig.status === "open" ? "Open" : gig.status === "awarded" ? "Awarded" : gig.status === "in_progress" ? "In progress" : gig.status === "completed" ? "Completed" : gig.status === "cancelled" ? "Cancelled" : gig.status === "pending_confirmation" ? "Pending" : gig.status}
+                                  </span>
                                   {inCart && (
-                                    <Badge variant="outline" className="text-xs">In cart</Badge>
+                                    <span className="text-xs text-muted-foreground">In cart</span>
                                   )}
                                   {diggerProfile && userBids.has(gig.id) && (
-                                    <Badge variant="secondary" className="text-xs gap-1 border-green-600/40 text-green-700 dark:text-green-400 bg-green-500/10">
-                                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                                      Proposal submitted
-                                    </Badge>
+                                    <span className="text-xs text-emerald-600 dark:text-emerald-400">Proposal submitted</span>
                                   )}
                                   {(gig as any).escrow_requested_by_consumer && (
-                                    <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-700 dark:text-blue-400">
-                                      Escrow
-                                    </Badge>
+                                    <span className="text-xs text-blue-600 dark:text-blue-400">Escrow</span>
                                   )}
                                 </div>
                                 <h3 className="text-lg font-semibold leading-tight hover:text-primary transition-colors line-clamp-2">
@@ -801,7 +780,7 @@ const BrowseGigs = () => {
                           <DollarSign className="h-4 w-4 shrink-0" />
                           <span>{formatGigPrice(gig)}</span>
                           {gig.project_type === "hourly" && (
-                            <Badge variant="secondary" className="text-xs ml-1">Hourly</Badge>
+                            <span className="text-xs text-muted-foreground ml-1">Hourly</span>
                           )}
                         </div>
                         <div className="flex items-center gap-1">

@@ -11,7 +11,6 @@ import {
   Clock,
   DollarSign,
   MapPin,
-  CheckCircle2,
   Loader2,
   FileText,
   ChevronDown,
@@ -256,14 +255,12 @@ export function DiggerProposalCard({
                   <span className="font-semibold text-foreground">{displayName}</span>
                 )}
                 {diggerProfile.verified && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <CheckCircle2 className="h-3 w-3" /> Verified
-                  </Badge>
+                  <span className="text-xs text-muted-foreground">Verified</span>
                 )}
                 {bid.pricing_model === "success_based" ? (
-                  <Badge variant="outline" className="text-xs">Exclusive (Pay on Award)</Badge>
+                  <span className="text-xs text-muted-foreground">Exclusive</span>
                 ) : (
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">Buy the lead</Badge>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">Buy the lead</span>
                 )}
               </div>
               {professionalHeadline && (
@@ -364,32 +361,22 @@ export function DiggerProposalCard({
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <div className="flex flex-wrap items-center gap-2">
               {isPinned && (
-                <Badge variant="outline" className="gap-1 border-primary/50 text-primary font-medium">
-                  <Pin className="h-3 w-3" />
-                  Pinned
-                </Badge>
+                <span className="text-xs text-primary">Pinned</span>
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-default">
-                    <Badge
-                      variant={
-                        bid.status === "accepted" && bid.awarded
-                          ? "default"
-                          : isAwardedWaitingResponse
-                            ? "secondary"
-                            : (BID_STATUS_CONFIG[bid.status]?.variant ?? "secondary")
-                      }
-                      className={cn(
-                        bid.status === "accepted" && bid.awarded && "bg-green-600 hover:bg-green-600"
-                      )}
-                    >
-                      {bid.status === "accepted" && bid.awarded
-                        ? "Hired ✓"
-                        : isAwardedWaitingResponse
-                        ? "Awarded"
-                        : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
-                    </Badge>
+                  <span className={cn(
+                    "inline-flex cursor-default text-xs font-normal",
+                    bid.status === "accepted" && bid.awarded && "text-green-500 dark:text-green-400",
+                    isAwardedWaitingResponse && "text-amber-600 dark:text-amber-400",
+                    bid.status === "rejected" && "text-red-600 dark:text-red-400",
+                    !(bid.status === "accepted" && bid.awarded) && !isAwardedWaitingResponse && bid.status !== "rejected" && "text-gray-500 dark:text-gray-400"
+                  )}>
+                    {bid.status === "accepted" && bid.awarded
+                      ? "Hired"
+                      : isAwardedWaitingResponse
+                      ? "Awarded"
+                      : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px]">

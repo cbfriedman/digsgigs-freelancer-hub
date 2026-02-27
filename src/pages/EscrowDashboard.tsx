@@ -5,7 +5,6 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, FileText, DollarSign, Clock, CheckCircle2 } from "lucide-react";
@@ -111,27 +110,24 @@ export default function EscrowDashboard() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      pending: { variant: "outline", label: "Pending" },
-      funded: { variant: "default", label: "Funded" },
-      in_progress: { variant: "secondary", label: "In Progress" },
-      completed: { variant: "default", label: "Completed" }
-    };
-    
-    const config = statusMap[status] || { variant: "outline" as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = { pending: "Pending", funded: "Funded", in_progress: "In progress", completed: "Completed" };
+    return labels[status] ?? status;
   };
-
-  const getMilestoneStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      pending: { variant: "outline", label: "Pending" },
-      in_progress: { variant: "secondary", label: "In Progress" },
-      completed: { variant: "default", label: "Released" }
-    };
-    
-    const config = statusMap[status] || { variant: "outline" as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const getStatusClass = (status: string) => {
+    if (status === "completed" || status === "funded") return "text-green-700 dark:text-green-600";
+    if (status === "in_progress") return "text-blue-600 dark:text-blue-400";
+    if (status === "pending" || status === "open") return status === "open" ? "text-violet-600 dark:text-violet-400" : "text-gray-500 dark:text-gray-400";
+    return "text-gray-500 dark:text-gray-400";
+  };
+  const getMilestoneStatusLabel = (status: string) => {
+    const labels: Record<string, string> = { pending: "Pending", in_progress: "In progress", completed: "Released" };
+    return labels[status] ?? status;
+  };
+  const getMilestoneStatusClass = (status: string) => {
+    if (status === "completed") return "text-green-700 dark:text-green-600";
+    if (status === "in_progress") return "text-blue-600 dark:text-blue-400";
+    return "text-gray-500 dark:text-gray-400";
   };
 
   const ContractCard = ({ contract, role }: { contract: EscrowContract; role: "consumer" | "digger" }) => {
@@ -161,7 +157,7 @@ export default function EscrowDashboard() {
                 </div>
               </CardDescription>
             </div>
-            {getStatusBadge(contract.status)}
+            <span className={cn("text-xs font-normal", getStatusClass(contract.status))}>{getStatusLabel(contract.status)}</span>
           </div>
         </CardHeader>
         <CardContent>
@@ -233,7 +229,7 @@ export default function EscrowDashboard() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getMilestoneStatusBadge(milestone.status)}</TableCell>
+                      <TableCell><span className={cn("text-xs font-normal", getMilestoneStatusClass(milestone.status))}>{getMilestoneStatusLabel(milestone.status)}</span></TableCell>
                       <TableCell>
                         {milestone.released_at 
                           ? new Date(milestone.released_at).toLocaleDateString()

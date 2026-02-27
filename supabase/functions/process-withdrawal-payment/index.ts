@@ -59,14 +59,15 @@ serve(async (req) => {
       throw new Error("Unauthorized: This penalty doesn't belong to you");
     }
 
-    // Update penalty status
+    // Update penalty status (stripePaymentIntentId optional when client completes after redirect)
+    const penaltyUpdate: { status: string; paid_at: string; stripe_payment_intent_id?: string } = {
+      status: "paid",
+      paid_at: new Date().toISOString()
+    };
+    if (stripePaymentIntentId) penaltyUpdate.stripe_payment_intent_id = stripePaymentIntentId;
     const { error: updatePenaltyError } = await supabaseClient
       .from("withdrawal_penalties")
-      .update({
-        status: "paid",
-        stripe_payment_intent_id: stripePaymentIntentId,
-        paid_at: new Date().toISOString()
-      })
+      .update(penaltyUpdate)
       .eq("id", penaltyId);
 
     if (updatePenaltyError) {
@@ -97,7 +98,11 @@ serve(async (req) => {
     if (bid) {
       await supabaseClient
         .from("gigs")
-        .update({ status: "open" })
+        .update({
+          status: "open",
+          awarded_bid_id: null,
+          awarded_digger_id: null,
+        })
         .eq("id", bid.gig_id);
     }
 
