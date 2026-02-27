@@ -534,40 +534,40 @@ export default function RoleDashboard() {
 
   return (
     <PageLayout maxWidth="wide">
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <EmailVerificationBanner />
         
         <header className="animate-fade-in-up">
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
             Dashboard
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1 break-words">
             {nextAction.title}
           </p>
         </header>
 
         {/* Single primary action */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto">
+          <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto min-h-11 sm:min-h-0">
             {nextAction.ctaLabel}
             <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
           {/* Digger */}
           <Card className="border shadow-none animate-fade-in-up">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-base font-medium">Digger</CardTitle>
+            <CardHeader className="px-4 py-3 sm:p-5 pb-2">
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Wrench className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <CardTitle className="text-base font-medium truncate">Digger</CardTitle>
                   {activeRole === 'digger' && (
-                    <span className="text-xs text-muted-foreground">· Active</span>
+                    <span className="text-xs text-muted-foreground shrink-0">· Active</span>
                   )}
                 </div>
                 {!userRoles.includes('digger') && (
-                  <Button size="sm" variant="outline" onClick={handleRegisterDigger}>
+                  <Button size="sm" variant="outline" onClick={handleRegisterDigger} className="shrink-0 min-h-9">
                     Join
                   </Button>
                 )}
@@ -578,7 +578,7 @@ export default function RoleDashboard() {
                 </CardDescription>
               )}
             </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+            <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
               {userRoles.includes('digger') ? (
                 <>
                   {hasDiggerProfile && diggerProfileForCompletion && (() => {
@@ -589,16 +589,16 @@ export default function RoleDashboard() {
                     });
                     const { score } = profileCompletion;
                     return (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Progress value={score} className="h-1.5 flex-1" />
-                        <span className="text-muted-foreground shrink-0">{score}%</span>
+                      <div className="flex items-center gap-2 text-xs min-w-0">
+                        <Progress value={score} className="h-1.5 flex-1 min-w-0" />
+                        <span className="text-muted-foreground shrink-0 tabular-nums">{score}%</span>
                         <Button
                           size="sm"
                           variant={score >= 100 ? "ghost" : "default"}
                           className={
                             score >= 100
-                              ? "h-7 text-xs shrink-0 -mr-1"
-                              : "h-7 text-xs shrink-0 -mr-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
+                              ? "h-8 sm:h-7 text-xs shrink-0 -mr-1 min-h-9 sm:min-h-0"
+                              : "h-8 sm:h-7 text-xs shrink-0 -mr-1 min-h-9 sm:min-h-0 bg-orange-500 hover:bg-orange-600 text-white border-0"
                           }
                           onClick={() => {
                             handleSwitchRole('digger');
@@ -614,20 +614,20 @@ export default function RoleDashboard() {
                       </div>
                     );
                   })()}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="default"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => { handleSwitchRole('digger'); navigate('/my-leads'); }}
                     >
                       My Leads
-                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      <ArrowRight className="h-3.5 w-3.5 ml-1 shrink-0" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => { handleSwitchRole('digger'); navigate('/my-bids'); }}
                     >
                       My Bids
@@ -635,7 +635,7 @@ export default function RoleDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => {
                         handleSwitchRole('digger');
                         if (!hasDiggerProfile) setFirstProfileDialogRole("digger");
@@ -653,7 +653,7 @@ export default function RoleDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => { handleSwitchRole('digger'); navigate('/browse-gigs'); }}
                     >
                       Browse
@@ -661,11 +661,11 @@ export default function RoleDashboard() {
                   </div>
                 </>
               ) : (
-                <div className="py-6 text-center">
+                <div className="py-5 sm:py-6 text-center">
                   <p className="text-sm text-muted-foreground mb-3">
                     Find gigs, unlock leads, get paid.
                   </p>
-                  <Button size="sm" variant="outline" onClick={handleRegisterDigger}>
+                  <Button size="sm" variant="outline" onClick={handleRegisterDigger} className="min-h-10 sm:min-h-0">
                     Register as Digger
                   </Button>
                 </div>
@@ -675,17 +675,17 @@ export default function RoleDashboard() {
 
           {/* Gigger */}
           <Card className="border shadow-none animate-fade-in-up">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-base font-medium">Gigger</CardTitle>
+            <CardHeader className="px-4 py-3 sm:p-5 pb-2">
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Briefcase className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <CardTitle className="text-base font-medium truncate">Gigger</CardTitle>
                   {activeRole === 'gigger' && (
-                    <span className="text-xs text-muted-foreground">· Active</span>
+                    <span className="text-xs text-muted-foreground shrink-0">· Active</span>
                   )}
                 </div>
                 {!userRoles.includes('gigger') && (
-                  <Button size="sm" variant="outline" onClick={handleRegisterGigger}>
+                  <Button size="sm" variant="outline" onClick={handleRegisterGigger} className="shrink-0 min-h-9">
                     Join
                   </Button>
                 )}
@@ -696,49 +696,49 @@ export default function RoleDashboard() {
                 </CardDescription>
               )}
             </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+            <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
               {userRoles.includes('gigger') ? (
                 <>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="default"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => { handleSwitchRole('gigger'); navigate('/my-gigs'); }}
                     >
                       My Gigs
-                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      <ArrowRight className="h-3.5 w-3.5 ml-1 shrink-0" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
                       onClick={() => { handleSwitchRole('gigger'); navigate('/post-gig'); }}
                     >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      <Plus className="h-3.5 w-3.5 mr-1 shrink-0" />
                       Post gig
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 min-w-0"
+                      className="min-h-10 sm:min-h-0 col-span-2 sm:col-span-1 sm:flex-1 sm:min-w-0"
                       onClick={() => {
                         handleSwitchRole('gigger');
                         if (!hasGiggerProfile) setFirstProfileDialogRole("gigger");
                         else if (user?.id) navigate(getCanonicalGiggerProfilePath(user.id));
                       }}
                     >
-                      <User className="h-3.5 w-3.5 mr-1" />
+                      <User className="h-3.5 w-3.5 mr-1 shrink-0" />
                       {hasGiggerProfile ? 'Profile' : 'Set up profile'}
                     </Button>
                   </div>
                 </>
               ) : (
-                <div className="py-6 text-center">
+                <div className="py-5 sm:py-6 text-center">
                   <p className="text-sm text-muted-foreground mb-3">
                     Post gigs. Review bids. Award Diggers.
                   </p>
-                  <Button size="sm" variant="outline" onClick={handleRegisterGigger}>
+                  <Button size="sm" variant="outline" onClick={handleRegisterGigger} className="min-h-10 sm:min-h-0">
                     Register as Gigger
                   </Button>
                 </div>
