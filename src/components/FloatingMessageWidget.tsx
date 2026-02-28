@@ -1456,10 +1456,10 @@ export function FloatingMessageWidget() {
                 return { ...prev, [conv.id]: next };
               });
             }}
-            className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/40 bg-muted shrink-0 cursor-pointer rounded-t-2xl"
+            className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-gray-600/50 bg-gray-700 dark:bg-gray-800 text-gray-100 shrink-0 cursor-pointer rounded-t-2xl"
             aria-label={collapsedChats[conv.id] ? "Expand chat" : "Collapse chat"}
           >
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 text-gray-100">
               <div className="relative h-9 w-9 shrink-0">
                 <Avatar className="h-9 w-9 ring-1 ring-border/40">
                   <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" />
@@ -1514,7 +1514,7 @@ export function FloatingMessageWidget() {
                 ) : (
                   <h3 className="font-semibold text-sm truncate">{conv.partnerDisplayName}</h3>
                 )}
-                <p className="text-xs text-muted-foreground truncate mt-0.5" title={conv.partnerJobTitle || (conv.gigId ? "View project" : undefined)}>
+                <p className="text-xs text-gray-300 dark:text-gray-400 truncate mt-0.5" title={conv.partnerJobTitle || (conv.gigId ? "View project" : undefined)}>
                   {conv.gigId ? (
                     <button
                       type="button"
@@ -1552,7 +1552,7 @@ export function FloatingMessageWidget() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-8 w-8 ${openMenuChatId === conv.id ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : ""}`}
+                    className={`h-8 w-8 text-gray-100 hover:bg-gray-600 hover:text-white ${openMenuChatId === conv.id ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : ""}`}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     title="Chat options"
@@ -1611,7 +1611,7 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 text-gray-100 hover:bg-gray-600 hover:text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   openFullMessages(conv);
@@ -1623,7 +1623,7 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 text-gray-100 hover:bg-gray-600 hover:text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeChat(conv.id);
@@ -1720,15 +1720,16 @@ export function FloatingMessageWidget() {
                 return null;
               }
 
-              // Digger: Accept/Decline when awarded and this digger is the awarded one (hide if bid already accepted)
-              if (isDigger && status === "awarded" && isAwardedDigger && bidId && gigStatus?.bid_status !== "accepted") {
+              // Digger: Accept/Decline when awarded and this digger is the awarded one (buttons stay visible but disabled after accept)
+              if (isDigger && status === "awarded" && isAwardedDigger && bidId) {
+                const bidAlreadyAccepted = gigStatus?.bid_status === "accepted";
                 return (
                   <div className="shrink-0 flex justify-end items-center gap-2 py-2 px-3 border-b border-border/40 bg-muted/30">
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           className="gap-1.5 bg-green-600 hover:bg-green-700"
-                          disabled={acceptDeclineLoading[conv.id]}
+                          disabled={acceptDeclineLoading[conv.id] || bidAlreadyAccepted}
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!conv.gigId || !conv.diggerId) return;
@@ -1743,6 +1744,16 @@ export function FloatingMessageWidget() {
                               } else {
                                 toast.success("Job accepted! Ready to start.");
                               }
+                              setGigStatusMap((prev) => ({
+                                ...prev,
+                                [conv.id]: {
+                                  ...prev[conv.id],
+                                  status: prev[conv.id]?.status ?? "awarded",
+                                  awarded_bid_id: prev[conv.id]?.awarded_bid_id ?? bidId,
+                                  awarded_digger_id: prev[conv.id]?.awarded_digger_id ?? conv.diggerId,
+                                  bid_status: "accepted",
+                                },
+                              }));
                               refetchGigStatus(conv.id, conv.gigId);
                               window.dispatchEvent(new Event("recent-conversations-refresh"));
                               loadMessages(conv.id, false);
@@ -1759,7 +1770,7 @@ export function FloatingMessageWidget() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={acceptDeclineLoading[conv.id]}
+                          disabled={acceptDeclineLoading[conv.id] || bidAlreadyAccepted}
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!conv.gigId || !conv.diggerId) return;
@@ -1769,6 +1780,16 @@ export function FloatingMessageWidget() {
                                 body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId, reason: "Declined from chat" },
                               });
                               toast.success("Award declined.");
+                              setGigStatusMap((prev) => ({
+                                ...prev,
+                                [conv.id]: {
+                                  ...prev[conv.id],
+                                  status: prev[conv.id]?.status ?? "awarded",
+                                  awarded_bid_id: prev[conv.id]?.awarded_bid_id ?? bidId,
+                                  awarded_digger_id: prev[conv.id]?.awarded_digger_id ?? conv.diggerId,
+                                  bid_status: "declined",
+                                },
+                              }));
                               refetchGigStatus(conv.id, conv.gigId);
                               window.dispatchEvent(new Event("recent-conversations-refresh"));
                               loadMessages(conv.id, false);
@@ -1826,11 +1847,34 @@ export function FloatingMessageWidget() {
                             amount={meta.amount}
                             isDigger={conv.isCurrentUserDigger}
                             diggerId={conv.diggerId}
+                            bidAccepted={gigStatusMap[conv.id]?.bid_status === "accepted" && gigStatusMap[conv.id]?.awarded_bid_id === meta.bid_id}
                             onAccept={() => {
+                              if (conv.gigId) refetchGigStatus(conv.id, conv.gigId);
+                              setGigStatusMap((prev) => ({
+                                ...prev,
+                                [conv.id]: {
+                                  ...prev[conv.id],
+                                  status: prev[conv.id]?.status ?? "awarded",
+                                  awarded_bid_id: prev[conv.id]?.awarded_bid_id ?? meta.bid_id ?? undefined,
+                                  awarded_digger_id: prev[conv.id]?.awarded_digger_id ?? conv.diggerId ?? undefined,
+                                  bid_status: "accepted",
+                                },
+                              }));
                               window.dispatchEvent(new Event("recent-conversations-refresh"));
                               loadMessages(conv.id, false);
                             }}
                             onDecline={() => {
+                              if (conv.gigId) refetchGigStatus(conv.id, conv.gigId);
+                              setGigStatusMap((prev) => ({
+                                ...prev,
+                                [conv.id]: {
+                                  ...prev[conv.id],
+                                  status: prev[conv.id]?.status ?? "awarded",
+                                  awarded_bid_id: prev[conv.id]?.awarded_bid_id ?? meta.bid_id ?? undefined,
+                                  awarded_digger_id: prev[conv.id]?.awarded_digger_id ?? conv.diggerId ?? undefined,
+                                  bid_status: "declined",
+                                },
+                              }));
                               window.dispatchEvent(new Event("recent-conversations-refresh"));
                               loadMessages(conv.id, false);
                             }}
@@ -1921,7 +1965,7 @@ export function FloatingMessageWidget() {
               tabIndex={0}
               onClick={() => setIsOpen(false)}
               onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-primary/30 bg-primary text-primary-foreground cursor-pointer rounded-t-2xl"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-gray-600/50 bg-gray-700 dark:bg-gray-800 text-gray-100 cursor-pointer rounded-t-2xl"
               aria-label="Collapse messages"
             >
               <button
@@ -1930,7 +1974,7 @@ export function FloatingMessageWidget() {
                   e.stopPropagation();
                   navigate(MESSAGES_PAGE);
                 }}
-                className="font-semibold text-sm text-primary-foreground hover:underline text-left"
+                className="font-semibold text-sm text-gray-100 hover:underline text-left"
               >
                 Messages
               </button>
@@ -1938,7 +1982,7 @@ export function FloatingMessageWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 relative text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                  className="h-7 w-7 relative text-gray-100 hover:bg-gray-600 hover:text-white"
                   onClick={toggleMute}
                   title={soundMuted ? "Unmute notifications" : "Mute notifications"}
                 >
@@ -1947,12 +1991,12 @@ export function FloatingMessageWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                  className="h-7 w-7 text-gray-100 hover:bg-gray-600 hover:text-white"
                   onClick={() => setIsOpen(false)}
                   title="Collapse messages"
                   aria-label="Collapse messages"
                 >
-                  <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary-foreground" aria-hidden />
+                  <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-gray-100" aria-hidden />
                 </Button>
               </div>
             </div>
@@ -2098,7 +2142,7 @@ export function FloatingMessageWidget() {
                                 </span>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate min-w-0" title={display}>
+                            <p className="text-xs text-muted-foreground min-w-0 break-words line-clamp-2 overflow-hidden text-ellipsis" title={display}>
                               {display}
                             </p>
                           </div>
@@ -2120,7 +2164,7 @@ export function FloatingMessageWidget() {
             onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
             className={cn(
               "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
-              "rounded-2xl border border-primary/30 bg-primary text-primary-foreground shadow-xl hover:shadow-2xl transition-shadow"
+              "rounded-2xl border border-gray-600/50 bg-gray-700 dark:bg-gray-800 text-gray-100 shadow-xl hover:shadow-2xl transition-shadow"
             )}
             aria-label="Open messages"
           >
@@ -2130,7 +2174,7 @@ export function FloatingMessageWidget() {
                 e.stopPropagation();
                 navigate(MESSAGES_PAGE);
               }}
-              className="font-semibold text-sm text-primary-foreground hover:underline text-left"
+              className="font-semibold text-sm text-gray-100 hover:underline text-left"
             >
               Messages
             </button>
@@ -2138,7 +2182,7 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 relative text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                className="h-7 w-7 relative text-gray-100 hover:bg-gray-600 hover:text-white"
                 onClick={toggleMute}
                 title={soundMuted ? "Unmute notifications" : "Mute notifications"}
               >
@@ -2147,12 +2191,12 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                className="h-7 w-7 text-gray-100 hover:bg-gray-600 hover:text-white"
                 onClick={() => setIsOpen(true)}
                 title="Open messages"
                 aria-label="Open messages"
               >
-                <ChevronUp className="h-4 w-4 text-primary-foreground shrink-0" />
+                <ChevronUp className="h-4 w-4 text-gray-100 shrink-0" />
               </Button>
             </div>
           </div>

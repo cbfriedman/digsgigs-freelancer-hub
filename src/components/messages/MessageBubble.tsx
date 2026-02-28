@@ -85,8 +85,8 @@ export function MessageBubble({
             "relative overflow-hidden rounded-2xl px-4 py-2.5 shadow-sm transition-all",
             showActions && "pr-10",
             isOwn
-              ? "bg-primary text-primary-foreground rounded-br-md ml-auto"
-              : "bg-muted text-foreground border border-border/40 rounded-bl-md shadow-card"
+              ? "bg-green-100 dark:bg-green-950/50 text-foreground border border-green-200/60 dark:border-green-800/50 rounded-br-md ml-auto shadow-card"
+              : "bg-gray-100 dark:bg-gray-800/50 text-foreground border border-gray-200/60 dark:border-gray-700/50 rounded-bl-md shadow-card"
           )}
         >
           {/* Three-dot menu - Reply for any message; Edit/Copy/Delete for own */}
@@ -108,8 +108,8 @@ export function MessageBubble({
                     className={cn(
                       "h-7 w-7",
                       isOwn
-                        ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/20"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "text-foreground/80 hover:text-foreground hover:bg-green-200/50 dark:hover:bg-green-900/50"
+                        : "text-foreground/80 hover:text-foreground hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -208,8 +208,7 @@ export function MessageBubble({
 
           <div
             className={cn(
-              "flex items-center justify-end gap-1.5 mt-1.5 select-none",
-              isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+              "flex items-center justify-end gap-1.5 mt-1.5 select-none text-gray-600 dark:text-gray-400"
             )}
           >
             <span className="text-[10px] sm:text-xs">{timeStr}</span>

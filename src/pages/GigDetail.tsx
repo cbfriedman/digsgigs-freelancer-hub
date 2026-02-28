@@ -410,6 +410,30 @@ const GigDetail = () => {
     };
   }, [id, diggerId, gig?.consumer_id]);
 
+  // Realtime: gig updates (e.g. gigger awards → show "You're awarded" card without refresh)
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`gig-detail-gig:${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "gigs", filter: `id=eq.${id}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const next = payload.new as Partial<Gig>;
+          setGig((prev) => (prev ? { ...prev, ...next } : (next as Gig)));
+          if (next?.status === "awarded" && next?.awarded_digger_id && next.awarded_digger_id === diggerId && next?.awarded_bid_id) {
+            setExistingBid((prev) =>
+              prev && prev.id === next.awarded_bid_id ? { ...prev, awarded: true } : prev
+            );
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, diggerId]);
+
   const loadData = async () => {
     if (!id) return;
 
@@ -758,6 +782,8 @@ const GigDetail = () => {
           title: data?.alreadyAccepted ? "Already accepted" : "You accepted the job!",
           description: "The client has been notified. You or they can set up the payment contract (milestones) next.",
         });
+        setExistingBid((prev) => (prev ? { ...prev, status: "accepted" } : null));
+        setGig((prev) => (prev ? { ...prev, status: "in_progress" } : null));
         loadData();
       }
     } catch (e) {
@@ -796,6 +822,12 @@ const GigDetail = () => {
       });
       setDeclineDialogOpen(false);
       setDeclineReason("");
+      setGig((prev) =>
+        prev
+          ? { ...prev, status: "open", awarded_at: null, awarded_bid_id: null, awarded_digger_id: null }
+          : null
+      );
+      setExistingBid((prev) => (prev ? { ...prev, awarded: false } : null));
       loadData();
     } catch (e) {
       toast({
@@ -1251,6 +1283,7 @@ const GigDetail = () => {
                     <Button
                       variant="outline"
                       onClick={() => setDeclineDialogOpen(true)}
+                      disabled={acceptAwardLoading || declineLoading}
                       className="gap-2 w-full sm:w-auto min-h-[44px] sm:min-h-0"
                     >
                       Decline

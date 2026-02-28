@@ -24,6 +24,8 @@ interface AwardEventBubbleProps {
   isDigger: boolean;
   /** Digger profile id for this conversation - used to fetch bid when needed */
   diggerId?: string | null;
+  /** When true, parent knows this bid was accepted (e.g. optimistic update from top bar) – disables Accept/Decline without refetch */
+  bidAccepted?: boolean;
   onAccept?: () => void;
   onDecline?: () => void;
 }
@@ -36,6 +38,7 @@ export function AwardEventBubble({
   amount,
   isDigger,
   diggerId: diggerIdProp,
+  bidAccepted: bidAcceptedFromParent,
   onAccept,
   onDecline,
 }: AwardEventBubbleProps) {
@@ -87,6 +90,7 @@ export function AwardEventBubble({
       } else {
         toast({ title: "Job Accepted!", description: "You've accepted this job. Time to start work!" });
       }
+      setAlreadyAccepted(true);
       onAccept?.();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Failed to accept", variant: "destructive" });
@@ -120,6 +124,7 @@ export function AwardEventBubble({
     }
   };
 
+  const accepted = alreadyAccepted || !!bidAcceptedFromParent;
   const showAcceptDecline = event === "awarded" && isDigger && requiresAcceptance;
 
   return (
@@ -146,7 +151,7 @@ export function AwardEventBubble({
               size="sm"
               className="gap-1.5 bg-green-600 hover:bg-green-700"
               onClick={handleAccept}
-              disabled={accepting || declining || alreadyAccepted}
+              disabled={accepting || declining || accepted}
             >
               {accepting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
               Accept
@@ -156,8 +161,8 @@ export function AwardEventBubble({
               variant="outline"
               className="gap-1.5"
               onClick={handleDecline}
-              disabled={accepting || declining || alreadyAccepted}
-              title={alreadyAccepted ? "Cannot decline after accepting" : undefined}
+              disabled={accepting || declining || accepted}
+              title={accepted ? "Cannot decline after accepting" : undefined}
             >
               {declining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
               Decline
