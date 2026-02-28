@@ -64,7 +64,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
-import { OPEN_FLOATING_CHAT_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
+import { OPEN_FLOATING_CHAT_EVENT, AWARD_ACCEPTED_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
@@ -530,14 +530,17 @@ export function FloatingMessageWidget() {
           const gig = payload.new as { id: string; status?: string; awarded_bid_id?: string; awarded_digger_id?: string };
           const gigId = gig.id;
           const currentOpenChats = openChatsRef.current;
+          const newStatus = gig.status ?? "open";
           setGigStatusMap((prev) => {
             const next = { ...prev };
             for (const c of currentOpenChats) {
               if (c.gigId === gigId) {
+                const existing = prev[c.id];
                 next[c.id] = {
-                  status: gig.status ?? "open",
+                  status: newStatus,
                   awarded_bid_id: gig.awarded_bid_id,
                   awarded_digger_id: gig.awarded_digger_id,
+                  bid_status: existing?.bid_status ?? (newStatus === "in_progress" ? "accepted" : undefined),
                 };
               }
             }
@@ -550,6 +553,32 @@ export function FloatingMessageWidget() {
       supabase.removeChannel(channel);
     };
   }, [openChats.map((c) => c.gigId).filter(Boolean).sort().join(",")]);
+
+  // When digger accepts from Gig Detail (or elsewhere), disable Accept/Decline in float chat without refresh
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { gigId, bidId } = (e as CustomEvent<{ gigId: string; bidId?: string }>).detail ?? {};
+      if (!gigId) return;
+      const currentOpenChats = openChatsRef.current;
+      setGigStatusMap((prev) => {
+        const next = { ...prev };
+        for (const c of currentOpenChats) {
+          if (c.gigId === gigId) {
+            next[c.id] = {
+              ...prev[c.id],
+              status: prev[c.id]?.status ?? "awarded",
+              awarded_bid_id: prev[c.id]?.awarded_bid_id ?? bidId ?? undefined,
+              awarded_digger_id: prev[c.id]?.awarded_digger_id ?? c.diggerId ?? undefined,
+              bid_status: "accepted",
+            };
+          }
+        }
+        return next;
+      });
+    };
+    window.addEventListener(AWARD_ACCEPTED_EVENT, handler);
+    return () => window.removeEventListener(AWARD_ACCEPTED_EVENT, handler);
+  }, []);
 
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));

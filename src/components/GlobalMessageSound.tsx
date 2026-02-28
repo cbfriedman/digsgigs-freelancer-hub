@@ -35,9 +35,16 @@ export function GlobalMessageSound() {
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages" },
           (payload) => {
-            const msg = payload.new as { id?: string; sender_id?: string; metadata?: { _type?: string } };
+            const msg = payload.new as { id?: string; sender_id?: string; metadata?: { _type?: string; event?: string } };
+            const isAwardEvent = msg.metadata?._type === "award_event";
+            const awardEventType = msg.metadata?.event;
+            const isImportantAwardEvent = isAwardEvent && ["declined", "accepted", "awarded", "cancelled"].includes(awardEventType ?? "");
+            if (isImportantAwardEvent) {
+              playNotificationSound(msg.id != null ? String(msg.id) : undefined);
+              return;
+            }
             if (msg.sender_id === userIdRef.current) return;
-            if (msg.metadata?._type === "award_event") return;
+            if (isAwardEvent) return;
             playNotificationSound(msg.id != null ? String(msg.id) : undefined);
           }
         )

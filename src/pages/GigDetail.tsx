@@ -30,7 +30,7 @@ import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
-import { openFloatingChat } from "@/lib/openFloatingChat";
+import { openFloatingChat, dispatchAwardAccepted } from "@/lib/openFloatingChat";
 import {
   Dialog,
   DialogContent,
@@ -784,6 +784,7 @@ const GigDetail = () => {
         });
         setExistingBid((prev) => (prev ? { ...prev, status: "accepted" } : null));
         setGig((prev) => (prev ? { ...prev, status: "in_progress" } : null));
+        dispatchAwardAccepted(id, existingBid.id);
         loadData();
       }
     } catch (e) {

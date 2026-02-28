@@ -17,3 +17,18 @@ export function openFloatingChat(gigId: string, diggerId: string): void {
     })
   );
 }
+
+/** Fired when digger accepts an award (e.g. from Gig Detail) so floating chat can disable Accept/Decline without refresh. */
+export const AWARD_ACCEPTED_EVENT = "award-accepted";
+
+export interface AwardAcceptedDetail {
+  gigId: string;
+  bidId?: string;
+}
+
+export function dispatchAwardAccepted(gigId: string, bidId?: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<AwardAcceptedDetail>(AWARD_ACCEPTED_EVENT, { detail: { gigId, bidId } })
+  );
+}
