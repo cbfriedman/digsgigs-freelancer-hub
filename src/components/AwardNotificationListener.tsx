@@ -23,7 +23,7 @@ export function AwardNotificationListener() {
 
       playNotificationSound();
       toast.success("You're awarded!", {
-        description: n.message || "You've been awarded this gig. Check your messages to accept.",
+        description: n.message || "You've been awarded this gig. Accept within 24 hours or you'll be charged a $100 penalty (same if you decline). Check your messages to accept.",
         duration: 10000,
         action: {
           label: "View",

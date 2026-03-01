@@ -452,7 +452,7 @@ export const BidSubmissionTemplate = ({
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  Client pays 15% deposit to award you. The 8% referral fee (${REFERRAL_FEE_MIN} min) comes from their deposit—not your pocket. You must accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty.
+                  Client pays 15% deposit to award you. The 8% referral fee (${REFERRAL_FEE_MIN} min) comes from their deposit—not your pocket. You must accept within 24 hours or you&apos;ll be charged a $100 penalty (same if you decline).
                 </p>
               </button>
             </div>

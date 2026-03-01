@@ -263,7 +263,7 @@ serve(async (req) => {
             user_id: diggerProfile.user_id,
             type: "lead_awarded_exclusive",
             title: "You're awarded",
-            message: `You've been awarded "${gig?.title || "this gig"}". Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty and the client gets their deposit back.`,
+            message: `You've been awarded "${gig?.title || "this gig"}". Accept within 24 hours or you'll be charged a $100 penalty (same if you decline). If you decline, the client gets their deposit back.`,
             link: `/gig/${gigId}`,
             metadata: {
               gig_id: gigId,
@@ -297,7 +297,7 @@ serve(async (req) => {
             await supabaseClient.from("messages").insert({
               conversation_id: conv.id,
               sender_id: giggerId,
-              content: "You've been awarded this gig. Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty.",
+              content: "You've been awarded this gig. Accept within 24 hours or you'll be charged a $100 penalty (same if you decline). If you decline, the client gets their deposit back.",
               metadata: { _type: "award_event", event: "awarded", bid_id: bidId, gig_id: gigId, amount: bidAmount },
             });
             logStep("Award system message inserted into chat");

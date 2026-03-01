@@ -36,14 +36,15 @@ export function GlobalMessageSound() {
           { event: "INSERT", schema: "public", table: "messages" },
           (payload) => {
             const msg = payload.new as { id?: string; sender_id?: string; metadata?: { _type?: string; event?: string } };
+            const isOwn = msg.sender_id === userIdRef.current;
             const isAwardEvent = msg.metadata?._type === "award_event";
             const awardEventType = msg.metadata?.event;
             const isImportantAwardEvent = isAwardEvent && ["declined", "accepted", "awarded", "cancelled"].includes(awardEventType ?? "");
             if (isImportantAwardEvent) {
-              playNotificationSound(msg.id != null ? String(msg.id) : undefined);
+              if (!isOwn) playNotificationSound(msg.id != null ? String(msg.id) : undefined);
               return;
             }
-            if (msg.sender_id === userIdRef.current) return;
+            if (isOwn) return;
             if (isAwardEvent) return;
             playNotificationSound(msg.id != null ? String(msg.id) : undefined);
           }

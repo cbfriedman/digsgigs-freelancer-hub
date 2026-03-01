@@ -167,7 +167,7 @@ serve(async (req) => {
         user_id: diggerProfile.user_id,
         type: "lead_awarded_exclusive",
         title: "You're awarded",
-        message: `You've been awarded "${gig?.title || "this gig"}". Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty and the client gets their deposit back.`,
+        message: `You've been awarded "${gig?.title || "this gig"}". Accept within 24 hours or you'll be charged a $100 penalty (same if you decline). If you decline, the client gets their deposit back.`,
         link: `/gig/${gigId}`,
         metadata: {
           gig_id: gigId,

@@ -499,18 +499,20 @@ const GigDetail = () => {
       const list = clientStatsRes.data as { status: string; awarded_at?: string | null }[];
       const open = list.filter((g) => g.status === "open").length;
       const active = list.filter((g) => g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")).length;
-      const completed = list.filter((g) => g.status === "completed").length;
-      setClientGigStats({ open, active, completed, total: list.length });
+      const completedFromGigs = list.filter((g) => g.status === "completed").length;
+      setClientGigStats({ open, active, completed: completedFromGigs, total: list.length });
     } else {
       setClientGigStats(null);
     }
     if (clientSpentRes.data && Array.isArray(clientSpentRes.data)) {
-      const spent = (clientSpentRes.data as { total_amount: number; status: string }[])
-        .filter((r) => r.status === "completed")
-        .reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
+      const contracts = clientSpentRes.data as { total_amount: number; status: string }[];
+      const completedContracts = contracts.filter((r) => r.status === "completed");
+      const spent = completedContracts.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
       setClientSpentBudget(spent > 0 ? spent : null);
+      setClientCompletedContractsCount(completedContracts.length);
     } else {
       setClientSpentBudget(null);
+      setClientCompletedContractsCount(null);
     }
 
     if (!userIsDigger) {
@@ -662,6 +664,8 @@ const GigDetail = () => {
   const [clientGigStats, setClientGigStats] = useState<ClientGigStats | null>(null);
   /** Total amount client has spent on completed contracts (for "About the client" card) */
   const [clientSpentBudget, setClientSpentBudget] = useState<number | null>(null);
+  /** Number of completed escrow contracts (for "About the client" card — accurate completed projects) */
+  const [clientCompletedContractsCount, setClientCompletedContractsCount] = useState<number | null>(null);
   /** Verification from auth (email/social) for About the client when profile columns are not set */
   const [clientVerificationFromAuth, setClientVerificationFromAuth] = useState<{ email_verified: boolean; social_verified: boolean } | null>(null);
   const handleBump = async () => {
@@ -1261,7 +1265,7 @@ const GigDetail = () => {
                       <div className="min-w-0 flex-1">
                         <CardTitle className="text-lg sm:text-xl">You&apos;re awarded</CardTitle>
                         <CardDescription className="mt-1 space-y-1 text-sm">
-                          <span className="block">The client awarded you this gig. Accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty and the client gets their deposit back.</span>
+                          <span className="block">The client awarded you this gig. Accept within 24 hours or you&apos;ll be charged a $100 penalty (same if you decline). If you decline, the client gets their deposit back.</span>
                         </CardDescription>
                       </div>
                     </div>
@@ -1298,15 +1302,15 @@ const GigDetail = () => {
               gig?.status === "in_progress" &&
               gig.awarded_digger_id === diggerId &&
               existingBid?.awarded && existingBid?.status === "accepted" && (
-                <Card id="award-response" className="border border-primary/20 rounded-lg bg-muted/20 shadow-none">
+                <Card id="award-response" className="border border-green-200/60 dark:border-green-800/50 rounded-lg bg-green-50 dark:bg-green-950/30 shadow-none">
                   <CardHeader className="p-4 sm:p-5">
                     <div className="flex flex-col sm:flex-row items-start gap-3">
-                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400">
                         <Award className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-lg sm:text-xl">You&apos;re hired for this gig</CardTitle>
-                        <CardDescription className="mt-1 space-y-1 text-sm">
+                        <CardTitle className="text-lg sm:text-xl text-green-900 dark:text-green-100">You&apos;re hired for this gig</CardTitle>
+                        <CardDescription className="mt-1 space-y-1 text-sm text-green-800/90 dark:text-green-200/90">
                           <span className="block">You accepted the award. You or the client can set up the payment contract (milestones) next.</span>
                         </CardDescription>
                       </div>
@@ -1477,7 +1481,7 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {!canViewAsOwner && !hasLeadPurchase && !isOwner && (
+            {!hasLeadPurchase && !isOwner && gig?.status === "open" && (showDiggerContent || !canViewAsOwner) && (
               <Card className="border border-primary/20 rounded-lg shadow-none bg-primary/5">
                 <CardHeader className="p-3 sm:p-4 pb-1">
                   <CardTitle className="text-sm font-medium flex items-center gap-1.5">
@@ -1655,8 +1659,8 @@ const GigDetail = () => {
                       </div>
                     </div>
                   )}
-                  {/* Single line: local time + joined (compact) */}
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  {/* Local time first, then Joined below */}
+                  <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                     {(formatClientLocalTime(p?.timezone ?? null) ||
                       (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null)) && (
                       <span className="flex items-center gap-1">
@@ -1669,7 +1673,7 @@ const GigDetail = () => {
                       <span>Joined {format(new Date(p.created_at), "MMM yyyy")}</span>
                     )}
                   </div>
-                  {/* Verification: inline icons only when any */}
+                  {/* Verification: green when verified */}
                   {(() => {
                     const emailVerified = p?.email_verified ?? clientVerificationFromAuth?.email_verified ?? false;
                     const socialVerified = p?.social_verified ?? clientVerificationFromAuth?.social_verified ?? false;
@@ -1677,13 +1681,14 @@ const GigDetail = () => {
                     const paymentVerified = p?.payment_verified ?? false;
                     const idVerified = p?.id_verified ?? false;
                     const hasAny = emailVerified || phoneVerified || paymentVerified || idVerified || socialVerified;
+                    const verifiedBadgeClass = "text-[10px] px-1.5 py-0 gap-0.5 bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300 border-0";
                     return hasAny ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {emailVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Mail className="h-2.5 w-2.5" /> Email</Badge>}
-                        {phoneVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Phone className="h-2.5 w-2.5" /> Phone</Badge>}
-                        {paymentVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><CreditCard className="h-2.5 w-2.5" /> Pay</Badge>}
-                        {idVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><IdCard className="h-2.5 w-2.5" /> ID</Badge>}
-                        {socialVerified && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5"><Share2 className="h-2.5 w-2.5" /> Social</Badge>}
+                        {emailVerified && <Badge variant="secondary" className={verifiedBadgeClass}><Mail className="h-2.5 w-2.5" /> Email</Badge>}
+                        {phoneVerified && <Badge variant="secondary" className={verifiedBadgeClass}><Phone className="h-2.5 w-2.5" /> Phone</Badge>}
+                        {paymentVerified && <Badge variant="secondary" className={verifiedBadgeClass}><CreditCard className="h-2.5 w-2.5" /> Pay</Badge>}
+                        {idVerified && <Badge variant="secondary" className={verifiedBadgeClass}><IdCard className="h-2.5 w-2.5" /> ID</Badge>}
+                        {socialVerified && <Badge variant="secondary" className={verifiedBadgeClass}><Share2 className="h-2.5 w-2.5" /> Social</Badge>}
                       </div>
                     ) : null;
                   })()}
@@ -1695,7 +1700,7 @@ const GigDetail = () => {
                       )}
                       {clientGigStats && clientGigStats.total >= 0 && (
                         <span className="text-muted-foreground">
-                          {clientGigStats.open} open · {clientGigStats.completed} completed
+                          {clientGigStats.open} open · {(clientCompletedContractsCount ?? clientGigStats.completed)} completed
                         </span>
                       )}
                     </div>

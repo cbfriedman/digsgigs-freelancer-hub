@@ -130,7 +130,8 @@ export function FloatingMessageWidget() {
   /** Gig status per conversation (for Award/Cancel/Hired/Accept-Decline in chat top) */
   const [gigStatusMap, setGigStatusMap] = useState<Record<string, { status: string; awarded_bid_id?: string; awarded_digger_id?: string; bid_status?: string }>>({});
   const [cancelAwardLoading, setCancelAwardLoading] = useState<Record<string, boolean>>({});
-  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<Record<string, boolean>>({});
+  const [acceptLoading, setAcceptLoading] = useState<Record<string, boolean>>({});
+  const [declineLoading, setDeclineLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteChatId;
@@ -1758,11 +1759,11 @@ export function FloatingMessageWidget() {
                         <Button
                           size="sm"
                           className="gap-1.5 bg-green-600 hover:bg-green-700"
-                          disabled={acceptDeclineLoading[conv.id] || bidAlreadyAccepted}
+                          disabled={acceptLoading[conv.id] || declineLoading[conv.id] || bidAlreadyAccepted}
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!conv.gigId || !conv.diggerId) return;
-                            setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: true }));
+                            setAcceptLoading((p) => ({ ...p, [conv.id]: true }));
                             try {
                               const data = await invokeEdgeFunction<{ requiresPayment?: boolean; checkoutUrl?: string }>(supabase, "digger-accept-award", {
                                 body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId },
@@ -1789,21 +1790,21 @@ export function FloatingMessageWidget() {
                             } catch (err: any) {
                               toast.error(err?.message ?? "Failed to accept");
                             } finally {
-                              setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: false }));
+                              setAcceptLoading((p) => ({ ...p, [conv.id]: false }));
                             }
                           }}
                         >
-                          {acceptDeclineLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                          {acceptLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                           Accept
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={acceptDeclineLoading[conv.id] || bidAlreadyAccepted}
+                          disabled={acceptLoading[conv.id] || declineLoading[conv.id] || bidAlreadyAccepted}
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!conv.gigId || !conv.diggerId) return;
-                            setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: true }));
+                            setDeclineLoading((p) => ({ ...p, [conv.id]: true }));
                             try {
                               await invokeEdgeFunction(supabase, "digger-decline-award", {
                                 body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId, reason: "Declined from chat" },
@@ -1825,11 +1826,11 @@ export function FloatingMessageWidget() {
                             } catch (err: any) {
                               toast.error(err?.message ?? "Failed to decline");
                             } finally {
-                              setAcceptDeclineLoading((p) => ({ ...p, [conv.id]: false }));
+                              setDeclineLoading((p) => ({ ...p, [conv.id]: false }));
                             }
                           }}
                         >
-                          <X className="h-4 w-4" />
+                          {declineLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                           Decline
                         </Button>
                       </div>
