@@ -302,22 +302,16 @@
   animation: loading-pulse 2s ease-in-out infinite !important;
 }
 
-/* Typing indicator: smooth pulse; dots use alternate size (sm/md/sm) and color (primary/accent/primary) */
+/* Typing indicator: ordered wave — first, second, third (increase then decrease); no glance effect */
 @keyframes typing-dot {
-  0%, 100% {
-    opacity: 0.5;
-    transform: translateY(0) scale(0.9);
-    box-shadow: 0 0 0 0 transparent;
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-3px) scale(1.08);
-    box-shadow: 0 0 6px 1px currentColor;
-  }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 .animate-typing-dot {
-  animation: typing-dot 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite both !important;
+  animation: typing-dot 1.5s ease-in-out infinite both !important;
 }
+.animate-typing-dot:nth-child(2) { animation-delay: 0.5s; }
+.animate-typing-dot:nth-child(3) { animation-delay: 1s; }
 .typing-dot-sm {
   width: 0.375rem;
   height: 0.375rem;
@@ -327,12 +321,12 @@
   height: 0.5rem;
 }
 
-/* AI chat panel: same typing-dot animation, alternate size/color via classes */
+/* AI chat panel: same ordered typing-dot wave (first, second, third) */
 #ai-chat-root .chat-typing-dot {
-  animation: typing-dot 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+  animation: typing-dot 1.5s ease-in-out infinite both;
 }
-#ai-chat-root .chat-typing-dot-2 { animation-delay: 0.2s; }
-#ai-chat-root .chat-typing-dot-3 { animation-delay: 0.4s; }
+#ai-chat-root .chat-typing-dot-2 { animation-delay: 0.5s; }
+#ai-chat-root .chat-typing-dot-3 { animation-delay: 1s; }
 #ai-chat-root .typing-dot-sm { width: 0.375rem; height: 0.375rem; }
 #ai-chat-root .typing-dot-md { width: 0.5rem; height: 0.5rem; }
 #ai-chat-root .animate-spin,

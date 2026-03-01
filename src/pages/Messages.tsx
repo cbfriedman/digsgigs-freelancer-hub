@@ -176,6 +176,8 @@ export default function Messages() {
   const messagesChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingSendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [partnerTypingUntil, setPartnerTypingUntil] = useState<number | null>(null);
   const [isDragOverChat, setIsDragOverChat] = useState(false);
   const dragDepthRef = useRef(0);
@@ -954,10 +956,33 @@ export default function Messages() {
 
   // No scroll-on-messages effect here: we scroll only on conversation switch and after send (auto) to avoid vibration
 
-  // Debounced broadcast "typing" when user types
+  // "typing" soon then every 3s; send "stopped_typing" when user stops typing for 3s or clears/sends
   useEffect(() => {
-    if (!selectedConversation || !currentUser?.id || newMessage.trim() === "") return;
+    if (!selectedConversation || !currentUser?.id) return;
+    const hadInterval = !!typingSendIntervalRef.current;
     if (typingSendTimeoutRef.current) clearTimeout(typingSendTimeoutRef.current);
+    typingSendTimeoutRef.current = null;
+    if (typingSendIntervalRef.current) {
+      clearInterval(typingSendIntervalRef.current);
+      typingSendIntervalRef.current = null;
+    }
+    if (typingStopTimeoutRef.current) {
+      clearTimeout(typingStopTimeoutRef.current);
+      typingStopTimeoutRef.current = null;
+    }
+    if (newMessage.trim() === "") {
+      if (hadInterval) {
+        const ch = messagesChannelRef.current;
+        if (ch) {
+          ch.send({
+            type: "broadcast",
+            event: "stopped_typing",
+            payload: { user_id: currentUser.id },
+          });
+        }
+      }
+      return;
+    }
     typingSendTimeoutRef.current = setTimeout(() => {
       const ch = messagesChannelRef.current;
       if (ch) {
@@ -968,11 +993,44 @@ export default function Messages() {
         });
       }
       typingSendTimeoutRef.current = null;
-    }, 300);
+      typingSendIntervalRef.current = setInterval(() => {
+        const c = messagesChannelRef.current;
+        if (c) {
+          c.send({
+            type: "broadcast",
+            event: "typing",
+            payload: { user_id: currentUser.id },
+          });
+        }
+      }, 3000);
+      typingStopTimeoutRef.current = setTimeout(() => {
+        typingStopTimeoutRef.current = null;
+        if (typingSendIntervalRef.current) {
+          clearInterval(typingSendIntervalRef.current);
+          typingSendIntervalRef.current = null;
+        }
+        const c = messagesChannelRef.current;
+        if (c) {
+          c.send({
+            type: "broadcast",
+            event: "stopped_typing",
+            payload: { user_id: currentUser.id },
+          });
+        }
+      }, 3000);
+    }, 50);
     return () => {
       if (typingSendTimeoutRef.current) {
         clearTimeout(typingSendTimeoutRef.current);
         typingSendTimeoutRef.current = null;
+      }
+      if (typingSendIntervalRef.current) {
+        clearInterval(typingSendIntervalRef.current);
+        typingSendIntervalRef.current = null;
+      }
+      if (typingStopTimeoutRef.current) {
+        clearTimeout(typingStopTimeoutRef.current);
+        typingStopTimeoutRef.current = null;
       }
     };
   }, [newMessage, selectedConversation, currentUser?.id]);
@@ -1212,12 +1270,26 @@ export default function Messages() {
         (payload) => {
           const userId = (payload.payload as { user_id?: string })?.user_id;
           if (userId && userId !== uid) {
-            setPartnerTypingUntil(Date.now() + 3000);
+            setPartnerTypingUntil(Date.now() + 6000);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = setTimeout(() => {
               setPartnerTypingUntil(null);
               typingTimeoutRef.current = null;
-            }, 3000);
+            }, 6000);
+          }
+        }
+      )
+      .on(
+        "broadcast",
+        { event: "stopped_typing" },
+        (payload) => {
+          const stoppedUserId = (payload.payload as { user_id?: string })?.user_id;
+          if (stoppedUserId && stoppedUserId !== uid) {
+            if (typingTimeoutRef.current) {
+              clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = null;
+            }
+            setPartnerTypingUntil(null);
           }
         }
       )

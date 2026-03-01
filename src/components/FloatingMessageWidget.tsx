@@ -167,6 +167,8 @@ export function FloatingMessageWidget() {
   const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
   const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
   const typingSendTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
+  const typingSendIntervalsRef = useRef<Record<string, ReturnType<typeof setInterval> | null>>({});
+  const typingStopTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
   const dragDepthRef = useRef<Record<string, number>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
   const messagesMapRef = useRef<Record<string, Message[]>>({});
@@ -310,6 +312,7 @@ export function FloatingMessageWidget() {
 
   const subscribeToMessages = useCallback((convId: string) => {
     if (channelsRef.current[convId]) return;
+    setPartnerTypingMap((prev) => (prev[convId] ? { ...prev, [convId]: false } : prev));
     const uid = userIdRef.current;
     const channel = supabase
       .channel(`messages:${convId}`)
@@ -381,7 +384,20 @@ export function FloatingMessageWidget() {
           typingTimeoutsRef.current[convId] = setTimeout(() => {
             setPartnerTypingMap((prev) => ({ ...prev, [convId]: false }));
             typingTimeoutsRef.current[convId] = null;
-          }, 3000);
+          }, 6000);
+        }
+      )
+      .on(
+        "broadcast",
+        { event: "stopped_typing" },
+        (payload) => {
+          const stoppedUserId = (payload.payload as { user_id?: string })?.user_id;
+          if (!stoppedUserId || stoppedUserId === uid) return;
+          if (typingTimeoutsRef.current[convId]) {
+            clearTimeout(typingTimeoutsRef.current[convId]);
+            typingTimeoutsRef.current[convId] = null;
+          }
+          setPartnerTypingMap((prev) => ({ ...prev, [convId]: false }));
         }
       )
       .subscribe();
@@ -600,6 +616,12 @@ export function FloatingMessageWidget() {
     const typingSendTimeout = typingSendTimeoutsRef.current[convId];
     if (typingSendTimeout) clearTimeout(typingSendTimeout);
     delete typingSendTimeoutsRef.current[convId];
+    const typingSendInterval = typingSendIntervalsRef.current[convId];
+    if (typingSendInterval) clearInterval(typingSendInterval);
+    delete typingSendIntervalsRef.current[convId];
+    const typingStopTimeout = typingStopTimeoutsRef.current[convId];
+    if (typingStopTimeout) clearTimeout(typingStopTimeout);
+    delete typingStopTimeoutsRef.current[convId];
     setPartnerTypingMap((prev) => {
       if (!prev[convId]) return prev;
       const next = { ...prev };
@@ -633,8 +655,12 @@ export function FloatingMessageWidget() {
       channelsRef.current = {};
       Object.values(typingTimeoutsRef.current).forEach((t) => t && clearTimeout(t));
       Object.values(typingSendTimeoutsRef.current).forEach((t) => t && clearTimeout(t));
+      Object.values(typingSendIntervalsRef.current).forEach((i) => i != null && clearInterval(i));
+      Object.values(typingStopTimeoutsRef.current).forEach((t) => t != null && clearTimeout(t));
       typingTimeoutsRef.current = {};
       typingSendTimeoutsRef.current = {};
+      typingSendIntervalsRef.current = {};
+      typingStopTimeoutsRef.current = {};
     };
   }, []);
 
@@ -927,24 +953,69 @@ export function FloatingMessageWidget() {
     setReplyingToMap((prev) => ({ ...prev, [convId]: { id: messageId, content: content.slice(0, 200) } }));
   }, []);
 
+  const sendTypingBroadcast = useCallback((convId: string) => {
+    const channel = channelsRef.current[convId];
+    const uid = userIdRef.current;
+    if (channel && uid) {
+      channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { user_id: uid },
+      });
+    }
+  }, []);
+
+  const sendStoppedTypingBroadcast = useCallback((convId: string) => {
+    const channel = channelsRef.current[convId];
+    const uid = userIdRef.current;
+    if (channel && uid) {
+      channel.send({
+        type: "broadcast",
+        event: "stopped_typing",
+        payload: { user_id: uid },
+      });
+    }
+  }, []);
+
   const handleMessageInputChange = useCallback((convId: string, value: string) => {
     setInputMap((prev) => ({ ...prev, [convId]: value }));
-    if (!value.trim()) return;
+    const trimmed = value.trim();
     const existingTimeout = typingSendTimeoutsRef.current[convId];
     if (existingTimeout) clearTimeout(existingTimeout);
+    const existingInterval = typingSendIntervalsRef.current[convId];
+    if (existingInterval) {
+      clearInterval(existingInterval);
+      typingSendIntervalsRef.current[convId] = null;
+    }
+    const existingStopTimeout = typingStopTimeoutsRef.current[convId];
+    if (existingStopTimeout) {
+      clearTimeout(existingStopTimeout);
+      typingStopTimeoutsRef.current[convId] = null;
+    }
+    if (!trimmed) {
+      if (existingTimeout || existingInterval) sendStoppedTypingBroadcast(convId);
+      return;
+    }
+    const scheduleStoppedTyping = () => {
+      typingStopTimeoutsRef.current[convId] = setTimeout(() => {
+        typingStopTimeoutsRef.current[convId] = null;
+        const interval = typingSendIntervalsRef.current[convId];
+        if (interval) {
+          clearInterval(interval);
+          typingSendIntervalsRef.current[convId] = null;
+        }
+        sendStoppedTypingBroadcast(convId);
+      }, 3000);
+    };
+    // Send typing after 50ms; then heartbeat every 3s; after 3s with no keystrokes send stopped_typing
     typingSendTimeoutsRef.current[convId] = setTimeout(() => {
-      const channel = channelsRef.current[convId];
-      const uid = userIdRef.current;
-      if (channel && uid) {
-        channel.send({
-          type: "broadcast",
-          event: "typing",
-          payload: { user_id: uid },
-        });
-      }
+      sendTypingBroadcast(convId);
       typingSendTimeoutsRef.current[convId] = null;
-    }, 300);
-  }, []);
+      const interval = setInterval(() => sendTypingBroadcast(convId), 3000);
+      typingSendIntervalsRef.current[convId] = interval;
+      scheduleStoppedTyping();
+    }, 50);
+  }, [sendTypingBroadcast, sendStoppedTypingBroadcast]);
 
   const handleMessageInputFocus = useCallback(
     async (convId: string) => {
@@ -993,6 +1064,17 @@ export function FloatingMessageWidget() {
       }
       setSendingMap((prev) => ({ ...prev, [conv.id]: true }));
       setInputMap((prev) => ({ ...prev, [conv.id]: "" }));
+      const sendInterval = typingSendIntervalsRef.current[conv.id];
+      if (sendInterval) {
+        clearInterval(sendInterval);
+        delete typingSendIntervalsRef.current[conv.id];
+      }
+      const stopTimeout = typingStopTimeoutsRef.current[conv.id];
+      if (stopTimeout) {
+        clearTimeout(stopTimeout);
+        delete typingStopTimeoutsRef.current[conv.id];
+      }
+      sendStoppedTypingBroadcast(conv.id);
       const tempId = `temp-${Date.now()}`;
       const optimisticMessage: Message = {
         id: tempId,
@@ -1082,6 +1164,17 @@ export function FloatingMessageWidget() {
       const { data: { session } } = await supabase.auth.getSession();
       setSendingMap((prev) => ({ ...prev, [conv.id]: true }));
       setInputMap((prev) => ({ ...prev, [conv.id]: "" }));
+      const sendInterval = typingSendIntervalsRef.current[conv.id];
+      if (sendInterval) {
+        clearInterval(sendInterval);
+        delete typingSendIntervalsRef.current[conv.id];
+      }
+      const stopTimeout = typingStopTimeoutsRef.current[conv.id];
+      if (stopTimeout) {
+        clearTimeout(stopTimeout);
+        delete typingStopTimeoutsRef.current[conv.id];
+      }
+      sendStoppedTypingBroadcast(conv.id);
       setAttachmentUploadConvId(conv.id);
       setAttachmentUploadProgress(0);
       const tempId = `temp-${Date.now()}`;
@@ -1189,7 +1282,7 @@ export function FloatingMessageWidget() {
         setTimeout(focusInput, 100);
       }
     },
-    [user?.id, loadMessages]
+    [user?.id, loadMessages, sendStoppedTypingBroadcast]
   );
 
   const isFileDrag = (e: React.DragEvent) =>
@@ -2298,3 +2391,5 @@ export function FloatingMessageWidget() {
     </div>
   );
 }
+
+export default FloatingMessageWidget;

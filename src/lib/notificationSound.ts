@@ -2,9 +2,9 @@ const MUTE_KEY = "notification-sound-muted";
 let lastNotificationPlayAt = 0;
 const MIN_PLAY_GAP_MS = 2000;
 
-// One play per message id (receiver can get same INSERT from multiple subscriptions)
+// One play per message id (receiver can get same INSERT from multiple subscriptions or duplicate events)
 const playedMessageIds = new Set<string>();
-const PLAYED_ID_TTL_MS = 5000;
+const PLAYED_ID_TTL_MS = 15000;
 
 function clearPlayedId(id: string): void {
   playedMessageIds.delete(id);
@@ -32,13 +32,13 @@ export function setNotificationMuted(muted: boolean): void {
  */
 export function playNotificationSound(messageId?: string): void {
   if (isNotificationMuted()) return;
-  const now = Date.now();
   const id = messageId != null ? String(messageId) : undefined;
   if (id) {
     if (playedMessageIds.has(id)) return;
     playedMessageIds.add(id);
     setTimeout(() => clearPlayedId(id), PLAYED_ID_TTL_MS);
   }
+  const now = Date.now();
   if (now - lastNotificationPlayAt < MIN_PLAY_GAP_MS) return;
   lastNotificationPlayAt = now;
   try {
