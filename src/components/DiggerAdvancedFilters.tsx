@@ -37,6 +37,8 @@ interface DiggerAdvancedFiltersProps {
   categories: Category[];
   filters: DiggerFilters;
   onFiltersChange: (filters: DiggerFilters) => void;
+  /** Called after a search is saved so the saved-searches list can refresh without page reload */
+  onSavedSearch?: () => void;
 }
 
 const COMMON_CERTIFICATIONS = [
@@ -100,9 +102,10 @@ const COUNTRIES = [
 ];
 
 export const DiggerAdvancedFilters = ({
-  categories, 
-  filters, 
+  categories,
+  filters,
   onFiltersChange,
+  onSavedSearch,
 }: DiggerAdvancedFiltersProps) => {
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -157,6 +160,7 @@ export const DiggerAdvancedFilters = ({
 
       toast.success("Search saved successfully! You'll receive email alerts for matching professionals.");
       setSearchName("");
+      onSavedSearch?.();
     } catch (error) {
       console.error('Error saving search:', error);
       toast.error("Failed to save search");
@@ -407,20 +411,23 @@ export const DiggerAdvancedFilters = ({
           )}
         </div>
 
-        {/* Save Search */}
-        <div className="space-y-3 pt-4 border-t">
-          <Label className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Save Search & Get Email Alerts
+        {/* Save search & email alerts */}
+        <div className="space-y-1.5 pt-3 border-t border-border/60">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Save search & get alerts
           </Label>
-          <div className="flex gap-2">
+          <p className="text-[10px] text-muted-foreground">
+            We email you when new diggers match these filters.
+          </p>
+          <div className="flex gap-1.5">
             <Input
-              placeholder="Search name (e.g., 'Licensed plumbers in Boston')"
+              placeholder="e.g. Plumbers near Boston"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
+              className="h-8 text-xs flex-1 min-w-0"
             />
-            <Button onClick={handleSaveSearch} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
+            <Button onClick={handleSaveSearch} disabled={saving} size="sm" className="h-8 shrink-0 text-xs">
+              <Save className="h-3 w-3 mr-1" />
               Save
             </Button>
           </div>

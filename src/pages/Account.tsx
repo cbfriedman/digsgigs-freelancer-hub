@@ -275,7 +275,7 @@ export default function Account() {
               Identity & Security
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Login and verification.
+              Sign-in and verification. Your data stays secure.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">

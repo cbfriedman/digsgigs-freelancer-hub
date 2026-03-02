@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, DollarSign, Calendar, Tag, ShoppingCart, Map, List, Filter, HandHeart, MapPin, ChevronDown, ChevronRight, CheckCircle2, RefreshCw } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Search, DollarSign, Calendar, ShoppingCart, Filter, HandHeart, MapPin, ChevronDown, ChevronRight, CheckCircle2, RefreshCw } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { GigAdvancedFilters, type GigFilters, type IndustryCategoryWithProfessions } from "@/components/GigAdvancedFilters";
 import { useStripeConnect } from "@/hooks/useStripeConnect";
 import { useProfessions } from "@/hooks/useProfessions";
-import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
 import PageLayout from "@/components/layout/PageLayout";
@@ -101,6 +98,7 @@ interface Gig {
 
 const BrowseGigs = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { categoriesWithProfessions: rawCategoriesWithProfessions } = useProfessions();
   const [gigs, setGigs] = useState<Gig[]>([]);
   /** All categories from DB (parents + subcategories) so all are displayed and filters match project category_id */
@@ -130,7 +128,6 @@ const BrowseGigs = () => {
   const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [userBids, setUserBids] = useState<Set<string>>(new Set());
   const [userLeadPurchases, setUserLeadPurchases] = useState<Set<string>>(new Set());
   const [advancedFilters, setAdvancedFilters] = useState<GigFilters>({
@@ -146,6 +143,23 @@ const BrowseGigs = () => {
   const [showRefinePanel, setShowRefinePanel] = useState(true);
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
   const { loading: stripeConnectLoading, canReceivePayments } = useStripeConnect();
+
+  // Apply saved search filters when navigating from Saved Searches page (Apply button)
+  useEffect(() => {
+    const stateFilters = (location.state as { filters?: Partial<GigFilters> } | null)?.filters;
+    if (!stateFilters) return;
+    setAdvancedFilters({
+      budgetRange: [0, 50000],
+      selectedCategories: [],
+      selectedProfessionIds: [],
+      selectedKeywords: [],
+      locationRadius: 50,
+      postedSince: "all",
+      sortBy: "newest",
+      ...stateFilters,
+    });
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, location.pathname, navigate]);
 
   const toggleDescription = (gigId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -165,6 +179,9 @@ const BrowseGigs = () => {
   useEffect(() => {
     loadData();
   }, [selectedCategory, budgetFilter, projectTypeFilter, diggerProfile, advancedFilters]);
+
+  // Refetch saved searches when user saves from Refine panel (no page refresh)
+  const savedSearchesRefetchRef = useRef<(() => void) | null>(null);
 
   // Real-time: new open gigs added to list; updates (e.g. status change to awarded/in_progress) reflected
   const gigsChannelRef = useRef<RealtimeChannel | null>(null);
@@ -515,23 +532,20 @@ const BrowseGigs = () => {
       />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <div className="px-4 sm:px-6 pt-4 pb-8 sm:pt-6 sm:pb-10 max-w-[1600px] mx-auto">
+      <div className="px-3 sm:px-6 pt-3 pb-6 sm:pt-5 sm:pb-8 max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="mb-3 sm:mb-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">Browse Gigs</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">Find gigs posted by Giggers. Bid or unlock the lead.</p>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Browse Gigs</h1>
+            <p className="text-xs text-muted-foreground mt-0.5 sm:text-sm">Bid or unlock leads.</p>
             {(diggerProfile as any)?.lead_limit_enabled && (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
-                  Leads this period: {leadsPurchasedThisPeriod} / {(diggerProfile as any).lead_limit}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Badge variant={limitReached ? "destructive" : "secondary"} className="text-xs">
+                  {leadsPurchasedThisPeriod}/{(diggerProfile as any).lead_limit} leads
                 </Badge>
                 {limitReached && (
-                  <span className="text-sm text-muted-foreground">
-                    Limit reached. Older gigs (&gt;24h) at $1.{" "}
-                    <Button variant="link" className="p-0 h-auto font-normal text-sm" onClick={() => navigate("/lead-limits")}>
-                      Increase limit
-                    </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Older at $1. <Button variant="link" className="p-0 h-auto font-normal text-xs" onClick={() => navigate("/lead-limits")}>Limit</Button>
                   </span>
                 )}
               </div>
@@ -540,17 +554,13 @@ const BrowseGigs = () => {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 gap-2 min-h-[44px] sm:min-h-0"
+            className="shrink-0 gap-1.5 min-h-[40px] sm:min-h-0 h-9"
             onClick={() => loadData(true)}
             disabled={loading || refreshing}
-            title="Refresh to load new gigs"
+            title="Refresh"
           >
-            {refreshing ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="sr-only sm:not-sr-only">{refreshing ? "Refreshing…" : "Refresh"}</span>
+            <RefreshCw className={refreshing ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+            <span className="sr-only sm:not-sr-only text-xs">{refreshing ? "…" : "Refresh"}</span>
           </Button>
         </div>
 
@@ -560,19 +570,19 @@ const BrowseGigs = () => {
         )}
 
         {/* Filter bar */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="relative w-full sm:min-w-[200px] sm:max-w-md sm:flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <div className="flex flex-col gap-2 mb-3 sm:mb-5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <div className="relative w-full sm:min-w-[180px] sm:max-w-sm sm:flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Search by title or description..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 sm:h-10 bg-background min-h-[44px] sm:min-h-0"
+                className="pl-8 h-9 sm:h-9 bg-background min-h-[40px] sm:min-h-0 text-sm"
               />
             </div>
             <Select value={projectTypeFilter} onValueChange={setProjectTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-10 min-h-[44px] sm:min-h-10">
+              <SelectTrigger className="w-full sm:w-[120px] h-9 min-h-[40px] sm:min-h-0 text-sm">
                 <SelectValue placeholder="Project type" />
               </SelectTrigger>
               <SelectContent>
@@ -582,7 +592,7 @@ const BrowseGigs = () => {
               </SelectContent>
             </Select>
             <Select value={budgetFilter} onValueChange={setBudgetFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] h-10 min-h-[44px] sm:min-h-10">
+              <SelectTrigger className="w-full sm:w-[130px] h-9 min-h-[40px] sm:min-h-0 text-sm">
                 <SelectValue placeholder="Budget" />
               </SelectTrigger>
               <SelectContent>
@@ -596,7 +606,7 @@ const BrowseGigs = () => {
               value={advancedFilters.postedSince}
               onValueChange={(v: GigFilters["postedSince"]) => setAdvancedFilters({ ...advancedFilters, postedSince: v })}
             >
-              <SelectTrigger className="w-full sm:w-[140px] h-10 min-h-[44px] sm:min-h-10">
+              <SelectTrigger className="w-full sm:w-[110px] h-9 min-h-[40px] sm:min-h-0 text-sm">
                 <SelectValue placeholder="Posted" />
               </SelectTrigger>
               <SelectContent>
@@ -610,7 +620,7 @@ const BrowseGigs = () => {
               value={advancedFilters.sortBy}
               onValueChange={(v: GigFilters["sortBy"]) => setAdvancedFilters({ ...advancedFilters, sortBy: v })}
             >
-              <SelectTrigger className="w-full sm:w-[160px] h-10 min-h-[44px] sm:min-h-10">
+              <SelectTrigger className="w-full sm:w-[130px] h-9 min-h-[40px] sm:min-h-0 text-sm">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
@@ -623,28 +633,30 @@ const BrowseGigs = () => {
             <Button
               variant={showRefinePanel ? "secondary" : "outline"}
               size="sm"
-              className="h-10 min-h-[44px] sm:min-h-10 shrink-0 gap-1.5"
+              className="h-9 min-h-[40px] sm:min-h-0 shrink-0 gap-1 text-sm"
               onClick={() => setShowRefinePanel((p) => !p)}
             >
-              <Filter className="h-4 w-4 shrink-0" />
+              <Filter className="h-3.5 w-3.5 shrink-0" />
               Refine
-              {hasActiveRefine && <span className="h-2 w-2 rounded-full bg-primary" />}
-              {showRefinePanel ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {hasActiveRefine && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+              {showRefinePanel ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
             </Button>
           </div>
         </div>
 
-        <div className={cn("grid gap-4 sm:gap-6", showRefinePanel ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-1")}>
+        <div className={cn("grid gap-3 sm:gap-5", showRefinePanel ? "lg:grid-cols-[240px_1fr]" : "lg:grid-cols-1")}>
           {showRefinePanel && (
-            <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1 min-w-0">
+            <aside className="lg:col-span-1 space-y-3 order-2 lg:order-1 min-w-0">
               <GigAdvancedFilters
                 categories={getGigCategoriesForFilter(allCategories)}
                 categoriesWithProfessions={categoriesWithProfessions}
                 filters={advancedFilters}
                 onFiltersChange={setAdvancedFilters}
+                onSavedSearch={() => savedSearchesRefetchRef.current?.()}
               />
               <SavedSearchesList
                 searchType="gigs"
+                onRegisterRefetch={(refetch) => { savedSearchesRefetchRef.current = refetch; }}
                 onApplySearch={(appliedFilters) =>
                   setAdvancedFilters({
                     budgetRange: [0, 50000],
@@ -662,53 +674,36 @@ const BrowseGigs = () => {
           )}
 
           <div className={cn("min-w-0", showRefinePanel && "lg:col-span-1 order-1 lg:order-2")}>
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "map")} className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <TabsList className="w-full sm:w-auto grid grid-cols-2 h-11">
-                  <TabsTrigger value="list" className="min-h-[44px] sm:min-h-0 text-sm">
-                    <List className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
-                    List
-                  </TabsTrigger>
-                  <TabsTrigger value="map" className="min-h-[44px] sm:min-h-0 text-sm">
-                    <Map className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
-                    Map
-                  </TabsTrigger>
-                </TabsList>
-                <span className="text-sm text-muted-foreground order-first sm:order-none w-full sm:w-auto">
-                  {displayGigs.length} {displayGigs.length === 1 ? "gig" : "gigs"}
-                </span>
-              </div>
-
-              <TabsContent value="list" className="relative">
+            <div className="space-y-4">
+              <div className="relative">
                 {refreshing && (
                   <div className="h-0.5 w-full bg-primary/30 rounded-full overflow-hidden mb-3" aria-hidden>
                     <div className="h-full w-1/3 min-w-[80px] bg-primary rounded-full animate-refresh-slide" />
                   </div>
                 )}
                 {loading ? (
-                  <div className="space-y-3 sm:space-y-4" aria-busy="true" aria-label="Loading gigs">
+                  <div className="space-y-2 sm:space-y-3" aria-busy="true" aria-label="Loading gigs">
                     {[1, 2, 3, 4, 5].map((i) => (
-                      <Card key={i} className="border border-border bg-card rounded-lg overflow-hidden">
-                        <CardContent className="p-4 sm:p-5 md:p-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-4 items-start">
-                            <div className="min-w-0 space-y-3">
-                              <div className="flex flex-wrap gap-2">
-                                <Skeleton className="h-4 w-12 rounded" />
-                                <Skeleton className="h-4 w-14 rounded" />
+                      <Card key={i} className="border border-border/70 bg-card rounded-md overflow-hidden">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-3 items-start">
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex flex-wrap gap-1.5">
+                                <Skeleton className="h-3 w-10 rounded" />
+                                <Skeleton className="h-3 w-12 rounded" />
                               </div>
-                              <Skeleton className="h-5 w-full max-w-[85%] rounded" />
-                              <Skeleton className="h-4 w-full rounded" />
-                              <Skeleton className="h-4 w-full max-w-[95%] rounded" />
-                              <Skeleton className="h-4 w-3/4 rounded" />
-                              <div className="flex flex-wrap gap-x-3 gap-y-2">
-                                <Skeleton className="h-5 w-20 rounded-md" />
-                                <Skeleton className="h-5 w-16 rounded-md" />
-                                <Skeleton className="h-5 w-24 rounded-md" />
+                              <Skeleton className="h-4 w-full max-w-[85%] rounded" />
+                              <Skeleton className="h-3 w-full rounded" />
+                              <Skeleton className="h-3 w-full max-w-[90%] rounded" />
+                              <div className="flex flex-wrap gap-x-2 gap-y-1.5">
+                                <Skeleton className="h-4 w-16 rounded" />
+                                <Skeleton className="h-4 w-14 rounded" />
+                                <Skeleton className="h-4 w-20 rounded" />
                               </div>
                             </div>
-                            <div className="hidden sm:block space-y-2">
-                              <Skeleton className="h-9 w-full rounded-md" />
-                              <Skeleton className="h-4 w-12 rounded" />
+                            <div className="hidden sm:block space-y-1.5">
+                              <Skeleton className="h-8 w-full rounded" />
+                              <Skeleton className="h-3 w-10 rounded" />
                             </div>
                           </div>
                         </CardContent>
@@ -716,20 +711,16 @@ const BrowseGigs = () => {
                     ))}
                   </div>
                 ) : displayGigs.length === 0 ? (
-                  <Card className="border border-dashed bg-transparent shadow-none">
-                    <CardContent className="py-12 sm:py-16 px-4 text-center">
-                      <p className="text-muted-foreground mb-2 text-sm sm:text-base">
-                        {limitReached
-                          ? "No older gigs available right now. Check back later or increase your lead limit."
-                          : "No gigs match your filters."}
+                  <Card className="border border-dashed border-border/60 bg-transparent shadow-none">
+                    <CardContent className="py-8 sm:py-10 px-4 text-center">
+                      <p className="text-muted-foreground text-sm">
+                        {limitReached ? "No older gigs. Check back or increase lead limit." : "No gigs match your filters."}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Try a different category, broader budget, or clear Refine filters.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Change filters or Refine.</p>
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-2 sm:space-y-3">
                     {displayGigs.map((gig) => {
                       const isOld = isOldGig(gig.created_at);
                       const isNew = !isOld;
@@ -741,14 +732,14 @@ const BrowseGigs = () => {
                           key={gig.id}
                           className={cn(
                             "group relative overflow-hidden cursor-pointer transition-colors",
-                            "border border-border bg-card rounded-lg",
-                            "hover:bg-muted/60 hover:border-border active:bg-muted/70"
+                            "border border-border/70 bg-card rounded-md",
+                            "hover:bg-muted/50 hover:border-border active:bg-muted/60"
                           )}
                           onClick={() => navigate(`/gig/${gig.id}`)}
                         >
-                          <CardContent className="p-4 sm:p-5 md:p-6">
+                          <CardContent className="p-3 sm:p-4">
                             <div
-                              className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-md bg-background border border-border p-1.5"
+                              className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded bg-background/95 border border-border/60 p-1"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Checkbox
@@ -773,18 +764,18 @@ const BrowseGigs = () => {
                                     toast.success("Removed from cart");
                                   }
                                 }}
-                                className="h-4 w-4"
+                                className="h-3.5 w-3.5"
                               />
-                              <label htmlFor={`cart-${gig.id}`} className="text-xs text-muted-foreground cursor-pointer select-none pr-0.5">Cart</label>
+                              <label htmlFor={`cart-${gig.id}`} className="text-[10px] text-muted-foreground cursor-pointer select-none">Cart</label>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-4 items-start">
-                              <div className="min-w-0 space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-[7fr_3fr] gap-3 items-start">
+                              <div className="min-w-0 space-y-2">
+                                <div className="flex flex-wrap items-center gap-1.5">
                                   {isNew && (
-                                    <span className="text-xs text-primary">New</span>
+                                    <span className="text-[10px] text-primary">New</span>
                                   )}
                                   <span className={cn(
-                                    "text-xs font-normal",
+                                    "text-[10px] font-normal",
                                     gig.status === "open" && "text-violet-600 dark:text-violet-400",
                                     gig.status === "awarded" && "text-green-500 dark:text-green-400",
                                     gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
@@ -794,20 +785,20 @@ const BrowseGigs = () => {
                                     {gig.status === "open" ? "Open" : gig.status === "awarded" ? "Awarded" : gig.status === "in_progress" ? "In progress" : gig.status === "completed" ? "Completed" : gig.status === "cancelled" ? "Cancelled" : gig.status === "pending_confirmation" ? "Pending" : gig.status}
                                   </span>
                                   {inCart && (
-                                    <span className="text-xs text-muted-foreground">In cart</span>
+                                    <span className="text-[10px] text-muted-foreground">In cart</span>
                                   )}
                                   {diggerProfile && userBids.has(gig.id) && (
-                                    <span className="text-xs text-emerald-600 dark:text-emerald-400">Proposal submitted</span>
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400">Proposal submitted</span>
                                   )}
                                   {(gig as any).escrow_requested_by_consumer && (
-                                    <span className="text-xs text-blue-600 dark:text-blue-400">Escrow</span>
+                                    <span className="text-[10px] text-blue-600 dark:text-blue-400">Escrow</span>
                                   )}
                                 </div>
-                                <h3 className="text-lg font-semibold leading-tight text-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-2">
+                                <h3 className="text-base font-medium leading-tight text-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-2 sm:text-[15px]">
                                   {gig.title}
                                 </h3>
-                                <div className="text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                                  <p className={cn("leading-relaxed whitespace-pre-wrap", !expandedDescriptionIds.has(gig.id) && "line-clamp-3")}>
+                                <div className="text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                                  <p className={cn("leading-snug whitespace-pre-wrap", !expandedDescriptionIds.has(gig.id) && "line-clamp-3")}>
                                     {!expandedDescriptionIds.has(gig.id) && gig.description.length > 150
                                       ? `${gig.description.slice(0, 150).trim()}…`
                                       : gig.description}
@@ -816,45 +807,39 @@ const BrowseGigs = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-auto py-1 px-0 mt-1 text-primary text-xs"
+                                      className="h-auto py-0.5 px-0 mt-0.5 text-primary text-[10px]"
                                       onClick={(e) => toggleDescription(gig.id, e)}
                                     >
-                                      {expandedDescriptionIds.has(gig.id) ? "Show less" : "Read more"}
+                                      {expandedDescriptionIds.has(gig.id) ? "Less" : "More"}
                                     </Button>
                                   )}
                                 </div>
-                                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-2 text-xs sm:text-sm text-muted-foreground rounded-lg bg-muted/30 sm:bg-muted/40 px-3 py-2">
-                        {gig.categories && (
-                          <div className="flex items-center gap-1">
-                            <Tag className="h-4 w-4 shrink-0" />
-                            <span>{gig.categories.name}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 shrink-0" />
+                                <div className="flex flex-wrap gap-x-2.5 sm:gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-muted-foreground rounded-md bg-muted/20 px-2 py-1.5">
+                        <div className="flex items-center gap-0.5">
+                          <DollarSign className="h-3 w-3 shrink-0 opacity-80" />
                           <span>{formatGigPrice(gig)}</span>
                           {gig.project_type === "hourly" && (
-                            <span className="text-xs text-muted-foreground ml-1">Hourly</span>
+                            <span className="text-[10px] text-muted-foreground ml-0.5">/hr</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4 shrink-0" />
+                        <div className="flex items-center gap-0.5">
+                          <MapPin className="h-3 w-3 shrink-0 opacity-80" />
                           <span>{gig.location || "Remote"}</span>
                         </div>
                         {gig.preferred_regions && gig.preferred_regions.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4 shrink-0 opacity-70" />
-                            <span className="text-xs">Pref: {formatSelectionDisplay(gig.preferred_regions)}</span>
+                          <div className="flex items-center gap-0.5">
+                            <MapPin className="h-3 w-3 shrink-0 opacity-60" />
+                            <span>Pref: {formatSelectionDisplay(gig.preferred_regions)}</span>
                           </div>
                         )}
                         {gig.deadline && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 shrink-0" />
+                          <div className="flex items-center gap-0.5">
+                            <Calendar className="h-3 w-3 shrink-0 opacity-80" />
                             <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
                           </div>
                         )}
                         {(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country) && (
-                          <div className="flex items-center gap-1.5" title={String(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country ?? "").trim()}>
+                          <div className="flex items-center gap-1" title={String(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country ?? "").trim()}>
                             {(() => {
                               const country = String(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country ?? "").trim();
                               const code = country ? getCodeForCountryName(country) : "";
@@ -865,14 +850,14 @@ const BrowseGigs = () => {
                                     <img
                                       src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`}
                                       alt=""
-                                      className="h-4 w-5 object-cover rounded-sm shrink-0"
-                                      width={20}
-                                      height={15}
+                                      className="h-3 w-4 object-cover rounded shrink-0"
+                                      width={16}
+                                      height={12}
                                     />
                                   ) : flagEmoji ? (
-                                    <span className="text-base leading-none" aria-hidden>{flagEmoji}</span>
+                                    <span className="text-xs leading-none" aria-hidden>{flagEmoji}</span>
                                   ) : null}
-                                  <span className="uppercase font-medium">{code || country}</span>
+                                  <span className="uppercase text-[10px] font-medium">{code || country}</span>
                                 </>
                               );
                             })()}
@@ -884,14 +869,14 @@ const BrowseGigs = () => {
                           ? gig.skills_required
                           : (gig.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
                         return names.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
+                          <div className="flex flex-wrap gap-1 mt-1.5">
                             {names.slice(0, 5).map((skill, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs font-normal">
+                              <Badge key={i} variant="secondary" className="text-[10px] font-normal py-0 px-1.5">
                                 {skill}
                               </Badge>
                             ))}
                             {names.length > 5 && (
-                              <Badge variant="outline" className="text-xs font-normal">
+                              <Badge variant="outline" className="text-[10px] font-normal py-0 px-1.5">
                                 +{names.length - 5}
                               </Badge>
                             )}
@@ -899,35 +884,34 @@ const BrowseGigs = () => {
                         ) : null;
                       })()}
                               </div>
-                              <div className="min-w-0 sm:text-right space-y-2" onClick={(e) => e.stopPropagation()}>
+                              <div className="min-w-0 sm:text-right space-y-1.5" onClick={(e) => e.stopPropagation()}>
                       {showSpecialPrice ? (
-                        <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
-                          Old Lead - $1
+                        <Badge variant="default" className="mb-1 text-[10px] py-0 px-1.5 bg-accent text-accent-foreground">
+                          Old Lead $1
                         </Badge>
                       ) : null}
-                      <div className="text-sm text-muted-foreground">
-                        Posted {formatDistanceToNow(new Date(gig.created_at))} ago
-                      </div>
-                      {/* Digger actions: Bid Now (open only) + Buy lead (open, awarded, in_progress) */}
+                      {/* Digger actions */}
                       {diggerProfile && (gig.status === 'open' || gig.status === 'awarded' || gig.status === 'in_progress') && (
-                        <div className="flex flex-col gap-2 mt-3">
+                        <div className="flex flex-col gap-1.5 mt-2">
                           {gig.status === 'open' ? (
                             !userBids.has(gig.id) ? (
-                              <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+                              <div className="flex flex-col sm:flex-row gap-1.5 flex-wrap">
                                 <Button
-                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
+                                  size="sm"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[100px] h-8 text-xs"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
                                     navigate(`/gig/${gig.id}#bid`);
                                   }}
                                 >
-                                  <HandHeart className="h-4 w-4 mr-2 shrink-0" />
+                                  <HandHeart className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                                   Bid Now
                                 </Button>
                                 <Button
                                   variant="outline"
-                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
+                                  size="sm"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[100px] h-8 text-xs hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -950,18 +934,19 @@ const BrowseGigs = () => {
                                     setCartOpen(true);
                                   }}
                                 >
-                                  <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                  <ShoppingCart className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                                   Buy lead
                                 </Button>
                               </div>
                             ) : (
                               <>
-                                <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                                  You have already submitted a proposal.
+                                <p className="text-xs font-medium text-green-700 dark:text-green-400">
+                                  Proposal submitted.
                                 </p>
-                                <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+                                <div className="flex flex-col sm:flex-row gap-1.5 flex-wrap">
                                   <Button
-                                    className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
+                                    size="sm"
+                                    className="w-full sm:flex-1 min-w-0 sm:min-w-[100px] h-8 text-xs"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
@@ -972,7 +957,7 @@ const BrowseGigs = () => {
                                   </Button>
                                 <Button
                                   variant="outline"
-                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
+                                  size="sm" className="w-full sm:flex-1 min-w-0 sm:min-w-[100px] h-8 text-xs hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -995,7 +980,7 @@ const BrowseGigs = () => {
                                     setCartOpen(true);
                                   }}
                                 >
-                                  <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                  <ShoppingCart className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                                   Buy lead
                                 </Button>
                                 </div>
@@ -1005,7 +990,7 @@ const BrowseGigs = () => {
                             <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                               <Button
                                 variant="outline"
-                                className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
+                                size="sm" className="w-full sm:flex-1 min-w-0 sm:min-w-[100px] h-8 text-xs hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
@@ -1028,15 +1013,13 @@ const BrowseGigs = () => {
                                   setCartOpen(true);
                                 }}
                               >
-                                <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                <ShoppingCart className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                                 Buy lead
                               </Button>
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground">
-                            {gig.status === 'open'
-                              ? "Bid free to compete · Or buy lead to unlock Gigger’s contact"
-                              : "Buy lead to unlock Gigger’s contact"}
+                          <p className="text-[10px] text-muted-foreground">
+                            {gig.status === 'open' ? "Bid free or buy lead." : "Buy lead to unlock contact."}
                           </p>
                         </div>
                       )}
@@ -1048,20 +1031,8 @@ const BrowseGigs = () => {
             })}
                   </div>
                 )}
-              </TabsContent>
-
-              <TabsContent value="map">
-                <MapView 
-                  items={displayGigs.map(g => ({
-                    id: g.id,
-                    title: g.title,
-                    location_lat: g.location_lat,
-                    location_lng: g.location_lng,
-                  }))}
-                  onMarkerClick={(id) => navigate(`/gig/${id}`)}
-                />
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </div>
         </div>
       </div>

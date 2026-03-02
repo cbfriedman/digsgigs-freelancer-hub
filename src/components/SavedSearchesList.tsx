@@ -20,9 +20,11 @@ interface SavedSearch {
 interface SavedSearchesListProps {
   searchType: 'gigs' | 'diggers';
   onApplySearch: (filters: any) => void;
+  /** Register refetch so parent can refresh list when a new search is saved elsewhere (e.g. Refine panel). */
+  onRegisterRefetch?: (refetch: () => void) => void;
 }
 
-export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesListProps) => {
+export const SavedSearchesList = ({ searchType, onApplySearch, onRegisterRefetch }: SavedSearchesListProps) => {
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +53,10 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
     loadSavedSearches();
   }, [loadSavedSearches]);
 
+  useEffect(() => {
+    onRegisterRefetch?.(loadSavedSearches);
+  }, [onRegisterRefetch, loadSavedSearches]);
+
   const toggleEmailAlerts = async (searchId: string, enabled: boolean) => {
     try {
       const { error } = await supabase
@@ -64,7 +70,7 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
         s.id === searchId ? { ...s, email_alerts_enabled: enabled } : s
       ));
 
-      toast.success(enabled ? "Email alerts enabled" : "Email alerts disabled");
+      toast.success(enabled ? "Alerts on" : "Alerts off");
     } catch (error) {
       console.error('Error updating search:', error);
       toast.error("Failed to update search");
@@ -90,9 +96,9 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground text-center">Loading saved searches...</p>
+      <Card className="border-border/60">
+        <CardContent className="p-3 sm:p-4">
+          <p className="text-xs text-muted-foreground text-center">Loading…</p>
         </CardContent>
       </Card>
     );
@@ -100,10 +106,10 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
 
   if (searches.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground text-center">
-            No saved searches yet. Use the advanced filters to create one!
+      <Card className="border-border/60">
+        <CardContent className="p-3 sm:p-4">
+          <p className="text-xs text-muted-foreground text-center">
+            No saved searches yet. Use Refine to set filters, then save to get email alerts.
           </p>
         </CardContent>
       </Card>
@@ -111,84 +117,77 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Saved Searches</CardTitle>
+    <Card className="border-border/60">
+      <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
+        <CardTitle className="text-sm font-medium">Saved searches</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-2.5">
         {searches.map((search) => (
           <div
             key={search.id}
-            className="p-4 border rounded-lg space-y-3"
+            className="p-2.5 sm:p-3 border border-border/50 rounded-md space-y-2 bg-muted/20"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h4 className="font-semibold flex items-center gap-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-medium flex items-center gap-1.5 truncate">
                   {search.name}
                   {search.email_alerts_enabled && (
-                    <Bell className="h-4 w-4 text-primary" />
+                    <Bell className="h-3 w-3 text-primary shrink-0" />
                   )}
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  Created {new Date(search.created_at).toLocaleDateString()}
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(search.created_at).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-7 text-xs"
                   onClick={() => onApplySearch(search.filters)}
                 >
-                  <Search className="h-4 w-4 mr-1" />
+                  <Search className="h-3 w-3 mr-0.5" />
                   Apply
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                   onClick={() => deleteSearch(search.id)}
+                  title="Delete"
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Switch
                 id={`alerts-${search.id}`}
                 checked={search.email_alerts_enabled}
                 onCheckedChange={(checked) => toggleEmailAlerts(search.id, checked)}
+                className="scale-75 origin-left"
               />
-              <Label htmlFor={`alerts-${search.id}`} className="text-sm cursor-pointer">
-                Email alerts for matching results
+              <Label htmlFor={`alerts-${search.id}`} className="text-[10px] text-muted-foreground cursor-pointer">
+                Email when new {searchType === "gigs" ? "gigs" : "diggers"} match
               </Label>
             </div>
 
-            {/* Display applied filters */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               {search.filters.selectedCategories?.length > 0 && (
-                <Badge variant="secondary">
-                  {search.filters.selectedCategories.length} categories
-                </Badge>
+                <Badge variant="secondary" className="text-[10px] py-0 px-1">{(search.filters.selectedCategories as string[]).length} cat.</Badge>
               )}
-              {search.filters.budgetRange && (
-                <Badge variant="secondary">
-                  ${search.filters.budgetRange[0]} - ${search.filters.budgetRange[1]}
-                </Badge>
+              {search.filters.budgetRange && ((search.filters.budgetRange as number[])[0] !== 0 || (search.filters.budgetRange as number[])[1] !== 50000) && (
+                <Badge variant="secondary" className="text-[10px] py-0 px-1">${(search.filters.budgetRange as number[])[0]}–${(search.filters.budgetRange as number[])[1]}</Badge>
               )}
-              {search.filters.hourlyRateRange && (
-                <Badge variant="secondary">
-                  ${search.filters.hourlyRateRange[0]}-${search.filters.hourlyRateRange[1]}/hr
-                </Badge>
+              {search.filters.hourlyRateRange && ((search.filters.hourlyRateRange as number[])[0] !== 0 || (search.filters.hourlyRateRange as number[])[1] !== 500) && (
+                <Badge variant="secondary" className="text-[10px] py-0 px-1">${(search.filters.hourlyRateRange as number[])[0]}-${(search.filters.hourlyRateRange as number[])[1]}/hr</Badge>
               )}
-              {search.filters.locationRadius && (
-                <Badge variant="secondary">
-                  {search.filters.locationRadius}mi radius
-                </Badge>
+              {search.filters.locationRadius != null && search.filters.locationRadius !== (searchType === "gigs" ? 50 : 25) && (
+                <Badge variant="secondary" className="text-[10px] py-0 px-1">{(search.filters.locationRadius as number)}mi</Badge>
               )}
-              {search.filters.minRating && (
-                <Badge variant="secondary">
-                  {search.filters.minRating}+ stars
-                </Badge>
+              {search.filters.minRating != null && Number(search.filters.minRating) > 0 && (
+                <Badge variant="secondary" className="text-[10px] py-0 px-1">{(search.filters.minRating as number)}+ ★</Badge>
               )}
             </div>
           </div>

@@ -321,18 +321,18 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </NavDropdown>
               )}
 
-              {/* Why Digs & Gigs — trust & info */}
+              {/* About & help */}
               <NavDropdown
                 id="why"
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    Why Digs & Gigs
+                    About
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </button>
                 }
               >
                 <DropdownMenuItem onClick={() => navigate("/about")} className="cursor-pointer">
-                  About
+                  About us
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/how-it-works")} className="cursor-pointer">
                   How it works
@@ -1216,8 +1216,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </>
                       )}
 
-                      {/* Why Digs & Gigs */}
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Why Digs & Gigs</p>
+                      {/* About */}
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">About</p>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",

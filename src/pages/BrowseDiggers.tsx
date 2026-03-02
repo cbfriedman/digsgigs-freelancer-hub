@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,7 @@ interface Digger {
 
 const BrowseDiggers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [diggers, setDiggers] = useState<Digger[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +103,16 @@ const BrowseDiggers = () => {
     offersFreeEstimates: false,
     country: undefined,
   });
+
+  const savedSearchesRefetchRef = useRef<(() => void) | null>(null);
+
+  // Apply saved search filters when navigating from Saved Searches page (Apply button)
+  useEffect(() => {
+    const stateFilters = (location.state as { filters?: Partial<DiggerFilters> } | null)?.filters;
+    if (!stateFilters) return;
+    setFilters((prev) => ({ ...prev, ...stateFilters }));
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     checkUserAccess();
@@ -445,13 +456,11 @@ const BrowseDiggers = () => {
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">Access Restricted</h2>
-                <p className="text-muted-foreground mb-6">
-                  Diggers cannot browse other Diggers. The marketplace is currently closed and curated. You can only view and manage your own profile.
+                <h2 className="text-xl font-semibold mb-3">Not available</h2>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Diggers browse gigs, not other diggers. View and manage your profile from the menu.
                 </p>
-                <Button onClick={() => navigate("/")}>
-                  Go to Home
-                </Button>
+                <Button onClick={() => navigate("/")}>Home</Button>
               </div>
             </CardContent>
           </Card>
@@ -473,13 +482,11 @@ const BrowseDiggers = () => {
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">Access Restricted</h2>
-                <p className="text-muted-foreground mb-6">
-                  You must post at least one gig before you can browse and view digger profiles.
+                <h2 className="text-xl font-semibold mb-3">Post a gig first</h2>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Browse diggers after you post at least one gig.
                 </p>
-                <Button onClick={() => navigate("/post-gig")}>
-                  Post Your First Gig
-                </Button>
+                <Button onClick={() => navigate("/post-gig")}>Post a gig</Button>
               </div>
             </CardContent>
           </Card>
@@ -499,11 +506,11 @@ const BrowseDiggers = () => {
 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Browse Talent</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl mb-0.5">Browse Diggers</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">
             {userRole === "gigger" 
-              ? "View diggers related to your posted gigs. Clicking on a profile will charge the digger to reveal their contact information."
-              : "Find the right Digger for your gig"}
+              ? "Find diggers for your gigs. Unlock contact info per lead."
+              : "Find the right digger for your gig."}
           </p>
         </div>
 
@@ -554,9 +561,11 @@ const BrowseDiggers = () => {
               categories={categories}
               filters={filters}
               onFiltersChange={setFilters}
+              onSavedSearch={() => savedSearchesRefetchRef.current?.()}
             />
-            <SavedSearchesList 
-              searchType="diggers" 
+            <SavedSearchesList
+              searchType="diggers"
+              onRegisterRefetch={(refetch) => { savedSearchesRefetchRef.current = refetch; }}
               onApplySearch={(appliedFilters) => setFilters(appliedFilters as DiggerFilters)}
             />
           </div>

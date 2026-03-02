@@ -1,22 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, Bell, Lightbulb, Briefcase } from "lucide-react";
+import { X, Save, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 export interface Category {
   id: string;
   name: string;
@@ -50,28 +41,6 @@ export interface GigFilters {
   sortBy: "newest" | "oldest" | "budget_asc" | "budget_desc";
 }
 
-const BUDGET_PRESETS: { label: string; range: [number, number] }[] = [
-  { label: "Any", range: [0, 50000] },
-  { label: "Under $1k", range: [0, 1000] },
-  { label: "$1k – $5k", range: [1000, 5000] },
-  { label: "$5k – $10k", range: [5000, 10000] },
-  { label: "$10k+", range: [10000, 50000] },
-];
-
-const POSTED_OPTIONS: { value: GigFilters["postedSince"]; label: string }[] = [
-  { value: "all", label: "Any time" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-];
-
-const SORT_OPTIONS: { value: GigFilters["sortBy"]; label: string }[] = [
-  { value: "newest", label: "Newest first" },
-  { value: "oldest", label: "Oldest first" },
-  { value: "budget_asc", label: "Budget: low → high" },
-  { value: "budget_desc", label: "Budget: high → low" },
-];
-
 const DEFAULT_FILTERS: GigFilters = {
   budgetRange: [0, 50000],
   selectedCategories: [],
@@ -89,6 +58,8 @@ interface GigAdvancedFiltersProps {
   categoriesWithProfessions?: IndustryCategoryWithProfessions[];
   filters: GigFilters;
   onFiltersChange: (filters: GigFilters) => void;
+  /** Called after a search is saved so the saved-searches list can refresh without page reload */
+  onSavedSearch?: () => void;
 }
 
 export const GigAdvancedFilters = ({
@@ -96,6 +67,7 @@ export const GigAdvancedFilters = ({
   categoriesWithProfessions = [],
   filters,
   onFiltersChange,
+  onSavedSearch,
 }: GigAdvancedFiltersProps) => {
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -120,14 +92,6 @@ export const GigAdvancedFilters = ({
 
   const isKeywordSelected = (keyword: string) =>
     selectedKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase());
-
-  const handleBudgetChange = (value: number[]) => {
-    onFiltersChange({ ...filters, budgetRange: [value[0], value[1]] });
-  };
-
-  const handleBudgetPreset = (range: [number, number]) => {
-    onFiltersChange({ ...filters, budgetRange: range });
-  };
 
   const handleCategoryToggle = (categoryId: string) => {
     const newCategories = filters.selectedCategories.includes(categoryId)
@@ -164,10 +128,9 @@ export const GigAdvancedFilters = ({
 
       if (error) throw error;
 
-      toast.success(
-        "Search saved! You'll get email alerts when new gigs match."
-      );
+      toast.success("Saved. We’ll email when new gigs match.");
       setSearchName("");
+      onSavedSearch?.();
     } catch (error) {
       console.error("Error saving search:", error);
       toast.error("Failed to save search");
@@ -203,88 +166,7 @@ export const GigAdvancedFilters = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Sort – first so it’s easy to find */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Sort by</Label>
-            <Select
-              value={filters.sortBy}
-              onValueChange={(v: GigFilters["sortBy"]) =>
-                onFiltersChange({ ...filters, sortBy: v })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Posted when */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Posted</Label>
-            <Select
-              value={filters.postedSince}
-              onValueChange={(v: GigFilters["postedSince"]) =>
-                onFiltersChange({ ...filters, postedSince: v })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {POSTED_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Budget – presets + slider */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Budget</Label>
-            <div className="flex flex-wrap gap-2">
-              {BUDGET_PRESETS.map(({ label, range }) => {
-                const isActive =
-                  filters.budgetRange[0] === range[0] &&
-                  filters.budgetRange[1] === range[1];
-                return (
-                  <Button
-                    key={label}
-                    variant={isActive ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => handleBudgetPreset(range)}
-                  >
-                    {label}
-                  </Button>
-                );
-              })}
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">
-                Or set range: ${filters.budgetRange[0].toLocaleString()} – $
-                {filters.budgetRange[1].toLocaleString()}
-              </span>
-              <Slider
-                min={0}
-                max={50000}
-                step={500}
-                value={filters.budgetRange}
-                onValueChange={handleBudgetChange}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          {/* Professions & keywords – profession and each keyword selectable */}
+          {/* Professions & keywords */}
           {categoriesWithProfessions.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
@@ -367,39 +249,25 @@ export const GigAdvancedFilters = ({
             </div>
           )}
 
-          {/* Save search */}
-          <div className="space-y-2 pt-3 border-t">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Bell className="h-4 w-4" />
+          {/* Save search & email alerts – new gigs matching this search */}
+          <div className="space-y-1.5 pt-3 border-t border-border/60">
+            <Label className="text-xs font-medium text-muted-foreground">
               Save search & get alerts
             </Label>
-            <div className="flex gap-2">
+            <p className="text-[10px] text-muted-foreground">
+              We email you when new gigs match these filters.
+            </p>
+            <div className="flex gap-1.5">
               <Input
-                placeholder="e.g. Plumbing jobs nearby"
+                placeholder="e.g. Web dev gigs"
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                className="text-sm"
+                className="h-8 text-xs flex-1 min-w-0"
               />
-              <Button onClick={handleSaveSearch} disabled={saving} size="sm">
-                <Save className="h-4 w-4 mr-1" />
+              <Button onClick={handleSaveSearch} disabled={saving} size="sm" className="h-8 shrink-0 text-xs">
+                <Save className="h-3 w-3 mr-1" />
                 Save
               </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Platform tip – Digs & Gigs specific */}
-      <Card className="bg-muted/50 border-muted">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex gap-3">
-            <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="space-y-1 text-sm">
-              <p className="font-medium">Why Digs & Gigs?</p>
-              <p className="text-muted-foreground">
-                Pay per lead, 8% only when you win the job—no membership fees.
-                Save a search above and we’ll email you when new gigs match.
-              </p>
             </div>
           </div>
         </CardContent>

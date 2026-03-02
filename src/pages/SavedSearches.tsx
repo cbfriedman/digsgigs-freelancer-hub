@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import { SavedSearchAnalytics } from "@/components/SavedSearchAnalytics";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark } from "lucide-react";
+import { PageLayout } from "@/components/layout/PageLayout";
+import SEOHead from "@/components/SEOHead";
 
 const SavedSearches = () => {
   const navigate = useNavigate();
@@ -19,50 +19,43 @@ const SavedSearches = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Bookmark className="h-8 w-8 text-primary" />
-              <div>
-                <CardTitle className="text-3xl">Saved Searches</CardTitle>
-                <CardDescription>
-                  Manage your saved searches and email alerts
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+    <PageLayout maxWidth="default">
+      <SEOHead
+        title="Saved searches"
+        description="Manage saved gig and digger searches. Get email alerts when new results match."
+      />
+      <div className="mx-auto max-w-3xl px-3 py-4 sm:px-0 sm:py-6">
+        <div className="mb-4 sm:mb-5">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Saved searches</h1>
+          <p className="text-xs text-muted-foreground mt-0.5 sm:text-sm">
+            Apply saved filters. Get email when new results match.
+          </p>
+        </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "gigs" | "diggers")}>
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-            <TabsTrigger value="gigs">Gig Searches</TabsTrigger>
-            <TabsTrigger value="diggers">Digger Searches</TabsTrigger>
+          <TabsList className="grid w-full max-w-sm grid-cols-2 h-9 mb-4 text-sm">
+            <TabsTrigger value="gigs">Gigs</TabsTrigger>
+            <TabsTrigger value="diggers">Diggers</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="gigs">
-            <div className="space-y-6">
-              <SavedSearchAnalytics searchType="gigs" />
-              <SavedSearchesList
-                searchType="gigs"
-                onApplySearch={handleApplyGigSearch}
-              />
-            </div>
+          <TabsContent value="gigs" className="space-y-4 mt-0">
+            <SavedSearchAnalytics searchType="gigs" />
+            <SavedSearchesList
+              searchType="gigs"
+              onApplySearch={handleApplyGigSearch}
+            />
           </TabsContent>
 
-          <TabsContent value="diggers">
-            <div className="space-y-6">
-              <SavedSearchAnalytics searchType="diggers" />
-              <SavedSearchesList
-                searchType="diggers"
-                onApplySearch={handleApplyDiggerSearch}
-              />
-            </div>
+          <TabsContent value="diggers" className="space-y-4 mt-0">
+            <SavedSearchAnalytics searchType="diggers" />
+            <SavedSearchesList
+              searchType="diggers"
+              onApplySearch={handleApplyDiggerSearch}
+            />
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

@@ -57,9 +57,9 @@ export const Footer = () => {
               <img src={logo} alt="Digs & Gigs" className="h-16 w-auto object-contain" />
             </button>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xs">
-              Giggers post gigs. Diggers get leads by email. Pay per lead or when awarded. No membership.
+              Post gigs. Find work. Pay per lead. No membership.
             </p>
-            <p className="text-xs text-muted-foreground mb-4">Secure platform · Verified users</p>
+            <p className="text-xs text-muted-foreground mb-4">Secure · Verified · Reliable</p>
             <div className="flex items-center gap-2">
               {socialLinks.map((social, i) => (
                 <a
@@ -162,10 +162,10 @@ export const Footer = () => {
 
         <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Digs & Gigs. All rights reserved.
+            &copy; {new Date().getFullYear()} Digs & Gigs
           </p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            Made with <Heart className="h-4 w-4 text-destructive fill-destructive" /> for freelancers & clients
+            Built for freelancers and clients
           </p>
         </div>
       </div>

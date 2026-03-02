@@ -2468,10 +2468,11 @@ const Register = () => {
 
                 {/* Terms and Privacy */}
                 <p className="text-center text-xs text-muted-foreground">
-                  By clicking 'Sign up', you acknowledge that you have read and accepted the{" "}
-                  <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+                  By signing up you agree to our{" "}
+                  <a href="/terms" className="text-primary hover:underline">Terms</a>
                   {" "}and{" "}
-                  <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.
+                  <a href="/privacy" className="text-primary hover:underline">Privacy</a>.
+                  Secure sign-in.
                 </p>
               </form>
             )}
