@@ -1734,13 +1734,17 @@ const DiggerDetail = () => {
                     />
                     <div className="absolute left-3 sm:left-4 -bottom-10">
                       <div className="relative size-fit">
-                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background">
+                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background shrink-0">
                           <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
                           <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">
                             {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
+                        <span
+                          className={`absolute bottom-[7%] right-[7%] w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background box-content ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`}
+                          title={isOnline ? "Online" : "Offline"}
+                          aria-hidden
+                        />
                       </div>
                     </div>
                   </div>
@@ -1899,11 +1903,15 @@ const DiggerDetail = () => {
                   />
                   <div className="absolute left-3 sm:left-4 -bottom-10">
                     <div className="relative size-fit">
-                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background">
+                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background shrink-0">
                         <AvatarImage src={effectiveAvatarUrl} />
                         <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{getInitials(digger.handle || digger.business_name)}</AvatarFallback>
                       </Avatar>
-                      <div className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
+                      <span
+                        className={`absolute bottom-[7%] right-[7%] w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background box-content ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`}
+                        title={isOnline ? "Online" : "Offline"}
+                        aria-hidden
+                      />
                     </div>
                   </div>
                 </div>
