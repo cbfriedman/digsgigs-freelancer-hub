@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface DiggerPricingSelectorProps {
   diggerId: string;
+  /** When empty (e.g. profile-only view), checkout is skipped and onRequestWithoutGig is used if provided */
   gigId: string;
   pricingModel: string;
   subscriptionTier: string;
@@ -18,6 +19,8 @@ interface DiggerPricingSelectorProps {
   offersFreEstimates?: boolean | null;
   businessName: string;
   onSelectPricing: (model: 'fixed' | 'hourly' | 'free_estimate') => void;
+  /** Called when user requests a proposal but no gig context (e.g. from digger profile). Use to open messages or contact flow. */
+  onRequestWithoutGig?: () => void;
 }
 
 export const DiggerPricingSelector = ({
@@ -30,6 +33,7 @@ export const DiggerPricingSelector = ({
   offersFreEstimates,
   businessName,
   onSelectPricing,
+  onRequestWithoutGig,
 }: DiggerPricingSelectorProps) => {
   const [selectedModel, setSelectedModel] = useState<'fixed' | 'hourly' | 'free_estimate' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +48,15 @@ export const DiggerPricingSelector = ({
 
   const handlePurchaseLead = async () => {
     if (!selectedModel) return;
+    // Profile-only view (no gig): use message/contact flow instead of lead-purchase checkout
+    if (!gigId?.trim()) {
+      if (onRequestWithoutGig) {
+        onRequestWithoutGig();
+      } else {
+        toast.error("Unable to request proposal from this page. Try messaging the professional instead.");
+      }
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await invokeEdgeFunction<{ url?: string; success?: boolean; message?: string }>(

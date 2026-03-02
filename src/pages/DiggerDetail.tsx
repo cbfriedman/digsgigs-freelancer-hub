@@ -2148,6 +2148,7 @@ const DiggerDetail = () => {
                   onSelectPricing={(model) => {
                     toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
                   }}
+                  onRequestWithoutGig={handleSendMessage}
                 />
               )}
               {isOwnProfile && (
