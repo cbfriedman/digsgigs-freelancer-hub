@@ -1496,7 +1496,7 @@ const GigDetail = () => {
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{LEAD_PRICE_CAPTION}</p>
                   </div>
-                  <Button onClick={handleUnlockLead} className="gap-1.5 shrink-0 h-9 w-full sm:w-auto">
+                  <Button onClick={handleUnlockLead} className="gap-1.5 shrink-0 h-9 w-full sm:w-auto hover:bg-orange-600 hover:text-white transition-colors">
                     <Unlock className="h-3.5 w-3.5" />
                     Unlock lead
                   </Button>

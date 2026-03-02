@@ -415,7 +415,7 @@ export const BidSubmissionTemplate = ({
                   "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors cursor-pointer",
                   pricingModel === "pay_per_lead"
                     ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    : "border-border hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30"
                 )}
               >
                 <div className="flex items-center gap-2">

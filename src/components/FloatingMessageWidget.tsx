@@ -1330,7 +1330,12 @@ export function FloatingMessageWidget() {
 
   const openFullMessages = (conv?: RecentConversation) => {
     setIsOpen(false);
-    navigate(conv ? `/messages?conversation=${conv.id}` : "/messages");
+    if (conv) {
+      navigate(`/messages?conversation=${conv.id}`);
+    } else {
+      const toRequests = activeTab === "requests";
+      navigate(toRequests ? "/messages?filter=requests" : "/messages");
+    }
   };
 
   const handleEditMessage = (convId: string, messageId: string) => {
@@ -1442,13 +1447,23 @@ export function FloatingMessageWidget() {
   if (!user || hideOnMessagesPage) return null;
 
   const listPanelWidth = "w-[calc(100vw-2rem)] max-w-[380px]";
-  const filteredConvs = listSearch.trim()
+
+  const isRequestConv = (c: RecentConversation) => {
+    const meta = c.lastMessageMetadata as { _type?: string } | null | undefined;
+    const isProposalRequest = meta?._type === "proposal_request";
+    return Boolean(c.isCurrentUserDigger && !c.lastMessageFromMe && isProposalRequest);
+  };
+
+  const requestConvs = conversations.filter(isRequestConv);
+
+  const filteredConvs = (listSearch.trim()
     ? conversations.filter(
         (c) =>
           c.partnerDisplayName.toLowerCase().includes(listSearch.toLowerCase()) ||
           (c.lastMessageContent?.toLowerCase().includes(listSearch.toLowerCase()) ?? false)
       )
-    : conversations;
+    : conversations
+  ).filter((c) => !isRequestConv(c));
 
   const handleMuteToggle = async (conv: RecentConversation) => {
     const currentMuted = mutedChats[conv.id] ?? !!conv.muted;
@@ -2162,13 +2177,55 @@ export function FloatingMessageWidget() {
             </div>
             <ScrollArea className="flex-1 min-w-0 max-w-full overflow-hidden">
               {activeTab === "requests" ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <MessageCircle className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground mb-2">View all requests in Messages</p>
-                  <Button variant="link" className="text-primary" onClick={() => openFullMessages()}>
-                    Open Messages
-                  </Button>
-                </div>
+                requestConvs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <MessageCircle className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                    <p className="text-sm text-muted-foreground mb-2">No message requests</p>
+                    <Button variant="link" className="text-primary" onClick={() => openFullMessages()}>
+                      Open Messages
+                    </Button>
+                  </div>
+                ) : (
+                  <ul className="py-2 min-w-0 max-w-full overflow-hidden">
+                    {requestConvs.map((c) => {
+                      const isOpenChat = openChats.some((o) => o.id === c.id);
+                      const isMuted = mutedChats[c.id] ?? !!c.muted;
+                      const isBlocked = blockedChats[c.id] ?? !!c.isBlocked;
+                      const unreadTotal = unreadOverrides[c.id] ?? c.unreadCount;
+                      return (
+                        <li key={c.id} className="min-w-0 max-w-full overflow-hidden list-none">
+                          <button
+                            type="button"
+                            className="w-full max-w-full min-w-0 flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left overflow-hidden"
+                            onClick={() => openChat(c)}
+                          >
+                            <div className="relative h-10 w-10 shrink-0 flex-shrink-0">
+                              <Avatar className="h-10 w-10 ring-1 ring-border/50">
+                                <AvatarImage src={c.partnerAvatarUrl || undefined} alt="" />
+                                <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                  {c.partnerDisplayName[0]?.toUpperCase() ?? "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              {unreadTotal > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-semibold">
+                                  {unreadTotal > 99 ? "99+" : unreadTotal}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 overflow-hidden basis-0">
+                              <div className="flex items-center justify-between gap-2 min-w-0">
+                                <span className="font-medium text-sm truncate min-w-0" title={c.partnerDisplayName}>
+                                  {c.partnerDisplayName}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">Requested a proposal</p>
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )
               ) : convLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

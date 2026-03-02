@@ -1202,7 +1202,13 @@ const DiggerDetail = () => {
       if (error) throw error;
 
       if (newConv && newConv.id) {
-        toast.success("Conversation started!");
+        // Record as a proposal request so it appears in the Digger's Message Requests
+        await invokeEdgeFunction(supabase, "insert-proposal-request-message", {
+          body: { conversation_id: newConv.id },
+        }).catch((err) => {
+          logger.warn("Failed to insert proposal request message", err);
+        });
+        toast.success("Request sent! The professional will see it in their Message Requests.");
         navigate(`/messages?conversation=${newConv.id}`);
       } else {
         throw new Error("Failed to create conversation");

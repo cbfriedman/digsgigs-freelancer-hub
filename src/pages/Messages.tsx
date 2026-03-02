@@ -373,7 +373,9 @@ export default function Messages() {
   };
 
   const [showHidden, setShowHidden] = useState(false);
-  const [listFilter, setListFilter] = useState<"all" | "favorites" | "unread">("all");
+  const [listFilter, setListFilter] = useState<"all" | "favorites" | "unread" | "requests">(
+    () => (searchParams.get("filter") === "requests" ? "requests" : "all")
+  );
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
 
   const unhideConversation = (conversationId: string) => {
@@ -435,6 +437,12 @@ export default function Messages() {
   const showConversationList = !isMobile || !selectedConversation;
   const showChatArea = !isMobile || selectedConversation;
 
+  const isRequestConversation = (c: Conversation) => {
+    const meta = c.last_message_metadata as { _type?: string } | null | undefined;
+    const isProposalRequest = meta?._type === "proposal_request";
+    return Boolean(c.digger_id && c.last_message_sender_id !== currentUser?.id && isProposalRequest);
+  };
+
   const filteredConversations = (listSearch.trim()
     ? conversations.filter(
         (c) =>
@@ -444,13 +452,18 @@ export default function Messages() {
     : conversations
   )
     .filter((c) => showHidden || !hiddenIds.includes(c.id))
-    .filter((c) =>
-      listFilter === "all"
-        ? true
-        : listFilter === "favorites"
-          ? starredIds.includes(c.id)
-          : (c.unread_count ?? 0) > 0
-    )
+    .filter((c) => {
+      if (listFilter === "requests") {
+        return isRequestConversation(c);
+      }
+      if (listFilter === "all" || listFilter === "favorites" || listFilter === "unread") {
+        if (isRequestConversation(c)) return false;
+        if (listFilter === "all") return true;
+        if (listFilter === "favorites") return starredIds.includes(c.id);
+        if (listFilter === "unread") return (c.unread_count ?? 0) > 0;
+      }
+      return false;
+    })
     .sort((a, b) => {
       const aPin = pinnedIds.includes(a.id);
       const bPin = pinnedIds.includes(b.id);
@@ -2048,6 +2061,18 @@ export default function Messages() {
                 >
                   Unread
                 </Button>
+                <Button
+                  variant={listFilter === "requests" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`rounded-full h-8 px-3 text-sm font-medium ${
+                    listFilter === "requests"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                  onClick={() => setListFilter("requests")}
+                >
+                  Message Requests
+                </Button>
                 <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -2074,7 +2099,7 @@ export default function Messages() {
                   <div className="p-6 text-center">
                     <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
                     <p className="text-sm text-muted-foreground">
-                      {listSearch.trim() ? "No matches." : "No conversations yet."}
+                      {listSearch.trim() ? "No matches." : listFilter === "requests" ? "No message requests." : "No conversations yet."}
                     </p>
                   </div>
                 ) : (
@@ -2498,6 +2523,7 @@ export default function Messages() {
                     <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
                     <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
                     <Button variant={listFilter === "unread" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "unread" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("unread")}>Unread</Button>
+                    <Button variant={listFilter === "requests" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "requests" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("requests")}>Message Requests</Button>
                     <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${moreFiltersOpen ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
@@ -2512,7 +2538,7 @@ export default function Messages() {
                   {filteredConversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                      <p className="text-sm text-muted-foreground">{listSearch.trim() ? "No matches." : "No conversations yet."}</p>
+                      <p className="text-sm text-muted-foreground">{listSearch.trim() ? "No matches." : listFilter === "requests" ? "No message requests." : "No conversations yet."}</p>
                     </div>
                   ) : (
                     <div className="px-2 py-1 space-y-0.5">

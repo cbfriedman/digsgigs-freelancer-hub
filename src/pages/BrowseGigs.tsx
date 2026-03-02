@@ -740,9 +740,9 @@ const BrowseGigs = () => {
                         <Card
                           key={gig.id}
                           className={cn(
-                            "relative overflow-hidden cursor-pointer",
+                            "group relative overflow-hidden cursor-pointer transition-colors",
                             "border border-border bg-card rounded-lg",
-                            "hover:border-primary/30 active:border-primary/40"
+                            "hover:bg-muted/60 hover:border-border active:bg-muted/70"
                           )}
                           onClick={() => navigate(`/gig/${gig.id}`)}
                         >
@@ -803,7 +803,7 @@ const BrowseGigs = () => {
                                     <span className="text-xs text-blue-600 dark:text-blue-400">Escrow</span>
                                   )}
                                 </div>
-                                <h3 className="text-lg font-semibold leading-tight hover:text-primary transition-colors line-clamp-2">
+                                <h3 className="text-lg font-semibold leading-tight text-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-2">
                                   {gig.title}
                                 </h3>
                                 <div className="text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
@@ -927,7 +927,7 @@ const BrowseGigs = () => {
                                 </Button>
                                 <Button
                                   variant="outline"
-                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -972,7 +972,7 @@ const BrowseGigs = () => {
                                   </Button>
                                 <Button
                                   variant="outline"
-                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
+                                  className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -1004,7 +1004,8 @@ const BrowseGigs = () => {
                           ) : (
                             <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                               <Button
-                                className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0"
+                                variant="outline"
+                                className="w-full sm:flex-1 min-w-0 sm:min-w-[120px] min-h-[44px] sm:min-h-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
