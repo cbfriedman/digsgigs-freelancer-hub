@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Code2 } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Phone, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Code2 } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -1794,9 +1794,8 @@ const DiggerDetail = () => {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isOwnProfile && viewAsClient && (
-                          <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal}>
-                            <Pencil className="h-4 w-4 mr-1.5" />
-                            Edit
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openProfileHeaderEditModal} title="Edit profile">
+                            <Pencil className="h-3.5 w-3.5" />
                           </Button>
                         )}
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
@@ -1944,8 +1943,8 @@ const DiggerDetail = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal} className="text-xs h-8">
-                        <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openProfileHeaderEditModal} title="Edit profile">
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile"><Share2 className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -1971,7 +1970,7 @@ const DiggerDetail = () => {
                   ) : (
                     <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
                       <p className="text-xs text-muted-foreground mb-2">Add a bio to help Giggers learn about your services</p>
-                      <Button size="sm" onClick={() => openSectionModal("about")} className="text-xs"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Add Bio</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openSectionModal("about")} className="text-xs text-muted-foreground hover:text-foreground h-8"><Plus className="h-3 w-3 mr-1" />Add</Button>
                     </div>
                   )}
                 </div>
@@ -1989,7 +1988,7 @@ const DiggerDetail = () => {
                     isOwnProfile ? (
                       <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
                         <p className="text-xs text-muted-foreground mb-2">Add work samples.</p>
-                        <Button size="sm" onClick={() => openSectionModal("portfolio")} className="text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" />Add portfolio</Button>
+                        <Button variant="ghost" size="sm" onClick={() => openSectionModal("portfolio")} className="text-xs text-muted-foreground hover:text-foreground h-8"><Plus className="h-3 w-3 mr-1" />Add</Button>
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">No portfolio yet.</p>
@@ -2023,7 +2022,7 @@ const DiggerDetail = () => {
                   ) : (
                     <div className="rounded-lg border border-dashed border-muted bg-muted/20 p-4 text-center">
                       <p className="text-xs text-muted-foreground mb-2">Add references from past Giggers</p>
-                      <Button size="sm" variant="outline" onClick={() => openSectionModal("references")} className="text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" />Add reference</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openSectionModal("references")} className="text-xs text-muted-foreground hover:text-foreground h-8"><Plus className="h-3 w-3 mr-1" />Add</Button>
                     </div>
                   )}
                 </div>
@@ -2193,9 +2192,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Availability</span>
                     {isOwnProfile && (
-                      <button type="button" onClick={() => openSectionModal("availability")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("availability")} title="Edit Availability">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <button
@@ -2240,9 +2239,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Service location</span>
                     {isOwnProfile && ((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) && (
-                      <button type="button" onClick={() => openSectionModal("service_location")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("service_location")} title="Edit Service location">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                     {((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) ? (
@@ -2274,7 +2273,7 @@ const DiggerDetail = () => {
                         })}
                       </div>
                     ) : isOwnProfile ? (
-                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => openSectionModal("service_location")}>
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openSectionModal("service_location")}>
                         <Plus className="h-3 w-3 shrink-0" /> Add
                       </button>
                     ) : (
@@ -2283,9 +2282,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Website</span>
                     {isOwnProfile && digger.website_url && (
-                      <button type="button" onClick={() => openSectionModal("website")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("website")} title="Edit Website">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {digger.website_url ? (
@@ -2294,7 +2293,7 @@ const DiggerDetail = () => {
                       <span className="truncate">{digger.website_url}</span>
                     </a>
                   ) : isOwnProfile ? (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("website")}>
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openSectionModal("website")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
                   ) : (
@@ -2303,9 +2302,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">GitHub</span>
                     {isOwnProfile && githubUrl && (
-                      <button type="button" onClick={openGithubModal} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openGithubModal} title="Edit GitHub">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {githubUrl ? (
@@ -2321,8 +2320,8 @@ const DiggerDetail = () => {
                       ) : null}
                     </div>
                   ) : isOwnProfile ? (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openGithubModal()}>
-                      <Plus className="h-3 w-3 shrink-0" /> Connect
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openGithubModal()}>
+                      <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
                   ) : (
                     <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
@@ -2330,9 +2329,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Profession</span>
                     {isOwnProfile && getDisplayedProfessions().length > 0 && (
-                      <button type="button" onClick={() => openSectionModal("profession")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("profession")} title="Edit Profession">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {getDisplayedProfessions().length > 0 ? (
@@ -2349,7 +2348,7 @@ const DiggerDetail = () => {
                       ))}
                     </button>
                   ) : isOwnProfile ? (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("profession")}>
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openSectionModal("profession")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
                   ) : (
@@ -2358,9 +2357,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Skills</span>
                     {isOwnProfile && getDiggerSkillNames(digger).length > 0 && (
-                      <button type="button" onClick={() => openSectionModal("skills")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("skills")} title="Edit Skills">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {getDiggerSkillNames(digger).length > 0 ? (
@@ -2376,7 +2375,7 @@ const DiggerDetail = () => {
                       ))}
                     </button>
                   ) : isOwnProfile ? (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("skills")}>
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openSectionModal("skills")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
                   ) : (
@@ -2385,9 +2384,9 @@ const DiggerDetail = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Social</span>
                     {isOwnProfile && digger.social_links && Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim())).length > 0 && (
-                      <button type="button" onClick={() => openSectionModal("social")} className="text-muted-foreground hover:text-foreground p-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSectionModal("social")} title="Edit Social">
                         <Pencil className="h-3 w-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {(() => {
@@ -2416,8 +2415,8 @@ const DiggerDetail = () => {
                         })}
                       </div>
                     ) : isOwnProfile ? (
-                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("social")}>
-                        <Plus className="h-3 w-3 shrink-0" /> Add links
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5 font-normal" onClick={() => openSectionModal("social")}>
+                        <Plus className="h-3 w-3 shrink-0" /> Add
                       </button>
                     ) : (
                       <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
@@ -2519,8 +2518,8 @@ const DiggerDetail = () => {
                   >
                     Open
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => openEditModal(profile.id)}>
-                    Edit
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(profile.id)} title="Edit profile">
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>

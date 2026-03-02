@@ -64,14 +64,15 @@ export const ExperienceSection = ({
             )}
           </CardTitle>
           {isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              {experiences.length > 0 ? (
-                <Pencil className="h-4 w-4 mr-1" />
-              ) : (
-                <Plus className="h-4 w-4 mr-1" />
-              )}
-              {experiences.length > 0 ? "Edit" : "Add experience"}
-            </Button>
+            experiences.length > 0 ? (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} title="Edit Experience">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} title="Add experience">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )
           )}
         </div>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -123,11 +124,12 @@ export const ExperienceSection = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 opacity-70 group-hover:opacity-100"
+                      className="h-7 w-7 shrink-0 opacity-70 group-hover:opacity-100"
                       onClick={() => (onEditItem ? onEditItem(exp) : onEdit?.())}
                       aria-label={`Edit ${exp.role_title} at ${exp.company_name}`}
+                      title="Edit"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -142,9 +144,8 @@ export const ExperienceSection = ({
               Add your work history (company, role, period) so Giggers can trust your experience.
             </p>
             {isOwnProfile && onEdit && (
-              <Button variant="outline" onClick={onEdit}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add your first experience
+              <Button variant="ghost" size="sm" onClick={onEdit} className="text-xs text-muted-foreground hover:text-foreground h-8">
+                <Plus className="h-3 w-3 mr-1" /> Add
               </Button>
             )}
           </div>

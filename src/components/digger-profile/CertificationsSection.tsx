@@ -63,14 +63,15 @@ export const CertificationsSection = ({
             )}
           </CardTitle>
           {isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              {certifications.length > 0 ? (
-                <Pencil className="h-4 w-4 mr-1" />
-              ) : (
-                <Plus className="h-4 w-4 mr-1" />
-              )}
-              {certifications.length > 0 ? "Edit" : "Add certification"}
-            </Button>
+            certifications.length > 0 ? (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} title="Edit Certifications">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} title="Add certification">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )
           )}
         </div>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -116,11 +117,12 @@ export const CertificationsSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 opacity-70 group-hover:opacity-100"
+                          className="h-7 w-7 opacity-70 group-hover:opacity-100"
                           onClick={() => (onEditItem ? onEditItem(cert) : onEdit?.())}
                           aria-label={`Edit ${cert.name}`}
+                          title="Edit"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                       )}
                       {evidenceUrl && (
@@ -171,9 +173,8 @@ export const CertificationsSection = ({
               Add certifications with proof (PDF or image) so Giggers can verify your credentials.
             </p>
             {isOwnProfile && onEdit && (
-              <Button variant="outline" onClick={onEdit}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add your first certification
+              <Button variant="ghost" size="sm" onClick={onEdit} className="text-xs text-muted-foreground hover:text-foreground h-8">
+                <Plus className="h-3 w-3 mr-1" /> Add
               </Button>
             )}
           </div>
