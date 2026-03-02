@@ -2265,10 +2265,12 @@ const DiggerDetail = () => {
                           );
                         })}
                       </div>
-                    ) : (
-                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("service_location")}>
+                    ) : isOwnProfile ? (
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => openSectionModal("service_location")}>
                         <Plus className="h-3 w-3 shrink-0" /> Add
                       </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not added</span>
                     )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Website</span>
@@ -2283,10 +2285,12 @@ const DiggerDetail = () => {
                       <Globe className="h-3 w-3 shrink-0" />
                       <span className="truncate">{digger.website_url}</span>
                     </a>
-                  ) : (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("website")}>
+                  ) : isOwnProfile ? (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("website")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
                   )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">GitHub</span>
@@ -2308,10 +2312,12 @@ const DiggerDetail = () => {
                         </a>
                       ) : null}
                     </div>
-                  ) : (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openGithubModal()}>
+                  ) : isOwnProfile ? (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openGithubModal()}>
                       <Plus className="h-3 w-3 shrink-0" /> Connect
                     </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
                   )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Profession</span>
@@ -2334,10 +2340,12 @@ const DiggerDetail = () => {
                         </span>
                       ))}
                     </button>
-                  ) : (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("profession")}>
+                  ) : isOwnProfile ? (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("profession")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
                   )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Skills</span>
@@ -2359,10 +2367,12 @@ const DiggerDetail = () => {
                         </span>
                       ))}
                     </button>
-                  ) : (
-                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("skills")}>
+                  ) : isOwnProfile ? (
+                    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("skills")}>
                       <Plus className="h-3 w-3 shrink-0" /> Add
                     </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
                   )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Social</span>
@@ -2397,10 +2407,12 @@ const DiggerDetail = () => {
                           );
                         })}
                       </div>
-                    ) : (
-                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => isOwnProfile && openSectionModal("social")}>
+                    ) : isOwnProfile ? (
+                      <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground -mt-0.5" onClick={() => openSectionModal("social")}>
                         <Plus className="h-3 w-3 shrink-0" /> Add links
                       </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground -mt-0.5">Not added</span>
                     );
                   })()}
                 </CardContent>
@@ -2447,22 +2459,6 @@ const DiggerDetail = () => {
                             <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
                               <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
                               {dc.categories?.name || ""}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  {getDiggerSkillNames(digger).length > 0 && (
-                    <Card className="rounded-xl border-border/70">
-                      <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">Skills</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0 px-4 pb-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {getDiggerSkillNames(digger).map((skill, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                              {skill}
                             </span>
                           ))}
                         </div>

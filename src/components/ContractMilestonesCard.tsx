@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -666,9 +667,30 @@ export function ContractMilestonesCard({
             Payment & milestones
           </CardTitle>
         </CardHeader>
-        <CardContent className="py-4 flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-          <p className="text-sm">Loading…</p>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full max-w-[95%]" />
+            <Skeleton className="h-4 w-full max-w-[88%]" />
+            <Skeleton className="h-4 w-full max-w-[70%]" />
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <div className="space-y-2">
+              <div className="flex justify-between gap-2">
+                <Skeleton className="h-4 flex-1 max-w-[60%]" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <div className="flex justify-between gap-2">
+                <Skeleton className="h-4 flex-1 max-w-[50%]" />
+                <Skeleton className="h-4 w-14" />
+              </div>
+              <div className="flex justify-between gap-2">
+                <Skeleton className="h-4 flex-1 max-w-[55%]" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+            <Skeleton className="h-4 w-full mt-2" />
+          </div>
         </CardContent>
       </Card>
     );

@@ -29,7 +29,7 @@ const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null;
 import { Card, CardContent } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -234,6 +234,8 @@ interface BidsListProps {
   messageClientTooltip?: string;
   /** When set, auto-open award dialog for this digger's bid (e.g. from float chat Award button). */
   openAwardForDiggerId?: string | null;
+  /** When false, hide Payment & milestones section (e.g. when owner switches to Digger mode). Default true. */
+  showPaymentAndMilestones?: boolean;
 }
 
 export const BidsList = ({
@@ -258,6 +260,7 @@ export const BidsList = ({
   canMessageClient = false,
   messageClientTooltip,
   openAwardForDiggerId,
+  showPaymentAndMilestones = true,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
@@ -711,8 +714,8 @@ export const BidsList = ({
 
   return (
     <div className="space-y-6">
-      {/* Payment contract & milestones: show only after gig is awarded (not when status is "open") */}
-      {(isOwner || currentDiggerId) && currentUserId && gigStatus && gigStatus !== "open" && (
+      {/* Payment contract & milestones: show only after gig is awarded (not when status is "open"); hidden when owner is in Digger mode */}
+      {showPaymentAndMilestones && (isOwner || currentDiggerId) && currentUserId && gigStatus && gigStatus !== "open" && (
         <ContractMilestonesCard
           key={contractCardKey}
           gigId={gigId}
@@ -793,11 +796,50 @@ export const BidsList = ({
       {isOwner && (
         <>
           {loading ? (
-            <Card>
-              <CardContent className="py-6 flex flex-col items-center justify-center gap-2">
-                <LoadingSpinner label="Loading bids..." />
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {[1, 2].map((i) => (
+                <Card key={i} className="overflow-hidden border border-border/60">
+                  <div className="p-6 pb-3">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex gap-4">
+                        <Skeleton className="h-20 w-20 shrink-0 rounded-xl" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Skeleton className="h-5 w-28" />
+                            <Skeleton className="h-4 w-24" />
+                          </div>
+                          <Skeleton className="h-4 w-3/4 max-w-[200px]" />
+                          <div className="flex gap-4">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-12" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 sm:shrink-0">
+                        <Skeleton className="h-7 w-24" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="space-y-4 pt-0">
+                    <div>
+                      <Skeleton className="h-3 w-14 mb-1.5" />
+                      <Skeleton className="h-4 w-full max-w-[280px]" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-3 w-20 mb-2" />
+                      <Skeleton className="h-4 w-full max-w-[95%]" />
+                      <Skeleton className="h-4 w-full max-w-[88%] mt-2" />
+                      <Skeleton className="h-4 w-full max-w-[70%] mt-2" />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/50">
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-9 w-28" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : showBidsFilterEmpty ? (
             <Card className="border-dashed">
               <CardContent className="py-12 text-center">

@@ -1003,14 +1003,6 @@ const GigDetail = () => {
             <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors">
               <CardHeader className="p-4 sm:p-5 md:p-6">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {hasBothRoles && (
-                    <span className={cn(
-                      "text-xs font-normal",
-                      activeRole === "gigger" ? "text-accent-foreground" : "text-primary"
-                    )}>
-                      {activeRole === "gigger" ? "Gigger mode" : "Digger mode"}
-                    </span>
-                  )}
                   <span className={cn(
                     "text-xs font-normal",
                     gig.status === "open" && "text-violet-600 dark:text-violet-400",
@@ -1450,6 +1442,7 @@ const GigDetail = () => {
                       ? "Open conversation with the Gigger"
                       : "You can reply after the Gigger sends you a message first"
                 }
+                showPaymentAndMilestones={!(isOwner && activeRole === "digger")}
               />
               </div>
             )}
