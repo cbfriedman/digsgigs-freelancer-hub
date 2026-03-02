@@ -175,6 +175,9 @@ export function SuggestMilestonePlanDialog({
                 Bid ${bidAmount.toFixed(2)} − 15% deposit = ${milestoneTotal.toFixed(2)}. Total of all milestone amounts must equal this.
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              7% deposit is added upon first milestone payment.
+            </p>
           </div>
 
           <div className="space-y-4">
