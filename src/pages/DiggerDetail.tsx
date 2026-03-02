@@ -1732,19 +1732,19 @@ const DiggerDetail = () => {
                       className="h-28 sm:h-32 md:h-36 w-full bg-muted"
                       style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                     />
-                    <div className="absolute left-3 sm:left-4 -bottom-8">
-                      <div className="relative">
-                        <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
+                    <div className="absolute left-3 sm:left-4 -bottom-10">
+                      <div className="relative size-fit">
+                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background">
                           <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
                           <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">
                             {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
+                        <div className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
                       </div>
                     </div>
                   </div>
-                  <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+                  <CardContent className="pt-12 sm:pt-14 pb-4 px-3 sm:px-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-1.5">
@@ -1897,17 +1897,17 @@ const DiggerDetail = () => {
                     className="h-28 sm:h-32 md:h-36 w-full bg-muted"
                     style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                   />
-                  <div className="absolute left-3 sm:left-4 -bottom-8">
-                    <div className="relative">
-                      <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
+                  <div className="absolute left-3 sm:left-4 -bottom-10">
+                    <div className="relative size-fit">
+                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background">
                         <AvatarImage src={effectiveAvatarUrl} />
                         <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{getInitials(digger.handle || digger.business_name)}</AvatarFallback>
                       </Avatar>
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
+                      <div className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`} title={isOnline ? "Online" : "Offline"} />
                     </div>
                   </div>
                 </div>
-                <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+                <CardContent className="pt-12 sm:pt-14 pb-4 px-3 sm:px-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-1.5">
