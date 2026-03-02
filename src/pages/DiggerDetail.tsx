@@ -52,7 +52,7 @@ import {
   getDiggerProfileUrl,
   formatCurrency,
   formatEarningsCompact,
-  getLocalTimeForCountry,
+  getLocalTimeForLocation,
   formatJoinDate,
 } from "./DiggerDetail/utils";
 
@@ -247,9 +247,10 @@ const DiggerDetail = () => {
     const viewerIsGigger = Array.isArray(userRoles) && userRoles.includes("gigger");
 
     // Fetch digger by UUID or username (handle) — anyone with the profile link can view
+    // profiles: single source for name (first_name, last_name, full_name) and address/location (city, state, country) so Account and profile stay in sync
     const fetchQuery = isUuid(slug)
-      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("id", slug)
-      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("handle", slug.toLowerCase());
+      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, first_name, last_name, email, avatar_url, country, city, state, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("id", slug)
+      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, first_name, last_name, email, avatar_url, country, city, state, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("handle", slug.toLowerCase());
     const { data: diggerData, error: diggerError } = await fetchQuery.single();
 
     if (diggerError || !diggerData) {
@@ -515,11 +516,16 @@ const DiggerDetail = () => {
     if (section === "about") setAboutDraft(digger.bio || "");
     if (section === "availability") setAvailabilityDraft(digger.availability || "");
     if (section === "location") {
+      // Use profiles (city, state, country) when available so same as Account; else digger
+      const p = digger.profiles as { city?: string | null; state?: string | null; country?: string | null } | undefined;
+      const city = (p?.city ?? digger.city ?? "").trim();
+      const state = (p?.state ?? digger.state ?? "").split(",")[0]?.trim() || "";
+      const country = (p?.country ?? digger.country ?? "").trim();
       setLocationEditValue({
         ...emptyLocationValue,
-        countryName: (digger.country ?? "").trim(),
-        regionName: (digger.state ?? "").split(",")[0]?.trim() || "",
-        cityName: (digger.city ?? "").trim(),
+        countryName: country,
+        regionName: state,
+        cityName: city,
       });
     }
     if (section === "service_location") {
@@ -554,11 +560,15 @@ const DiggerDetail = () => {
   useEffect(() => {
     if (sectionEditor.section !== "location" || !sectionEditor.open || !digger) return;
     let cancelled = false;
-    resolveLocationFromText(digger.country ?? null, digger.state ?? null, digger.city ?? null).then((resolved) => {
+    const p = digger.profiles as { city?: string | null; state?: string | null; country?: string | null } | undefined;
+    const country = p?.country ?? digger.country ?? null;
+    const state = p?.state ?? digger.state ?? null;
+    const city = p?.city ?? digger.city ?? null;
+    resolveLocationFromText(country, state, city).then((resolved) => {
       if (!cancelled) setLocationEditValue(resolved);
     });
     return () => { cancelled = true; };
-  }, [sectionEditor.section, sectionEditor.open, digger?.id, digger?.country, digger?.state, digger?.city]);
+  }, [sectionEditor.section, sectionEditor.open, digger?.id, digger?.country, digger?.state, digger?.city, digger?.profiles]);
 
   const serviceLocationCountries = useCountriesSearch(serviceLocationSearchDraft);
   const serviceLocationCountryList = serviceLocationCountries.data ?? [];
@@ -690,9 +700,13 @@ const DiggerDetail = () => {
     return Array.from(new Set(fromLegacy));
   };
 
+  // Prefer profiles (city, state, country) so location matches Account settings; fall back to digger_profiles then service location
   const getBaseLocationDisplay = (): string => {
-    const combined = [digger?.city, digger?.state, digger?.country].filter(Boolean).join(", ");
-    return combined || getServiceLocationDisplay() || "";
+    const p = digger?.profiles as { city?: string | null; state?: string | null; country?: string | null } | undefined;
+    const fromProfiles = p ? [p.city, p.state, p.country].filter(Boolean).join(", ") : "";
+    if (fromProfiles.trim()) return fromProfiles.trim();
+    const fromDigger = [digger?.city, digger?.state, digger?.country].filter(Boolean).join(", ");
+    return fromDigger || getServiceLocationDisplay() || "";
   };
 
   const socialPlatforms: { key: string; label: string; placeholder: string; domain: string }[] = [
@@ -1465,7 +1479,10 @@ const DiggerDetail = () => {
     || digger.profile_image_url
     || (isOwnProfile ? (currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture) : null)
     || DEFAULT_AVATAR;
-  const displayName = formatRealName(digger.profiles?.full_name) || digger.profile_name || "Main Profile";
+  // Prefer first_name + last_name from profiles (same as Account) so one user has one name everywhere
+  const profilesName = digger.profiles as { first_name?: string | null; last_name?: string | null; full_name?: string | null } | undefined;
+  const legalName = [profilesName?.first_name, profilesName?.last_name].filter(Boolean).join(" ").trim();
+  const displayName = formatRealName(legalName || profilesName?.full_name || undefined) || digger.profile_name || "Main Profile";
   // Username (handle): user-level profiles.handle first so synced with Gigger, then digger handle
   const profilesHandle = (digger.profiles as { handle?: string | null } | undefined)?.handle;
   const handleDisplay = (profilesHandle ? `@${String(profilesHandle).replace(/^@/, "")}` : "") || (digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "");
@@ -1479,8 +1496,10 @@ const DiggerDetail = () => {
     "Freelancer";
   // User-level location and time (same as Gigger profile when user has both roles)
   const profilesCountry = (digger.profiles as any)?.country ?? null;
+  const profilesState = (digger.profiles as any)?.state ?? null;
   const profilesTimezone = (digger.profiles as any)?.timezone ?? null;
   const locationCountry = profilesCountry || getServiceLocationCountry() || digger.country || "";
+  const locationState = profilesState ?? digger.state ?? null;
   const localTimeStr = (() => {
     if (profilesTimezone?.trim()) {
       try {
@@ -1492,10 +1511,10 @@ const DiggerDetail = () => {
           timeZoneName: "short",
         }).format(new Date());
       } catch {
-        return getLocalTimeForCountry(locationCountry);
+        return getLocalTimeForLocation(locationCountry, locationState);
       }
     }
-    return getLocalTimeForCountry(locationCountry);
+    return getLocalTimeForLocation(locationCountry, locationState);
   })();
   /** Get country code for location (e.g. "ES", "MX") - for flag image and display; prefer user-level profiles.country */
   const getLocationCountryCode = (): string => {

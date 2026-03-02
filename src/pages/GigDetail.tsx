@@ -24,7 +24,7 @@ import { useStripeConnect } from "@/hooks/useStripeConnect";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { CartDrawer } from "@/components/CartDrawer";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
-import { getLocalTimeForCountry } from "@/pages/DiggerDetail/utils";
+import { getLocalTimeForLocation } from "@/pages/DiggerDetail/utils";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { cn } from "@/lib/utils";
@@ -1655,11 +1655,11 @@ const GigDetail = () => {
                   {/* Local time first, then Joined below */}
                   <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                     {(formatClientLocalTime(p?.timezone ?? null) ||
-                      (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null)) && (
+                      (p?.country ?? gig.poster_country ? getLocalTimeForLocation(p?.country ?? gig.poster_country ?? "", p?.state ?? null) : null)) && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3 shrink-0" />
                         {formatClientLocalTime(p?.timezone ?? null) ||
-                          (p?.country ?? gig.poster_country ? getLocalTimeForCountry(p?.country ?? gig.poster_country ?? "") : null)}
+                          (p?.country ?? gig.poster_country ? getLocalTimeForLocation(p?.country ?? gig.poster_country ?? "", p?.state ?? null) : null)}
                       </span>
                     )}
                     {p?.created_at && (

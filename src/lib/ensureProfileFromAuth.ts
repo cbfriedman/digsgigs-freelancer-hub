@@ -11,17 +11,22 @@ export async function ensureProfileFromAuth(user: User): Promise<{ error: unknow
   if (!id) return { error: new Error("No user id") };
 
   const email = user.email ?? user.user_metadata?.email ?? "";
-  const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? "";
+  const fullName = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? "").trim();
   const avatarUrl =
     (user.user_metadata?.avatar_url as string) ??
     (user.user_metadata?.picture as string) ??
     null;
+  const parts = fullName ? fullName.split(/\s+/) : [];
+  const firstName = parts[0] ?? null;
+  const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
 
   const { error } = await supabase.from("profiles").upsert(
     {
       id,
       email: email || "unknown@temp.local",
       full_name: fullName || null,
+      first_name: firstName,
+      last_name: lastName,
       avatar_url: avatarUrl || null,
       user_type: "consumer",
     },

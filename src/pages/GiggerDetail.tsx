@@ -40,7 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
 import { resolveLocationFromText } from "@/hooks/useLocations";
 import { getCodeForCountryName } from "@/config/regionOptions";
-import { getLocalTimeForCountry, formatJoinDate, formatRealName } from "@/pages/DiggerDetail/utils";
+import { getLocalTimeForLocation, formatJoinDate, formatRealName } from "@/pages/DiggerDetail/utils";
 import { ensureGiggerProfile } from "@/lib/ensureGiggerProfile";
 import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
 import { GiggerRatingsList } from "@/components/GiggerRatingsList";
@@ -51,6 +51,8 @@ const DEFAULT_AVATAR = "/default-avatar.svg";
 interface ProfileRow {
   id: string;
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   about_me: string | null;
   cover_photo_url: string | null;
@@ -183,7 +185,7 @@ export default function GiggerDetail() {
       let gigList: (GigRow & { awarded_at?: string | null })[] = [];
       const fetchAll = async () => {
         const [profileRes, giggerRes, diggerRes, gigsRes] = await Promise.all([
-          (supabase.from("profiles") as any).select("id, full_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
+          (supabase.from("profiles") as any).select("id, full_name, first_name, last_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
           (supabase.from("gigger_profiles" as any)).select("user_id, show_to_diggers, average_rating, total_ratings").eq("user_id", userId).maybeSingle(),
           supabase.from("digger_profiles").select("profile_image_url, country, location").eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
           supabase.from("gigs").select("id, title, status, budget_min, budget_max, location, created_at, awarded_at, description, skills_required, poster_country, preferred_regions, work_type, timeline").eq("consumer_id", userId).order("created_at", { ascending: false }),
@@ -555,7 +557,9 @@ export default function GiggerDetail() {
   }
   if (!profile) return null;
 
-  const displayName = formatRealName(profile.full_name) || "Gigger";
+  // Prefer first_name + last_name (same as Account) so one user has one name everywhere
+  const legalName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  const displayName = formatRealName(legalName || profile.full_name || undefined) || "Gigger";
   const avatarUrl = (profile.avatar_url == null || String(profile.avatar_url).trim() === "") ? DEFAULT_AVATAR : (profile.avatar_url || diggerFallback?.profile_image_url || DEFAULT_AVATAR);
   const initials = displayName.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
   const handleDisplay = profile.handle?.trim() ? `@${String(profile.handle).replace(/^@/, "")}` : "";
@@ -563,7 +567,7 @@ export default function GiggerDetail() {
   const displayLocationText = (profileLocationParts.trim() || diggerFallback?.location?.trim() || profile.country || diggerFallback?.country || "").trim() || null;
   const locationCountry = displayLocationText ? (extractCountryFromLocation(displayLocationText) || displayLocationText) : (profile.country || diggerFallback?.country || null);
   const countryCode = locationCountry ? getCodeForCountryName(locationCountry) : "";
-  const localTime = formatLocalTime(profile.timezone) || (locationCountry ? (getLocalTimeForCountry(locationCountry) ?? "") : "");
+  const localTime = formatLocalTime(profile.timezone) || (locationCountry ? (getLocalTimeForLocation(profile.country ?? locationCountry, profile.state) ?? "") : "");
   const verificationItems = [
     { label: "ID verified", isActive: profile.id_verified != null ? !!profile.id_verified : false, icon: User },
     { label: "Phone", isActive: profile.phone_verified != null ? !!profile.phone_verified : !!(profile.phone?.trim() && profile.phone !== "Not specified"), icon: Phone },

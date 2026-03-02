@@ -29,6 +29,7 @@ import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
 import { loadStripe } from "@stripe/stripe-js";
+import { cn } from "@/lib/utils";
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
@@ -660,7 +661,7 @@ export function ContractMilestonesCard({
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-l-4 border-l-primary bg-muted/20">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
@@ -703,7 +704,7 @@ export function ContractMilestonesCard({
     }
     if ((isGigger || isAwardedDigger) && onSetupContractClick) {
       return (
-        <Card>
+        <Card className="border-l-4 border-l-primary bg-muted/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
@@ -743,7 +744,7 @@ export function ContractMilestonesCard({
     if (isAwardedDigger) {
       const hasSuggested = suggestedMilestonesFromBid && suggestedMilestonesFromBid.length > 0;
       return (
-        <Card>
+        <Card className="border-l-4 border-l-primary bg-muted/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
@@ -793,7 +794,7 @@ export function ContractMilestonesCard({
   const totalCount = contract.milestone_payments.length;
 
   return (
-    <Card>
+    <Card className="border-l-4 border-l-primary bg-muted/20">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
           <CreditCard className="h-5 w-5" />
@@ -935,11 +936,17 @@ export function ContractMilestonesCard({
           </div>
         )}
 
+        <div className="space-y-3">
         <TooltipProvider>
           {contract.milestone_payments.map((m) => (
             <div
               key={m.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-3 bg-muted/20"
+              className={cn(
+                "flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border-2 p-3 transition-colors",
+                m.status === "paid"
+                  ? "border-l-4 border-l-green-500 border-border bg-green-50 dark:bg-green-950/30 dark:border-green-800/50"
+                  : "border-l-4 border-l-primary border-border bg-muted/30"
+              )}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -952,6 +959,7 @@ export function ContractMilestonesCard({
                           ? "secondary"
                           : "outline"
                     }
+                    className={m.status === "paid" ? "bg-green-600 hover:bg-green-600 text-white border-0" : ""}
                   >
                     {m.status === "paid"
                       ? "Paid"
@@ -967,7 +975,7 @@ export function ContractMilestonesCard({
                   ${Number(m.amount).toFixed(2)}
                   {exclusiveWithDeposit && m.milestone_number === 1 && (
                     <span className="text-muted-foreground font-normal ml-2">
-                      (+ 7% deposit advance: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)})
+                      (+ 7% deposit: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)})
                     </span>
                   )}
                   {m.status === "paid" && m.released_at && (
@@ -976,24 +984,15 @@ export function ContractMilestonesCard({
                     </span>
                   )}
                 </p>
-                {/* First milestone: one clear line for 7% */}
-                {exclusiveWithDeposit && m.milestone_number === 1 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    7% deposit advance: ${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} — {isGigger ? "From your 15% deposit, released to the professional when you approve this first milestone (no extra charge)." : "From the client's 15% deposit, released to you when they approve this first milestone."}
-                  </p>
-                )}
-                {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && m.status === "paid" && (
-                  <p className="text-xs text-green-700 dark:text-green-400 mt-0.5 font-medium">
-                    {isDigger
-                      ? `You received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`
-                      : `Professional received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`}
-                  </p>
-                )}
-                {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && m.status !== "paid" && (
-                  <p className="text-sm font-medium text-foreground mt-1.5">
-                    {isDigger
-                      ? `You receive $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit).`
-                      : `When you approve: professional receives $${Number(m.amount).toFixed(2)} (milestone) + $${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (7% deposit) = $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} total.`}
+                {exclusiveWithDeposit && exclusiveWithDeposit.depositPaid && m.milestone_number === 1 && (
+                  <p className={cn("text-xs mt-0.5 font-medium", m.status === "paid" ? "text-green-700 dark:text-green-400" : "text-foreground")}>
+                    {m.status === "paid"
+                      ? (isDigger
+                          ? `You received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`
+                          : `Professional received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`)
+                      : (isDigger
+                          ? `You receive $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit).`
+                          : `On approve: professional gets $${Number(m.amount).toFixed(2)} + $${(exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (7% deposit) = $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} total.`)}
                   </p>
                 )}
                 {/* Gigger: spell out that professional gets milestone + 7% so it’s obvious */}
@@ -1020,6 +1019,7 @@ export function ContractMilestonesCard({
                       <Button
                         size="sm"
                         variant="secondary"
+                        className="hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
                         onClick={() => handleOpenSubmitWorkLogDialog(m.id)}
                         disabled={!!submittingId}
                       >
@@ -1120,6 +1120,7 @@ export function ContractMilestonesCard({
             </div>
           ))}
         </TooltipProvider>
+        </div>
 
         {isGigger && contract.status === "active" && (
           <div className="pt-2 border-t">
@@ -1325,7 +1326,7 @@ export function ContractMilestonesCard({
             <Button variant="outline" onClick={() => setSubmitWorkLogOpen(false)} disabled={submitWorkLogSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitWorkLogDialog} disabled={submitWorkLogSubmitting}>
+            <Button onClick={handleSubmitWorkLogDialog} disabled={submitWorkLogSubmitting} className="hover:bg-orange-600 hover:text-white transition-colors">
               {submitWorkLogSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
               Submit for review
             </Button>
