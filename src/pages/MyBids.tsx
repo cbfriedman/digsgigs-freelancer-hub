@@ -2,8 +2,9 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { ArrowLeft, MessageSquare, DollarSign, Calendar, FileText } from "lucide-react";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -235,39 +236,43 @@ const MyBids = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-10 max-w-2xl md:max-w-2xl lg:max-w-3xl">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
           <StripeConnectBanner />
-          <header className="mb-4 sm:mb-6 md:mb-8">
-            <Skeleton className="h-9 w-20 rounded-md -ml-2 mb-3 sm:mb-4" />
-            <Skeleton className="h-6 sm:h-7 w-24 rounded mb-1" />
-            <Skeleton className="h-4 w-[280px] max-w-full rounded" />
-          </header>
-          <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 sm:pb-4">
-            <Skeleton className="h-4 w-12 rounded mr-1" />
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <Skeleton className="h-9 w-40 mb-2 rounded" />
+              <Skeleton className="h-5 w-[320px] max-w-full rounded" />
+            </div>
+            <Skeleton className="h-10 w-36 rounded-md" />
+          </div>
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
             <Skeleton className="h-8 w-12 rounded-full" />
-            <Skeleton className="h-8 w-16 rounded-full" />
-            <Skeleton className="h-8 w-16 rounded-full" />
             <Skeleton className="h-8 w-14 rounded-full" />
-            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-24 rounded-full" />
             <Skeleton className="h-8 w-20 rounded-full" />
           </div>
-          <div className="space-y-4 sm:space-y-6" aria-busy="true" aria-label="Loading bids">
+          <div className="space-y-4" aria-busy="true" aria-label="Loading bids">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="border border-border rounded-lg overflow-hidden p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 sm:gap-4">
-                <div className="min-w-0 flex-1 flex flex-col gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Skeleton className="h-4 w-[70%] max-w-[24ch] rounded" />
-                    <Skeleton className="h-5 w-14 rounded-full" />
+              <Card key={i} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </div>
+                      <Skeleton className="h-4 w-full rounded" />
+                      <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                      <Skeleton className="h-9 w-24 rounded-md" />
+                      <Skeleton className="h-9 w-28 rounded-md" />
+                    </div>
                   </div>
-                  <Skeleton className="h-3 w-full rounded" />
-                  <Skeleton className="h-3 max-w-[90%] w-full rounded" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-col sm:items-end">
-                  <Skeleton className="h-9 w-20 rounded-md" />
-                  <Skeleton className="h-9 w-24 rounded-md" />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -277,29 +282,36 @@ const MyBids = () => {
 
   return (
     <>
-      <div className="min-h-screen">
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-10 max-w-2xl md:max-w-2xl lg:max-w-3xl">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
           <StripeConnectBanner />
-          <header className="mb-4 sm:mb-6 md:mb-8">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/")}
-              className="gap-1.5 -ml-2 text-muted-foreground mb-3 sm:mb-4 md:mb-4 min-h-[44px] sm:min-h-0 touch-manipulation"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-              Back
-            </Button>
-            <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-foreground">My Bids</h1>
-            <p className="text-xs sm:text-sm md:text-sm text-muted-foreground mt-0.5 md:mt-1">
+          <header className="mb-8 flex items-center justify-between">
+            <div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="gap-1.5 -ml-2 text-muted-foreground mb-2 min-h-[36px] sm:min-h-0"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+                Back
+              </Button>
+              <h1 className="text-4xl font-bold mb-2">My Bids</h1>
+              <p className="text-muted-foreground">
               {bids.length === 0
                 ? "Proposals you’ve submitted. Open a bid to view the gig and messages."
                 : `${bids.length} bid${bids.length === 1 ? "" : "s"} · newest first`}
-            </p>
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/browse-gigs")}>
+                Browse gigs
+              </Button>
+            </div>
           </header>
 
           {bids.length > 0 && (
-            <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 sm:pb-4">
+            <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
               <span className="text-xs font-medium text-muted-foreground mr-1 shrink-0">Filter:</span>
               {FILTER_OPTIONS.map(({ value, label }) => (
                 <Button
@@ -307,7 +319,7 @@ const MyBids = () => {
                   variant={statusFilter === value ? "default" : "outline"}
                   size="sm"
                   className={cn(
-                    "min-h-[36px] sm:min-h-0 h-8 sm:h-8 text-xs rounded-full touch-manipulation",
+                    "min-h-[36px] sm:min-h-0 h-8 text-xs rounded-full touch-manipulation",
                     statusFilter === value && "bg-primary text-primary-foreground"
                   )}
                   onClick={() => setStatusFilter(value)}
@@ -319,22 +331,24 @@ const MyBids = () => {
           )}
 
           {bids.length === 0 ? (
-            <section className="text-center py-8 sm:py-12 md:py-16 lg:py-20 border border-dashed border-border rounded-lg px-4 md:px-8">
-              <p className="text-muted-foreground text-sm md:text-base mb-4 md:mb-6">No bids yet.</p>
-              <Button variant="outline" size="sm" className="min-h-[44px] sm:min-h-0 md:text-sm touch-manipulation" onClick={() => navigate("/browse-gigs")}>
-                Browse gigs
-              </Button>
-            </section>
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground mb-4">No bids yet. Browse gigs and submit proposals.</p>
+                <Button onClick={() => navigate("/browse-gigs")}>
+                  Browse gigs
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="space-y-4 sm:space-y-8 md:space-y-10 lg:space-y-12">
+            <div className="space-y-4">
               {statusFilter === "all" ? (
                 <>
                   {filteredActiveBids.length > 0 && (
                     <section>
-                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         Active
                       </h2>
-                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                      <div className="space-y-4">
                         {filteredActiveBids.map((bid) => (
                           <BidRow
                             key={bid.id}
@@ -358,15 +372,15 @@ const MyBids = () => {
                             }
                           />
                         ))}
-                      </ul>
+                      </div>
                     </section>
                   )}
                   {filteredPastBids.length > 0 && (
                     <section>
-                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         Past
                       </h2>
-                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                      <div className="space-y-4">
                         {filteredPastBids.map((bid) => (
                           <BidRow
                             key={bid.id}
@@ -381,7 +395,7 @@ const MyBids = () => {
                             WithdrawComponent={undefined}
                           />
                         ))}
-                      </ul>
+                      </div>
                     </section>
                   )}
                 </>
@@ -389,10 +403,10 @@ const MyBids = () => {
                 <>
                   {filteredBidsWhenNotAll.length > 0 ? (
                     <section>
-                      <h2 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">
+                      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         {FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label} ({filteredBidsWhenNotAll.length})
                       </h2>
-                      <ul className="space-y-3 sm:space-y-2 md:space-y-3 lg:space-y-2">
+                      <div className="space-y-4">
                         {filteredBidsWhenNotAll.map((bid) => (
                           <BidRow
                             key={bid.id}
@@ -416,7 +430,7 @@ const MyBids = () => {
                             }
                           />
                         ))}
-                      </ul>
+                      </div>
                     </section>
                   ) : (
                     <p className="text-sm text-muted-foreground py-6 text-center">
@@ -548,51 +562,76 @@ function BidRow({
   };
 
   return (
-    <li className="border border-border rounded-lg overflow-hidden">
-      {/* Mobile: stack (content top, actions bottom right-aligned). Desktop: row (content left, actions right) */}
-      <div className="p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 sm:gap-4 md:gap-5">
-        <div className="min-w-0 flex-1 flex flex-col gap-1.5 md:gap-2 order-1 sm:order-none sm:self-stretch">
-          <div className="flex items-center gap-2 flex-wrap gap-y-1 shrink-0">
-            <span className="font-medium text-sm md:text-base truncate max-w-full sm:max-w-[30ch] md:max-w-[38ch] lg:max-w-[42ch]" title={bid.gigs.title}>
-              {bid.gigs.title.length > 50 ? `${bid.gigs.title.slice(0, 50)}…` : bid.gigs.title}
-            </span>
-            {gigStatus && (
-              <span className={cn(gigStatusClass, "shrink-0")}>{gigStatusLabel}</span>
+    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20">
+      <CardContent className="p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <h3 className="text-xl font-semibold truncate max-w-[30ch]" title={bid.gigs.title}>
+                  {bid.gigs.title.length > 30 ? `${bid.gigs.title.slice(0, 30)}…` : bid.gigs.title}
+                </h3>
+                {gigStatus && (
+                  <span className={cn(gigStatusClass, "shrink-0")}>{gigStatusLabel}</span>
+                )}
+              </div>
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                {rightBottomTooltip ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={cn("text-xs font-normal cursor-default", rightBottomClass)}>
+                        {rightBottomLabel}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[80vw] sm:max-w-none">
+                      <p className="text-xs">{rightBottomTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <span className={cn("text-xs font-normal", rightBottomClass)}>
+                    {rightBottomLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {bid.proposal && (
+              <p className="text-muted-foreground mb-4 line-clamp-2">
+                {bid.proposal.length > 150 ? `${bid.proposal.slice(0, 150).trim()}…` : bid.proposal}
+              </p>
             )}
+
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <DollarSign className="h-4 w-4" />
+                <span>Your bid: ${bid.amount.toLocaleString()}</span>
+              </div>
+              {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max) && (
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Bid {formatDistanceToNow(new Date(bid.created_at), { addSuffix: true })}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs md:text-sm text-muted-foreground shrink-0">
-            <span>Your bid: ${bid.amount.toLocaleString()}</span>
-            {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max) && (
-              <span className="hidden sm:inline">Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
-            )}
-            <span>{formatDistanceToNow(new Date(bid.created_at), { addSuffix: true })}</span>
-          </div>
-          {bid.proposal && (
-            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 lg:line-clamp-3 pt-0.5 sm:pt-0 sm:mt-auto">
-              {bid.proposal.length > 150 ? `${bid.proposal.slice(0, 150).trim()}…` : bid.proposal}
-            </p>
-          )}
         </div>
-        <div className="flex flex-col items-end sm:items-end justify-between gap-3 shrink-0 order-2 sm:order-none w-full sm:w-auto min-h-0 sm:min-h-[inherit] sm:self-stretch">
-          {/* Status at top on desktop; buttons at bottom */}
-          {rightBottomTooltip ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={cn("text-xs md:text-sm font-normal cursor-default text-right shrink-0 sm:pt-0", rightBottomClass)}>
-                  {rightBottomLabel}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-[80vw] sm:max-w-none">
-                <p className="text-xs">{rightBottomTooltip}</p>
-              </TooltipContent>
-            </Tooltip>
+
+        {/* Action row: status (optional) + buttons */}
+        <div className="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-4">
+          {bid.withdrawn_at != null && bid.withdrawal_penalty != null ? (
+            <p className="text-xs text-muted-foreground">
+              Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
+            </p>
           ) : (
-            <span className={cn("text-xs md:text-sm font-normal text-right shrink-0 sm:pt-0", rightBottomClass)}>
-              {rightBottomLabel}
-            </span>
+            <span />
           )}
-          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-2.5 w-full sm:w-auto mt-auto">
-            <Button variant="outline" size="sm" className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs touch-manipulation" onClick={onView}>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
+            <Button variant="outline" onClick={onView} className="min-w-0">
+              <FileText className="mr-2 h-4 w-4" />
               View gig
             </Button>
             {diggerProfileId && isThisBidAwarded && (
@@ -600,7 +639,7 @@ function BidRow({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 touch-manipulation",
+                  "min-w-0 gap-1.5",
                   showOrangeChat &&
                     "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 )}
@@ -614,12 +653,12 @@ function BidRow({
               >
                 {chatLoading ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Chat
                   </>
                 ) : (
                   <>
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                    <MessageSquare className="mr-2 h-4 w-4" />
                     Chat
                   </>
                 )}
@@ -629,23 +668,23 @@ function BidRow({
               <>
                 <Button
                   size="sm"
-                  className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white touch-manipulation"
+                  className="min-w-0 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
                   onClick={handleAcceptAward}
                   disabled={acceptLoading || declineLoading}
                   title="Accept this award and get hired"
                 >
-                  {acceptLoading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
+                  {acceptLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                   Accept
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="min-h-[44px] sm:h-8 sm:min-h-0 md:h-9 md:text-sm text-xs gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive touch-manipulation"
+                  className="min-w-0 gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
                   onClick={handleDeclineAward}
                   disabled={declineLoading || acceptLoading}
                   title="Decline this award (you will be charged a $100 penalty)"
                 >
-                  {declineLoading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                  {declineLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
                   Decline
                 </Button>
               </>
@@ -653,13 +692,8 @@ function BidRow({
             {WithdrawComponent}
           </div>
         </div>
-      </div>
-      {bid.withdrawn_at != null && bid.withdrawal_penalty != null && (
-        <div className="px-3 sm:px-4 md:px-5 lg:px-6 py-2 md:py-2.5 bg-muted/40 border-t border-border text-xs md:text-sm text-muted-foreground">
-          Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
-        </div>
-      )}
-    </li>
+      </CardContent>
+    </Card>
   );
 }
 
