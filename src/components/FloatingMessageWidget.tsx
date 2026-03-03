@@ -45,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -64,7 +65,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
-import { OPEN_FLOATING_CHAT_EVENT, AWARD_ACCEPTED_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
+import { OPEN_FLOATING_CHAT_EVENT, AWARD_ACCEPTED_EVENT, REFETCH_GIG_CHAT_MESSAGES_EVENT, type OpenFloatingChatDetail } from "@/lib/openFloatingChat";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
@@ -132,6 +133,8 @@ export function FloatingMessageWidget() {
   const [cancelAwardLoading, setCancelAwardLoading] = useState<Record<string, boolean>>({});
   const [acceptLoading, setAcceptLoading] = useState<Record<string, boolean>>({});
   const [declineLoading, setDeclineLoading] = useState<Record<string, boolean>>({});
+  const [declineDialogConvId, setDeclineDialogConvId] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
 
   useEffect(() => {
     const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteChatId;
@@ -184,6 +187,7 @@ export function FloatingMessageWidget() {
   openChatIdsRef.current = new Set(openChats.map((c) => c.id));
   const openChatsRef = useRef<RecentConversation[]>([]);
   openChatsRef.current = openChats;
+  const loadMessagesRef = useRef<(convId: string, showLoader?: boolean) => void>(() => {});
   const [partnerTypingMap, setPartnerTypingMap] = useState<Record<string, boolean>>({});
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
@@ -309,6 +313,7 @@ export function FloatingMessageWidget() {
     },
     [user?.id, scrollToEnd]
   );
+  loadMessagesRef.current = loadMessages;
 
   const subscribeToMessages = useCallback((convId: string) => {
     if (channelsRef.current[convId]) return;
@@ -596,6 +601,22 @@ export function FloatingMessageWidget() {
     window.addEventListener(AWARD_ACCEPTED_EVENT, handler);
     return () => window.removeEventListener(AWARD_ACCEPTED_EVENT, handler);
   }, []);
+
+  // After Gigger returns from Checkout: refetch messages for this gig's conversation so the award bubble appears
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { gigId, diggerId } = (e as CustomEvent<{ gigId: string; diggerId: string }>).detail ?? {};
+      if (!gigId || !diggerId) return;
+      const currentOpenChats = openChatsRef.current;
+      const conv = currentOpenChats.find((c) => c.gigId === gigId && c.diggerId === diggerId);
+      if (conv) {
+        loadMessagesRef.current(conv.id, false);
+        if (conv.gigId) refetchGigStatus(conv.id, conv.gigId);
+      }
+    };
+    window.addEventListener(REFETCH_GIG_CHAT_MESSAGES_EVENT, handler as EventListener);
+    return () => window.removeEventListener(REFETCH_GIG_CHAT_MESSAGES_EVENT, handler as EventListener);
+  }, [refetchGigStatus]);
 
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));
@@ -1909,36 +1930,13 @@ export function FloatingMessageWidget() {
                           size="sm"
                           variant="outline"
                           disabled={acceptLoading[conv.id] || declineLoading[conv.id] || bidAlreadyAccepted}
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            if (!conv.gigId || !conv.diggerId) return;
-                            setDeclineLoading((p) => ({ ...p, [conv.id]: true }));
-                            try {
-                              await invokeEdgeFunction(supabase, "digger-decline-award", {
-                                body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId, reason: "Declined from chat" },
-                              });
-                              toast.success("Award declined.");
-                              setGigStatusMap((prev) => ({
-                                ...prev,
-                                [conv.id]: {
-                                  ...prev[conv.id],
-                                  status: prev[conv.id]?.status ?? "awarded",
-                                  awarded_bid_id: prev[conv.id]?.awarded_bid_id ?? bidId,
-                                  awarded_digger_id: prev[conv.id]?.awarded_digger_id ?? conv.diggerId,
-                                  bid_status: "declined",
-                                },
-                              }));
-                              refetchGigStatus(conv.id, conv.gigId);
-                              window.dispatchEvent(new Event("recent-conversations-refresh"));
-                              loadMessages(conv.id, false);
-                            } catch (err: any) {
-                              toast.error(err?.message ?? "Failed to decline");
-                            } finally {
-                              setDeclineLoading((p) => ({ ...p, [conv.id]: false }));
-                            }
+                            setDeclineDialogConvId(conv.id);
+                            setDeclineReason("");
                           }}
                         >
-                          {declineLoading[conv.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                          <X className="h-4 w-4" />
                           Decline
                         </Button>
                       </div>
@@ -2447,6 +2445,80 @@ export function FloatingMessageWidget() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Header Decline: "Decline this job?" modal */}
+      {(() => {
+        const convId = declineDialogConvId;
+        const conv = convId ? openChats.find((c) => c.id === convId) : null;
+        const bidId = conv && convId ? gigStatusMap[convId]?.awarded_bid_id : undefined;
+        const loading = convId ? declineLoading[convId] : false;
+        return (
+          <Dialog open={!!convId} onOpenChange={(open) => { if (!open) { setDeclineDialogConvId(null); setDeclineReason(""); } }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Decline this job?</DialogTitle>
+                <DialogDescription>
+                  The award will be released and the client can choose someone else. If they paid a 15% deposit, they get a full refund. If you decline, you will be charged a $100 penalty. You can optionally give a short reason.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                placeholder="Reason (optional)"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                className="min-h-[80px] resize-y"
+                maxLength={500}
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setDeclineDialogConvId(null); setDeclineReason(""); }} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={loading || !conv?.gigId || !conv?.diggerId || !bidId}
+                  onClick={async () => {
+                    if (!convId || !conv?.gigId || !conv?.diggerId || !bidId) return;
+                    setDeclineLoading((p) => ({ ...p, [convId]: true }));
+                    try {
+                      await invokeEdgeFunction(supabase, "digger-decline-award", {
+                        body: { bidId, gigId: conv.gigId, diggerId: conv.diggerId, reason: declineReason.trim() || "Declined from chat" },
+                      });
+                      toast.success("Award declined.");
+                      setGigStatusMap((prev) => ({
+                        ...prev,
+                        [convId]: {
+                          ...prev[convId],
+                          status: prev[convId]?.status ?? "awarded",
+                          awarded_bid_id: prev[convId]?.awarded_bid_id ?? bidId,
+                          awarded_digger_id: prev[convId]?.awarded_digger_id ?? conv.diggerId,
+                          bid_status: "declined",
+                        },
+                      }));
+                      refetchGigStatus(convId, conv.gigId);
+                      window.dispatchEvent(new Event("recent-conversations-refresh"));
+                      loadMessages(convId, false);
+                      setDeclineDialogConvId(null);
+                      setDeclineReason("");
+                    } catch (err: any) {
+                      toast.error(err?.message ?? "Failed to decline");
+                    } finally {
+                      setDeclineLoading((p) => ({ ...p, [convId]: false }));
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Declining...
+                    </>
+                  ) : (
+                    "Decline award"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }

@@ -562,20 +562,20 @@ function BidRow({
   };
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20">
-      <CardContent className="p-6">
+    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h3 className="text-xl font-semibold truncate max-w-[30ch]" title={bid.gigs.title}>
-                  {bid.gigs.title.length > 30 ? `${bid.gigs.title.slice(0, 30)}…` : bid.gigs.title}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center mb-3">
+              <div className="flex items-start justify-between gap-2 min-w-0 flex-1">
+                <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words" title={bid.gigs.title}>
+                  {bid.gigs.title}
                 </h3>
                 {gigStatus && (
                   <span className={cn(gigStatusClass, "shrink-0")}>{gigStatusLabel}</span>
                 )}
               </div>
-              <div className="ml-auto flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
                 {rightBottomTooltip ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -596,12 +596,12 @@ function BidRow({
             </div>
 
             {bid.proposal && (
-              <p className="text-muted-foreground mb-4 line-clamp-2">
+              <p className="text-muted-foreground mb-4 line-clamp-2 text-sm break-words">
                 {bid.proposal.length > 150 ? `${bid.proposal.slice(0, 150).trim()}…` : bid.proposal}
               </p>
             )}
 
-            <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <DollarSign className="h-4 w-4" />
                 <span>Your bid: ${bid.amount.toLocaleString()}</span>
@@ -621,16 +621,16 @@ function BidRow({
         </div>
 
         {/* Action row: status (optional) + buttons */}
-        <div className="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-4">
+        <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {bid.withdrawn_at != null && bid.withdrawal_penalty != null ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground order-last sm:order-none w-full sm:w-auto">
               Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
             </p>
           ) : (
-            <span />
+            <span className="hidden sm:inline" />
           )}
-          <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
-            <Button variant="outline" onClick={onView} className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 justify-end sm:ml-auto min-h-9">
+            <Button variant="outline" size="sm" onClick={onView} className="min-w-0 min-h-9">
               <FileText className="mr-2 h-4 w-4" />
               View gig
             </Button>
@@ -639,7 +639,7 @@ function BidRow({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "min-w-0 gap-1.5",
+                  "min-w-0 min-h-9 gap-1.5",
                   showOrangeChat &&
                     "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 )}
@@ -668,23 +668,23 @@ function BidRow({
               <>
                 <Button
                   size="sm"
-                  className="min-w-0 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  className="min-w-0 min-h-9 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
                   onClick={handleAcceptAward}
                   disabled={acceptLoading || declineLoading}
                   title="Accept this award and get hired"
                 >
-                  {acceptLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                  {acceptLoading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
                   Accept
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="min-w-0 gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                  className="min-w-0 min-h-9 gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
                   onClick={handleDeclineAward}
                   disabled={declineLoading || acceptLoading}
                   title="Decline this award (you will be charged a $100 penalty)"
                 >
-                  {declineLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                  {declineLoading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
                   Decline
                 </Button>
               </>

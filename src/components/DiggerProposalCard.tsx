@@ -203,16 +203,16 @@ export function DiggerProposalCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-shadow",
+        "overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-shadow w-full min-w-0",
         isPinned && "border-l-4 border-l-primary"
       )}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="px-4 py-3 sm:px-6 sm:pb-3">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           {/* Left: Digger info — bigger avatar with online/offline, real name + username, headline, location + flag */}
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4 min-w-0 flex-1">
             <div className="relative shrink-0">
-              <Avatar className="h-20 w-20 rounded-xl border-2 border-border/50">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-border/50">
                 {(diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url) ? (
                   <img
                     src={diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url || ""}
@@ -227,20 +227,20 @@ export function DiggerProposalCard({
               </Avatar>
               <span
                 className={cn(
-                  "absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-background",
+                  "absolute bottom-0 right-0 h-3 w-3 sm:h-4 sm:w-4 rounded-full border-2 border-background",
                   isOnline ? "bg-green-500" : "bg-muted-foreground/50"
                 )}
                 aria-label={isOnline ? "Online" : "Offline"}
                 title={isOnline ? "Online" : "Offline"}
               />
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-2">
-                {realName && <span className="font-semibold text-foreground">{realName}</span>}
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                {realName && <span className="font-semibold text-foreground truncate max-w-[140px] sm:max-w-none">{realName}</span>}
                 {handle ? (
                   <Link
                     to={diggerProfileUrl}
-                    className="text-sm text-primary hover:underline font-medium"
+                    className="text-sm text-primary hover:underline font-medium truncate max-w-[120px] sm:max-w-none inline-block"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {handle}
@@ -248,7 +248,7 @@ export function DiggerProposalCard({
                 ) : (
                   <Link
                     to={diggerProfileUrl}
-                    className="text-sm text-primary hover:underline font-medium"
+                    className="text-sm text-primary hover:underline font-medium shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View profile
@@ -267,11 +267,11 @@ export function DiggerProposalCard({
                 )}
               </div>
               {professionalHeadline && (
-                <p className="mt-1 font-medium text-foreground/90 text-sm leading-tight">
+                <p className="mt-1 font-medium text-foreground/90 text-sm leading-tight line-clamp-2 sm:line-clamp-none">
                   {professionalHeadline}
                 </p>
               )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
                 {locationDisplay && (
                   <span className="flex items-center gap-1.5">
                     {countryCode ? (
@@ -306,15 +306,15 @@ export function DiggerProposalCard({
               </div>
             </div>
           </div>
-          {/* Right: Price & delivery */}
-          <div className="flex flex-col items-end gap-1 sm:shrink-0">
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-xl font-bold text-foreground">{priceLabel}</span>
+          {/* Right: Project budget & period */}
+          <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+            <div className="flex items-center gap-1 justify-end">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+              <span className="text-lg sm:text-xl font-bold text-foreground truncate">{priceLabel}</span>
             </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              {bid.timeline}
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground justify-end">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{bid.timeline}</span>
             </div>
             {responseTime && (
               <p className="text-xs text-muted-foreground">Replies {responseTime}</p>
@@ -322,20 +322,20 @@ export function DiggerProposalCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 pt-0">
+      <CardContent className="space-y-4 pt-0 px-4 pb-4 sm:px-6 sm:pb-6">
         {/* Project title (gig title) */}
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Project</p>
-          <p className="font-medium text-foreground">{gigTitle}</p>
+          <p className="font-medium text-foreground break-words">{gigTitle}</p>
         </div>
 
         {/* Cover letter with View more / View less */}
-        <div>
+        <div className="min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-1.5">
-            <FileText className="w-3.5 h-3.5 text-primary" />
+            <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cover letter</p>
           </div>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed break-words">
             {displayProposal}
           </p>
           {truncated && (
@@ -360,9 +360,9 @@ export function DiggerProposalCard({
         </div>
 
         {/* Status & actions — clear labels, tooltips, reminders, and Chatting indicator */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/50">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between pt-2 border-t border-border/50">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
               {isPinned && (
                 <span className="text-xs text-primary">Pinned</span>
               )}
@@ -432,7 +432,7 @@ export function DiggerProposalCard({
               ) : null)}
           </div>
           {isOwner && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 justify-end sm:justify-start">
               {onPinToggle && (
                 <Button
                   variant={isPinned ? "secondary" : "ghost"}
@@ -454,7 +454,7 @@ export function DiggerProposalCard({
                   )}
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleChat} disabled={chatLoading} className="gap-1.5 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600">
+              <Button variant="outline" size="sm" onClick={handleChat} disabled={chatLoading} className="gap-1.5 min-h-9 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600">
                 {chatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
                 Chat
               </Button>
@@ -539,16 +539,16 @@ export function DiggerProposalCard({
             </div>
           )}
           {showDiggerActions && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {gigStatus === "open" && !(bid.status === "accepted" && bid.awarded) && onEditProposal && (
-                <Button variant="outline" size="sm" className="gap-2" onClick={onEditProposal}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit proposal
+                <Button variant="outline" size="sm" className="gap-2 min-h-9" onClick={onEditProposal}>
+                  <Pencil className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Edit proposal</span>
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/my-bids")}>
-                View in My Bids
-                <ArrowRight className="h-3.5 w-3.5" />
+              <Button variant="outline" size="sm" className="gap-2 min-h-9" onClick={() => navigate("/my-bids")}>
+                <span className="truncate">View in My Bids</span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0" />
               </Button>
               {onMessageClient && canMessageClient && (
                 <Button
@@ -563,7 +563,7 @@ export function DiggerProposalCard({
                   Chat
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate("/browse-gigs")}>
+              <Button variant="ghost" size="sm" className="gap-2 min-h-9" onClick={() => navigate("/browse-gigs")}>
                 Browse more gigs
               </Button>
             </div>

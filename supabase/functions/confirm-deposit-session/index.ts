@@ -76,10 +76,11 @@ serve(async (req) => {
     const gigId = session.metadata.gig_id as string;
     const bidId = session.metadata.bid_id as string;
     const diggerId = session.metadata.digger_id as string;
+    const giggerId = session.metadata.gigger_id as string;
 
-    if (!depositId || !gigId || !bidId || !diggerId) {
+    if (!depositId || !gigId || !bidId || !diggerId || !giggerId) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing metadata (deposit_id, gig_id, bid_id, digger_id)" }),
+        JSON.stringify({ success: false, error: "Missing metadata (deposit_id, gig_id, bid_id, digger_id, gigger_id)" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
@@ -101,7 +102,7 @@ serve(async (req) => {
     if (deposit.status === "paid") {
       logStep("Deposit already paid (idempotent)", { depositId });
       return new Response(
-        JSON.stringify({ success: true, alreadyCompleted: true }),
+        JSON.stringify({ success: true, alreadyCompleted: true, digger_id: diggerId }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -178,10 +179,43 @@ serve(async (req) => {
       });
     }
 
+    // Insert award system message into chat (same as webhook / saved-card path) so the message shows in the message box
+    try {
+      const { data: bidRow } = await supabaseClient.from("bids").select("amount").eq("id", bidId).single();
+      const amount = bidRow?.amount ?? null;
+      let { data: conv } = await supabaseClient
+        .from("conversations")
+        .select("id")
+        .eq("gig_id", gigId)
+        .eq("digger_id", diggerId)
+        .eq("consumer_id", giggerId)
+        .is("admin_id", null)
+        .maybeSingle();
+      if (!conv?.id) {
+        const { data: newConv } = await supabaseClient
+          .from("conversations")
+          .insert({ gig_id: gigId, digger_id: diggerId, consumer_id: giggerId })
+          .select("id")
+          .single();
+        conv = newConv;
+      }
+      if (conv?.id) {
+        await supabaseClient.from("messages").insert({
+          conversation_id: conv.id,
+          sender_id: giggerId,
+          content: "You've been awarded this gig. Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty.",
+          metadata: { _type: "award_event", event: "awarded", bid_id: bidId, gig_id: gigId, amount },
+        });
+        logStep("Award system message inserted into chat");
+      }
+    } catch (chatErr) {
+      logStep("Failed to insert award chat message (non-blocking)", { error: chatErr instanceof Error ? chatErr.message : String(chatErr) });
+    }
+
     logStep("Award completed via confirm-deposit-session");
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, digger_id: diggerId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -30,7 +30,7 @@ import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
-import { openFloatingChat, dispatchAwardAccepted } from "@/lib/openFloatingChat";
+import { openFloatingChat, dispatchAwardAccepted, dispatchRefetchGigChatMessages } from "@/lib/openFloatingChat";
 import {
   Dialog,
   DialogContent,
@@ -221,7 +221,7 @@ const GigDetail = () => {
     let cancelled = false;
     (async () => {
       try {
-        const result = await invokeEdgeFunction<{ success?: boolean; alreadyCompleted?: boolean; error?: string }>(
+        const result = await invokeEdgeFunction<{ success?: boolean; alreadyCompleted?: boolean; digger_id?: string; error?: string }>(
           supabase,
           "confirm-deposit-session",
           { body: { session_id: sessionId } }
@@ -232,6 +232,10 @@ const GigDetail = () => {
           setSearchParams({}, { replace: true });
           if (!result.alreadyCompleted) {
             toast({ title: "Payment confirmed", description: "The professional has been awarded this gig." });
+          }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("recent-conversations-refresh"));
+            if (result.digger_id) dispatchRefetchGigChatMessages(id, result.digger_id);
           }
         } else if (result?.error) {
           toast({ title: "Could not confirm payment", description: result.error, variant: "destructive" });

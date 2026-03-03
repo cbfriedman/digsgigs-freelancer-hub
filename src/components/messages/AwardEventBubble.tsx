@@ -2,6 +2,15 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Trophy, CheckCircle, XCircle, Loader2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
@@ -45,8 +54,11 @@ export function AwardEventBubble({
   const { toast } = useToast();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
-  const [requiresAcceptance, setRequiresAcceptance] = useState(false);
+  // Default true for awarded+Digger so Accept/Decline show while bid loads (or if fetch fails)
+  const [requiresAcceptance, setRequiresAcceptance] = useState(() => event === "awarded" && !!isDigger);
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
 
   useEffect(() => {
     if (event !== "awarded" || !isDigger || !bidId) return;
@@ -99,12 +111,16 @@ export function AwardEventBubble({
     }
   };
 
-  const handleDecline = async () => {
-    if (!bidId || !gigId) return;
+  const handleDeclineClick = () => {
     if (alreadyAccepted) {
       toast({ title: "Already accepted", description: "You cannot decline after accepting this award.", variant: "destructive" });
       return;
     }
+    setDeclineDialogOpen(true);
+  };
+
+  const handleDeclineConfirm = async () => {
+    if (!bidId || !gigId) return;
     const diggerId = diggerIdProp ?? (await getDiggerIdFromBid(bidId));
     if (!diggerId) {
       toast({ title: "Error", description: "Could not find bid", variant: "destructive" });
@@ -113,9 +129,11 @@ export function AwardEventBubble({
     setDeclining(true);
     try {
       await invokeEdgeFunction(supabase, "digger-decline-award", {
-        body: { bidId, gigId, diggerId, reason: "Declined from chat" },
+        body: { bidId, gigId, diggerId, reason: declineReason.trim() || "Declined from chat" },
       });
       toast({ title: "Award declined", description: "The client has been notified." });
+      setDeclineDialogOpen(false);
+      setDeclineReason("");
       onDecline?.();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Failed to decline", variant: "destructive" });
@@ -160,7 +178,7 @@ export function AwardEventBubble({
               size="sm"
               variant="outline"
               className="gap-1.5"
-              onClick={handleDecline}
+              onClick={handleDeclineClick}
               disabled={accepting || declining || accepted}
               title={accepted ? "Cannot decline after accepting" : undefined}
             >
@@ -171,6 +189,38 @@ export function AwardEventBubble({
         )}
         <span className="text-[10px] text-muted-foreground">{timeStr}</span>
       </div>
+      <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Decline this job?</DialogTitle>
+            <DialogDescription>
+              The award will be released and the client can choose someone else. If they paid a 15% deposit, they get a full refund. If you decline, you will be charged a $100 penalty. You can optionally give a short reason.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Reason (optional)"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            className="min-h-[80px] resize-y"
+            maxLength={500}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeclineDialogOpen(false)} disabled={declining}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeclineConfirm} disabled={declining}>
+              {declining ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Declining...
+                </>
+              ) : (
+                "Decline award"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

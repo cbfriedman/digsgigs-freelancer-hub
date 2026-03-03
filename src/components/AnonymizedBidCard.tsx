@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AnonymizedDiggerCard } from "./AnonymizedDiggerCard";
 
 const PROPOSAL_PREVIEW_LENGTH = 280;
@@ -87,49 +88,49 @@ export const AnonymizedBidCard = ({
     : bid.proposal.slice(0, PROPOSAL_PREVIEW_LENGTH) + "...";
 
   return (
-    <Card className={isLowestBid ? "border-primary border-2 shadow-lg" : ""}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between flex-wrap gap-4">
+    <Card className={cn("w-full min-w-0 overflow-hidden", isLowestBid && "border-primary border-2 shadow-lg")}>
+      <CardHeader className="px-4 py-3 sm:px-6 sm:pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:flex-wrap">
           {/* Pricing Model Badge */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {bid.pricing_model === 'success_based' ? (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800">
-                <Percent className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800 text-xs">
+                <Percent className="w-3 h-3 mr-1 shrink-0" />
                 Exclusive (2% fee)
               </Badge>
             ) : (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                <CreditCard className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs">
+                <CreditCard className="w-3 h-3 mr-1 shrink-0" />
                 Non-Exclusive
               </Badge>
             )}
             {isLowestBid && bid.status === 'pending' && (
-              <Badge variant="default" className="bg-primary">
+              <Badge variant="default" className="bg-primary text-xs">
                 Lowest Bid
               </Badge>
             )}
           </div>
           
           {/* Cost Display */}
-          <div className="text-right">
-            <div className="flex items-center gap-1 justify-end">
-              <DollarSign className="w-5 h-5 text-primary" />
-              <span className={`text-2xl font-bold ${isLowestBid ? 'text-primary' : 'text-foreground'}`}>
+          <div className="flex flex-col items-start sm:items-end sm:text-right shrink-0">
+            <div className="flex items-center gap-1">
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
+              <span className={`text-xl sm:text-2xl font-bold truncate ${isLowestBid ? 'text-primary' : 'text-foreground'}`}>
                 {hasRange 
                   ? `${displayMin.toLocaleString()} – ${displayMax.toLocaleString()}`
                   : bid.amount.toLocaleString()
                 }
               </span>
             </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground justify-end mt-1">
-              <Clock className="w-3.5 h-3.5" />
-              {bid.timeline}
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground mt-0.5">
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{bid.timeline}</span>
             </div>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 pb-4 sm:px-6 sm:pb-6">
         {/* Digger profile: real name & photo when available */}
         <AnonymizedDiggerCard
           bidderNumber={bidderNumber}
@@ -157,12 +158,12 @@ export const AnonymizedBidCard = ({
         <Separator />
         
         {/* Cover letter / Proposal with View more */}
-        <div>
+        <div className="min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-primary" />
+            <FileText className="w-4 h-4 text-primary shrink-0" />
             <h4 className="font-semibold uppercase tracking-wide text-muted-foreground text-xs">Cover letter</h4>
           </div>
-          <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
+          <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed break-words">
             {displayProposal}
           </p>
           {proposalTruncated && (
@@ -189,8 +190,8 @@ export const AnonymizedBidCard = ({
         <Separator />
         
         {/* Status and Actions */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-wrap">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <Badge variant={
               bid.status === 'accepted' ? 'default' :
               bid.status === 'rejected' ? 'destructive' :
@@ -212,7 +213,7 @@ export const AnonymizedBidCard = ({
           </div>
           
           {/* Action Buttons (passed as children for flexibility) */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 justify-end sm:justify-start [&_button]:min-h-9">
             {children}
           </div>
         </div>

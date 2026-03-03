@@ -65,10 +65,10 @@ export const AnonymizedDiggerCard = ({
   const useRealIdentity = showRealIdentity || (displayName && displayName.trim().length > 0);
 
   return (
-    <Card className="border-l-4 border-l-primary/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-14 w-14 border-2 border-primary/20">
+    <Card className="border-l-4 border-l-primary/30 w-full min-w-0 overflow-hidden">
+      <CardHeader className="pb-3 px-4 sm:px-6">
+        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+          <Avatar className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 border-2 border-primary/20">
             {profileImageUrl ? (
               <AvatarImage src={profileImageUrl} alt={nameToShow} className="object-cover" />
             ) : null}
@@ -79,9 +79,9 @@ export const AnonymizedDiggerCard = ({
             </AvatarFallback>
           </Avatar>
           
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-lg font-semibold text-foreground">
+              <h4 className="text-base sm:text-lg font-semibold text-foreground truncate">
                 {nameToShow}
               </h4>
               {isVerified && (
@@ -109,7 +109,7 @@ export const AnonymizedDiggerCard = ({
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Rating */}
