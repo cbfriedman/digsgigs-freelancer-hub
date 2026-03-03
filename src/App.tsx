@@ -108,7 +108,6 @@ import ApplyDigger from "./pages/ApplyDigger";
 import FBDiggerLanding from "./pages/FBDiggerLanding";
 import ApplyDiggerFB from "./pages/ApplyDiggerFB";
 import ApplyLanding from "./pages/ApplyLanding";
-import PaymentMethods from "./pages/PaymentMethods";
 import BidTemplatePreview from "./pages/BidTemplatePreview";
 import LeadUnlockPreview from "./pages/LeadUnlockPreview";
 import Subscribe from "./pages/Subscribe";
@@ -260,7 +259,7 @@ const router = createBrowserRouter(
       },
       {
         path: "/payment-methods",
-        element: <ProtectedRoute requireVerified={true}><PaymentMethods /></ProtectedRoute>,
+        element: <Navigate to="/account" replace />,
       },
       {
         path: "/browse-diggers",

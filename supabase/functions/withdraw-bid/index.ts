@@ -99,10 +99,11 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    // Create Stripe checkout session for penalty payment
+    // Create Stripe checkout session for penalty payment (card or US bank)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      payment_method_types: ["card", "us_bank_account"],
       line_items: [
         {
           price_data: {

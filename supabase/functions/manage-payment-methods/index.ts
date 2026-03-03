@@ -66,65 +66,85 @@ serve(async (req) => {
     logStep("Using Stripe customer", { customerId });
 
     if (req.method === 'GET') {
-      // List payment methods
+      // List payment methods: card and us_bank_account
       logStep("Listing payment methods");
-      
-      const paymentMethods = await stripe.paymentMethods.list({
-        customer: customerId,
-        type: 'card',
-      });
+      const [cardsRes, bankRes] = await Promise.all([
+        stripe.paymentMethods.list({ customer: customerId, type: 'card' }),
+        stripe.paymentMethods.list({ customer: customerId, type: 'us_bank_account' }),
+      ]);
+      const allPms = [...cardsRes.data, ...bankRes.data];
 
-      // Sync with database
-      const dbPaymentMethods = [];
-      for (const pm of paymentMethods.data) {
+      const dbPaymentMethods: any[] = [];
+      for (const pm of allPms) {
+        const { data: existing } = await supabaseAdmin
+          .from('payment_methods')
+          .select('id, is_default')
+          .eq('stripe_payment_method_id', pm.id)
+          .single();
+
         if (pm.type === 'card' && pm.card) {
-          // Check if exists in database
-          const { data: existing } = await supabaseAdmin
-            .from('payment_methods')
-            .select('id, is_default')
-            .eq('stripe_payment_method_id', pm.id)
-            .single();
-
-          const paymentMethodData = {
+          if (!existing) {
+            await supabaseAdmin.from('payment_methods').insert({
+              user_id: user.id,
+              stripe_payment_method_id: pm.id,
+              stripe_customer_id: customerId,
+              type: 'card',
+              card_brand: pm.card.brand,
+              card_last4: pm.card.last4,
+              card_exp_month: pm.card.exp_month,
+              card_exp_year: pm.card.exp_year,
+              is_default: false,
+            });
+          }
+          dbPaymentMethods.push({
             id: pm.id,
-            type: pm.type,
+            type: 'card',
             card: {
               brand: pm.card.brand,
               last4: pm.card.last4,
               exp_month: pm.card.exp_month,
               exp_year: pm.card.exp_year,
             },
-            is_default: existing?.is_default || false,
+            us_bank_account: undefined,
+            is_default: existing?.is_default ?? false,
             created: pm.created,
-          };
-
-          // If not in database, insert it
+          });
+        } else if (pm.type === 'us_bank_account' && pm.us_bank_account) {
           if (!existing) {
-            await supabaseAdmin
-              .from('payment_methods')
-              .insert({
-                user_id: user.id,
-                stripe_payment_method_id: pm.id,
-                stripe_customer_id: customerId,
-                type: 'card',
-                card_brand: pm.card.brand,
-                card_last4: pm.card.last4,
-                card_exp_month: pm.card.exp_month,
-                card_exp_year: pm.card.exp_year,
-                is_default: false,
-              });
+            await supabaseAdmin.from('payment_methods').insert({
+              user_id: user.id,
+              stripe_payment_method_id: pm.id,
+              stripe_customer_id: customerId,
+              type: 'us_bank_account',
+              card_brand: null,
+              card_last4: pm.us_bank_account.last4 ?? null,
+              card_exp_month: null,
+              card_exp_year: null,
+              is_default: false,
+            });
           }
-
-          dbPaymentMethods.push(paymentMethodData);
+          dbPaymentMethods.push({
+            id: pm.id,
+            type: 'us_bank_account',
+            card: undefined,
+            us_bank_account: {
+              bank_name: pm.us_bank_account.bank_name ?? null,
+              last4: pm.us_bank_account.last4 ?? null,
+            },
+            is_default: existing?.is_default ?? false,
+            created: pm.created,
+          });
         }
+      }
+
+      // Keep profile.payment_verified in sync (so admin and others see correct status)
+      if (allPms.length > 0) {
+        await supabaseAdmin.from('profiles').update({ payment_verified: true }).eq('id', user.id);
       }
 
       return new Response(
         JSON.stringify({ paymentMethods: dbPaymentMethods }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -151,20 +171,17 @@ serve(async (req) => {
 
       // Get payment method details
       const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
-      
-      if (paymentMethod.type !== 'card' || !paymentMethod.card) {
-        throw new Error('Only card payment methods are supported');
+      const pmType = paymentMethod.type;
+      if (pmType !== 'card' && pmType !== 'us_bank_account') {
+        throw new Error('Unsupported payment method type');
       }
 
-      // Check if this is the first payment method (make it default)
       const { data: existingMethods } = await supabaseAdmin
         .from('payment_methods')
         .select('id')
         .eq('user_id', user.id);
-
       const isDefault = !existingMethods || existingMethods.length === 0;
 
-      // If setting as default, unset other defaults
       if (isDefault) {
         await supabaseAdmin
           .from('payment_methods')
@@ -172,52 +189,62 @@ serve(async (req) => {
           .eq('user_id', user.id);
       }
 
-      // Save to database
-      const { data: savedMethod, error: dbError } = await supabaseAdmin
+      const insertRow: Record<string, unknown> = {
+        user_id: user.id,
+        stripe_payment_method_id: paymentMethodId,
+        stripe_customer_id: customerId,
+        type: pmType,
+        is_default: isDefault,
+      };
+      if (pmType === 'card' && paymentMethod.card) {
+        insertRow.card_brand = paymentMethod.card.brand;
+        insertRow.card_last4 = paymentMethod.card.last4;
+        insertRow.card_exp_month = paymentMethod.card.exp_month;
+        insertRow.card_exp_year = paymentMethod.card.exp_year;
+      } else if (pmType === 'us_bank_account' && paymentMethod.us_bank_account) {
+        insertRow.card_brand = null;
+        insertRow.card_last4 = paymentMethod.us_bank_account.last4 ?? null;
+        insertRow.card_exp_month = null;
+        insertRow.card_exp_year = null;
+      }
+
+      const { error: dbError } = await supabaseAdmin
         .from('payment_methods')
-        .insert({
-          user_id: user.id,
-          stripe_payment_method_id: paymentMethodId,
-          stripe_customer_id: customerId,
-          type: 'card',
-          card_brand: paymentMethod.card.brand,
-          card_last4: paymentMethod.card.last4,
-          card_exp_month: paymentMethod.card.exp_month,
-          card_exp_year: paymentMethod.card.exp_year,
-          is_default: isDefault,
-        })
-        .select()
-        .single();
+        .insert(insertRow);
 
       if (dbError) {
         logStep("Database error", { error: dbError });
         throw new Error(`Failed to save payment method: ${dbError.message}`);
       }
 
-      // Mark profile as payment verified so Verification card shows green for giggers
       await supabaseAdmin.from('profiles').update({ payment_verified: true }).eq('id', user.id);
-
       logStep("Payment method saved", { paymentMethodId });
 
+      const responsePayload: Record<string, unknown> = {
+        success: true,
+        paymentMethod: {
+          id: paymentMethodId,
+          type: pmType,
+          is_default: isDefault,
+        },
+      };
+      if (pmType === 'card' && paymentMethod.card) {
+        (responsePayload.paymentMethod as any).card = {
+          brand: paymentMethod.card.brand,
+          last4: paymentMethod.card.last4,
+          exp_month: paymentMethod.card.exp_month,
+          exp_year: paymentMethod.card.exp_year,
+        };
+      } else if (pmType === 'us_bank_account' && paymentMethod.us_bank_account) {
+        (responsePayload.paymentMethod as any).us_bank_account = {
+          bank_name: paymentMethod.us_bank_account.bank_name ?? null,
+          last4: paymentMethod.us_bank_account.last4 ?? null,
+        };
+      }
+
       return new Response(
-        JSON.stringify({ 
-          success: true,
-          paymentMethod: {
-            id: paymentMethodId,
-            type: paymentMethod.type,
-            card: {
-              brand: paymentMethod.card.brand,
-              last4: paymentMethod.card.last4,
-              exp_month: paymentMethod.card.exp_month,
-              exp_year: paymentMethod.card.exp_year,
-            },
-            is_default: isDefault,
-          }
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
+        JSON.stringify(responsePayload),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 

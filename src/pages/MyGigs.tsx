@@ -109,6 +109,7 @@ const MyGigs = () => {
   const [reviewedGigIds, setReviewedGigIds] = useState<Set<string>>(new Set());
   const [leaveReviewGig, setLeaveReviewGig] = useState<Gig | null>(null);
   const [statusFilter, setStatusFilter] = useState<GigFilterOption>("all");
+  const [chatLoadingGigId, setChatLoadingGigId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGigs();
@@ -848,11 +849,25 @@ const MyGigs = () => {
                             variant="outline"
                             size="sm"
                             className="min-w-0 gap-1.5 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
-                            onClick={() => openFloatingChat(gig.id, (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!)}
+                            onClick={() => {
+                              setChatLoadingGigId(gig.id);
+                              openFloatingChat(gig.id, (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!);
+                              setTimeout(() => setChatLoadingGigId(null), 1500);
+                            }}
+                            disabled={chatLoadingGigId === gig.id}
                             title="Chat with the hired Digger"
                           >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Chat
+                            {chatLoadingGigId === gig.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Chat
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Chat
+                              </>
+                            )}
                           </Button>
                         )}
                     </div>

@@ -183,6 +183,7 @@ serve(async (req) => {
       const session = await stripe.checkout.sessions.create({
         customer: customerId ?? undefined,
         customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,
+        payment_method_types: ["card", "us_bank_account"],
         line_items: lineItems,
         mode: "payment",
         payment_intent_data: {

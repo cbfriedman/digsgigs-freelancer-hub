@@ -41,8 +41,8 @@ export const StripeConnectBanner = () => {
           </CardTitle>
           <CardDescription className="space-y-1.5">
             <span className="inline-block font-medium text-green-700 dark:text-green-400">Stripe verification: Complete</span>
-            <span className="block">Your account is fully verified by Stripe and ready to receive milestone payments from Giggers.</span>
-            <span className="block text-muted-foreground">Need to update bank or details? Use Reconnect. Use Confirm to refresh your status from Stripe.</span>
+            <span className="block">Your payout account is fully verified and ready to receive milestone payments from Giggers.</span>
+            <span className="block text-muted-foreground">Need to change bank or payout details? Use Reconnect. Use Confirm to refresh status from Stripe.</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0 flex flex-wrap gap-2">
@@ -67,7 +67,7 @@ export const StripeConnectBanner = () => {
         <AlertTitle>Payout account pending verification</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p><span className="font-medium text-amber-700 dark:text-amber-400">Stripe verification: Pending</span></p>
-          <p>Complete identity and bank details in Stripe (use Reconnect to open the form). Once Stripe finishes verifying, you can receive payments. Click <strong>Confirm payout account</strong> to refresh and check if verification is complete.</p>
+          <p>Complete identity and payout details in Stripe (use Reconnect to open the form). Once Stripe finishes verifying, you can receive payments. Click <strong>Confirm payout account</strong> to refresh and check if verification is complete.</p>
           <div className="flex flex-wrap gap-2 mt-2">
             <Button variant="outline" size="sm" onClick={createConnectAccount} disabled={creating}>
               {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -89,7 +89,7 @@ export const StripeConnectBanner = () => {
       <AlertCircle className="h-4 w-4" />
       <AlertTitle>Set up payout account</AlertTitle>
       <AlertDescription className="mt-2 space-y-2">
-        <p>To receive milestone payments, connect your Stripe account. You only need to do this once.</p>
+        <p>To receive milestone payments, connect your payout account via Stripe. Add any supported bank or payout details—you only need to do this once.</p>
         {typeof window !== "undefined" && window !== window.top && (
           <p className="text-xs text-muted-foreground">
             You’re viewing this inside a preview or embed. Open this app in its own tab and click Connect there.

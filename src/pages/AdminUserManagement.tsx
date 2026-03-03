@@ -17,7 +17,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { ArrowLeft, Shield, UserCog, Users, RefreshCw, MoreVertical, UserX, Trash2, UserCheck, Search } from "lucide-react";
+import { ArrowLeft, Shield, UserCog, Users, RefreshCw, MoreVertical, UserX, Trash2, UserCheck, Search, ExternalLink, CreditCard, Wallet, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 
 type SortOption = "date_desc" | "date_asc" | "name_asc" | "name_desc" | "email_asc" | "email_desc" | "role";
 
@@ -56,6 +57,13 @@ interface UserWithRoles {
   roles: string[];
   is_suspended: boolean;
   avatar_url: string | null;
+  /** From digger_profiles when user has a digger profile */
+  digger_handle: string | null;
+  digger_id: string | null;
+  /** Profile: has at least one payment method (card/bank) for paying */
+  payment_verified: boolean | null;
+  /** Digger only: Stripe Connect payout account connected and charges enabled */
+  payout_connected: boolean;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
@@ -131,6 +139,8 @@ const AdminUserManagement = () => {
 
       if (profilesError) throw profilesError;
 
+      const profileIds = (profiles || []).map((p: { id: string }) => p.id);
+
       // Get all user app roles
       const { data: userRoles, error: rolesError } = await supabase
         .from("user_app_roles")
@@ -138,19 +148,47 @@ const AdminUserManagement = () => {
 
       if (rolesError) throw rolesError;
 
-      // Combine profiles with their roles
-      const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
-        id: profile.id,
-        email: profile.email ?? "",
-        full_name: profile.full_name,
-        user_type: profile.user_type ?? "",
-        created_at: profile.created_at,
-        roles: userRoles
-          ?.filter(ur => ur.user_id === profile.id)
-          .map(ur => ur.app_role) || [],
-        is_suspended: (profile as { is_suspended?: boolean }).is_suspended ?? false,
-        avatar_url: profile.avatar_url ?? null,
-      }));
+      // Get digger profiles for profile URL and payout status
+      const { data: diggerProfiles } = profileIds.length > 0
+        ? await supabase
+            .from("digger_profiles")
+            .select("id, handle, user_id, stripe_connect_account_id, stripe_connect_charges_enabled")
+            .in("user_id", profileIds)
+        : { data: [] };
+      const diggerByUserId = new Map(
+        (diggerProfiles || []).map((d: {
+          id: string;
+          handle: string | null;
+          user_id: string;
+          stripe_connect_account_id: string | null;
+          stripe_connect_charges_enabled: boolean | null;
+        }) => [d.user_id, d])
+      );
+
+      // Combine profiles with their roles, digger profile info, and payment/payout status
+      const usersWithRoles: UserWithRoles[] = (profiles || []).map((profile: any) => {
+        const digger = diggerByUserId.get(profile.id);
+        const payoutConnected = !!(
+          digger?.stripe_connect_account_id &&
+          digger?.stripe_connect_charges_enabled
+        );
+        return {
+          id: profile.id,
+          email: profile.email ?? "",
+          full_name: profile.full_name,
+          user_type: profile.user_type ?? "",
+          created_at: profile.created_at,
+          roles: userRoles
+            ?.filter((ur: { user_id: string }) => ur.user_id === profile.id)
+            .map((ur: { app_role: string }) => ur.app_role) || [],
+          is_suspended: profile.is_suspended ?? false,
+          avatar_url: profile.avatar_url ?? null,
+          digger_handle: digger?.handle ?? null,
+          digger_id: digger?.id ?? null,
+          payment_verified: profile.payment_verified ?? null,
+          payout_connected: payoutConnected,
+        };
+      });
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -318,6 +356,13 @@ const AdminUserManagement = () => {
     return "?";
   };
 
+  /** Digger profile URL, or null if user has no digger profile. */
+  const getDiggerProfileUrl = (user: UserWithRoles): string | null =>
+    getCanonicalDiggerProfilePath({ handle: user.digger_handle, diggerId: user.digger_id });
+
+  /** Gigger profile URL (always available per user id). */
+  const getGiggerProfileUrl = (userId: string): string => getCanonicalGiggerProfilePath(userId);
+
   // Filter, sort, and paginate users
   const { filteredUsers, totalFiltered, totalPages, paginatedUsers, startIndex } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -393,7 +438,7 @@ const AdminUserManagement = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 py-8">
         <Button
           variant="ghost"
           onClick={() => navigate("/admin")}
@@ -425,7 +470,7 @@ const AdminUserManagement = () => {
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  View and manage roles for all registered users. Use filters and pagination to find users quickly.
+                  View and manage roles for all registered users. Payment = method connected (can pay); Payout = Stripe Connect connected (Diggers can receive). Use filters and pagination to find users quickly.
                 </CardDescription>
               </div>
               <Button
@@ -488,8 +533,8 @@ const AdminUserManagement = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[1000px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12 text-center">#</TableHead>
@@ -498,6 +543,18 @@ const AdminUserManagement = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1">
+                        <CreditCard className="h-4 w-4" aria-hidden />
+                        Payment
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-center whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1">
+                        <Wallet className="h-4 w-4" aria-hidden />
+                        Payout
+                      </span>
+                    </TableHead>
                     <TableHead>Current Roles</TableHead>
                     <TableHead>Registered</TableHead>
                     <TableHead>Actions</TableHead>
@@ -506,7 +563,7 @@ const AdminUserManagement = () => {
                 <TableBody>
                   {paginatedUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                         {totalFiltered === 0 && users.length > 0
                           ? "No users match the current filters."
                           : users.length === 0
@@ -529,7 +586,34 @@ const AdminUserManagement = () => {
                         </Avatar>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {user.full_name || "—"}
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{user.full_name || user.email || "—"}</span>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {((): React.ReactNode => {
+                              const diggerUrl = getDiggerProfileUrl(user);
+                              return diggerUrl ? (
+                                <a
+                                  href={diggerUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded"
+                                >
+                                  Digger profile
+                                  <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                                </a>
+                              ) : null;
+                            })()}
+                            <a
+                              href={getGiggerProfileUrl(user.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded"
+                            >
+                              Gigger profile
+                              <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                            </a>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
@@ -540,6 +624,36 @@ const AdminUserManagement = () => {
                           <Badge variant="destructive">Suspended</Badge>
                         ) : (
                           <Badge variant="outline" className="text-muted-foreground">Active</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center" title="Payment method connected (can pay for gigs)">
+                        {user.payment_verified ? (
+                          <span className="inline-flex items-center justify-center gap-1 text-emerald-600" aria-label="Payment method connected">
+                            <Check className="h-4 w-4" />
+                            <span className="sr-only">Yes</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center gap-1 text-muted-foreground" aria-label="No payment method">
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">No</span>
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center" title="Payout account connected (can receive payouts)">
+                        {user.digger_id ? (
+                          user.payout_connected ? (
+                            <span className="inline-flex items-center justify-center gap-1 text-emerald-600" aria-label="Payout account connected">
+                              <Check className="h-4 w-4" />
+                              <span className="sr-only">Yes</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center gap-1 text-muted-foreground" aria-label="Payout not set up">
+                              <X className="h-4 w-4" />
+                              <span className="sr-only">No</span>
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </TableCell>
                       <TableCell>

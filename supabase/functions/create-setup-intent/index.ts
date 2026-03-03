@@ -59,10 +59,10 @@ serve(async (req) => {
       logStep("Found existing Stripe customer", { customerId });
     }
 
-    // Create Setup Intent
+    // Create Setup Intent: support card + any other methods enabled in Stripe Dashboard (e.g. US bank account)
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'us_bank_account'],
     });
 
     logStep("Setup Intent created", { setupIntentId: setupIntent.id });

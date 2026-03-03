@@ -351,7 +351,7 @@ export function PaymentContractDialog({
                   </Dialog>
                   <span className="text-muted-foreground text-xs">or</span>
                   <Button size="sm" variant="ghost" className="shrink-0 h-auto py-1 px-2 text-xs font-medium" asChild>
-                    <Link to="/payment-methods" onClick={() => onOpenChange(false)}>
+                    <Link to="/account" onClick={() => onOpenChange(false)}>
                       Open Payment methods in Settings
                     </Link>
                   </Button>

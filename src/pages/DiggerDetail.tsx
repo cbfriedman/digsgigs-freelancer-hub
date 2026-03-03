@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Phone, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Code2 } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Phone, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Code2, Wallet } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -1466,11 +1466,13 @@ const DiggerDetail = () => {
   const occupationBadge = getOccupationBadge();
   // User-level verification (same as Gigger profile when user has both roles)
   const p = digger.profiles as { id_verified?: boolean | null; phone_verified?: boolean | null; email_verified?: boolean | null; payment_verified?: boolean | null } | undefined;
+  const payoutConnected = !!(digger.stripe_connect_account_id && digger.stripe_connect_charges_enabled);
   const verificationItems = [
     { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
     { label: "Phone", isActive: p?.phone_verified != null ? !!p.phone_verified : (!!digger.phone && digger.phone !== "Not specified"), icon: Phone },
     { label: "Email", isActive: p?.email_verified != null ? !!p.email_verified : !!digger.profiles?.email, icon: Mail },
-    { label: "Payment", isActive: p?.payment_verified != null ? !!p.payment_verified : !!(digger.stripe_connect_onboarded || digger.stripe_connect_charges_enabled), icon: CreditCard },
+    { label: "Payment", isActive: p?.payment_verified != null ? !!p.payment_verified : false, icon: CreditCard },
+    { label: "Payout account", isActive: payoutConnected, icon: Wallet },
   ];
 
   // Effective avatar: user-level (profiles.avatar_url) first so same as Gigger profile, then digger profile_image_url

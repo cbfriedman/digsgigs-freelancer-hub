@@ -2,23 +2,20 @@ import { useState, FormEvent } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  CardElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { Loader2, CreditCard } from "lucide-react";
 
-// Only initialize Stripe if the key is available
 const getStripePromise = () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-  if (!publishableKey) {
-    return null;
-  }
+  if (!publishableKey) return null;
   return loadStripe(publishableKey);
 };
 
@@ -27,179 +24,181 @@ interface PaymentMethodFormProps {
   onCancel?: () => void;
 }
 
-const PaymentMethodFormInner = ({ onSuccess, onCancel }: PaymentMethodFormProps) => {
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const handleGetClientSecret = async () => {
-    if (!stripe || !elements) return;
-
+/** Step 1: Fetch Setup Intent client secret (no Elements yet) */
+function InitStep({
+  onReady,
+  loading,
+  setLoading,
+}: {
+  onReady: (secret: string) => void;
+  loading: boolean;
+  setLoading: (v: boolean) => void;
+}) {
+  const handleInit = async () => {
     setLoading(true);
     try {
       const data = await invokeEdgeFunction<{ clientSecret?: string }>(supabase, "create-setup-intent");
-
       if (!data?.clientSecret) throw new Error("No client secret returned");
-
-      setClientSecret(data.clientSecret);
-      toast.success("Ready to save payment method");
-    } catch (error: any) {
+      onReady(data.clientSecret);
+    } catch (error: unknown) {
       console.error("Error creating setup intent:", error);
-      toast.error(error?.message || "Failed to initialize payment form");
+      toast.error(error instanceof Error ? error.message : "Failed to load payment form");
     } finally {
       setLoading(false);
     }
   };
 
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Choose your payment method. You can add a card or link a bank account (US). Secure form will load next.
+      </p>
+      <Button type="button" onClick={handleInit} disabled={loading} className="w-full">
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          <>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Continue
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+/** Step 2: Payment Element + confirmSetup (inside Elements with clientSecret) */
+function SetupFormStep({
+  clientSecret,
+  onSuccess,
+  onCancel,
+}: PaymentMethodFormProps & { clientSecret: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements || !clientSecret) {
-      toast.error("Please initialize the form first");
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      toast.error("Card element not found");
-      return;
-    }
+    if (!stripe || !elements || !clientSecret) return;
 
     setSaving(true);
-
     try {
-      // Confirm the setup intent
-      const { setupIntent, error: confirmError } = await stripe.confirmCardSetup(
+      const { error } = await elements.submit();
+      if (error) {
+        toast.error(error.message ?? "Please complete the form");
+        setSaving(false);
+        return;
+      }
+
+      const { setupIntent, error: confirmError } = await stripe.confirmSetup({
+        elements,
         clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
+        confirmParams: {
+          return_url: window.location.origin + "/account",
+        },
+      });
 
       if (confirmError) {
         throw confirmError;
       }
 
-      if (!setupIntent || setupIntent.status !== "succeeded") {
-        throw new Error("Setup Intent not completed");
+      if (!setupIntent?.payment_method) {
+        throw new Error("Setup not completed");
       }
 
       await invokeEdgeFunction(supabase, "manage-payment-methods", {
         body: {
           setupIntentId: setupIntent.id,
-          paymentMethodId: setupIntent.payment_method,
+          paymentMethodId: typeof setupIntent.payment_method === "string"
+            ? setupIntent.payment_method
+            : setupIntent.payment_method.id,
         },
       });
 
-      toast.success("Payment method saved successfully!");
+      toast.success("Payment method saved.");
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving payment method:", error);
-      toast.error(error?.message || "Failed to save payment method");
+      toast.error(error instanceof Error ? error.message : "Failed to save");
     } finally {
       setSaving(false);
     }
   };
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#424770",
-        "::placeholder": {
-          color: "#aab7c4",
-        },
-      },
-      invalid: {
-        color: "#9e2146",
-      },
-    },
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {!clientSecret ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Click the button below to initialize the secure payment form.
-          </p>
-          <Button
-            type="button"
-            onClick={handleGetClientSecret}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Initializing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Initialize Payment Form
-              </>
-            )}
+      <div className="p-4 border rounded-lg bg-card">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+            paymentMethodOrder: ["card", "us_bank_account"],
+          }}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={!stripe || saving} className="flex-1">
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Payment Method"
+          )}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+            Cancel
           </Button>
-        </div>
-      ) : (
-        <>
-          <div className="p-4 border rounded-lg bg-card">
-            <CardElement options={cardElementOptions} />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={!stripe || saving}
-              className="flex-1"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Payment Method"
-              )}
-            </Button>
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={saving}
-              >
-                Cancel
-              </Button>
-            )}
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </form>
   );
-};
+}
 
 export const PaymentMethodForm = (props: PaymentMethodFormProps) => {
   const stripePromise = getStripePromise();
-  
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   if (!stripePromise) {
     return (
       <Card>
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.
+            Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY.
           </p>
         </CardContent>
       </Card>
     );
   }
 
+  if (!clientSecret) {
+    return (
+      <InitStep
+        onReady={setClientSecret}
+        loading={loading}
+        setLoading={setLoading}
+      />
+    );
+  }
+
   return (
-    <Elements stripe={stripePromise}>
-      <PaymentMethodFormInner {...props} />
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        appearance: {
+          theme: "stripe",
+          variables: { borderRadius: "6px" },
+        },
+      }}
+      key={clientSecret}
+    >
+      <SetupFormStep {...props} clientSecret={clientSecret} />
     </Elements>
   );
 };

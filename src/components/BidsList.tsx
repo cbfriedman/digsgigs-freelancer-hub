@@ -981,7 +981,7 @@ export const BidsList = ({
                     </Dialog>
                     <span className="text-muted-foreground text-xs">or</span>
                     <Button size="sm" variant="ghost" className="h-auto py-1 px-2 text-xs" asChild>
-                      <Link to="/payment-methods" onClick={() => setBidToAward(null)}>
+                      <Link to="/account" onClick={() => setBidToAward(null)}>
                         Add in Settings
                       </Link>
                     </Button>

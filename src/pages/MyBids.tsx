@@ -456,6 +456,7 @@ function BidRow({
 }) {
   const [declineLoading, setDeclineLoading] = useState(false);
   const [acceptLoading, setAcceptLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const gigStatus = bid.gigs?.status ?? "";
   const showOrangeChat =
     diggerProfileId &&
@@ -603,11 +604,25 @@ function BidRow({
                   showOrangeChat &&
                     "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 )}
-                onClick={() => openFloatingChat(bid.gigs.id, diggerProfileId)}
+                onClick={() => {
+                  setChatLoading(true);
+                  openFloatingChat(bid.gigs.id, diggerProfileId);
+                  setTimeout(() => setChatLoading(false), 1500);
+                }}
+                disabled={chatLoading}
                 title="Chat with client"
               >
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                Chat
+                {chatLoading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                    Chat
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                    Chat
+                  </>
+                )}
               </Button>
             )}
             {isAwarded && onDeclineSuccess && (

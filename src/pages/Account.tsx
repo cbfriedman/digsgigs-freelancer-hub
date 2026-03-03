@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,8 @@ import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { PaymentMethodForm } from "@/components/PaymentMethodForm";
+import { useNotifications } from "@/hooks/useNotifications";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import {
@@ -36,6 +38,9 @@ import {
   ShieldAlert,
   User,
   MapPin,
+  Plus,
+  Star,
+  Building2,
 } from "lucide-react";
 
 type SettingsLink = {
@@ -44,12 +49,23 @@ type SettingsLink = {
   icon: React.ElementType;
   description: string;
   badge?: string;
+  /** If set, called instead of navigating to path (e.g. open a dialog). */
+  onClick?: () => void;
+};
+
+type PaymentMethod = {
+  id: string;
+  type: string;
+  card?: { brand: string; last4: string; exp_month: number; exp_year: number };
+  us_bank_account?: { bank_name: string | null; last4: string | null };
+  is_default: boolean;
+  created: number;
 };
 
 export default function Account() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userRoles, loading: authLoading, signOut } = useAuth();
+  const { user, userRoles, activeRole, loading: authLoading, signOut } = useAuth();
   const [isDigger, setIsDigger] = useState<boolean | null>(null);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -58,6 +74,15 @@ export default function Account() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
+  const [paymentDeletingId, setPaymentDeletingId] = useState<string | null>(null);
+  const [showAddFormInDialog, setShowAddFormInDialog] = useState(false);
+
+  const [emailPrefsSummary, setEmailPrefsSummary] = useState<{ enabled: boolean; frequency: string } | null>(null);
+  const [leadLimitsSummary, setLeadLimitsSummary] = useState<{ enabled: boolean; limit: string; period: string } | null>(null);
+  const { unreadCount: notificationUnreadCount } = useNotifications();
 
   const [profileIdentity, setProfileIdentity] = useState<{
     first_name: string | null;
@@ -80,6 +105,142 @@ export default function Account() {
     zip_postal: "",
     country: "",
   });
+
+  const [activeSection, setActiveSection] = useState<string>("identity-security");
+  const scrollingRef = useRef(false);
+  const sectionIds = useMemo(
+    () =>
+      [
+        { id: "identity-security", label: "Identity & Security" },
+        { id: "name-address", label: "Name & address" },
+        ...(isDigger ? [{ id: "payout-account", label: "Get paid" }] : []),
+        { id: "payments", label: "Payments" },
+        { id: "preferences", label: "Preferences" },
+        { id: "danger-zone", label: "Danger zone" },
+      ] as const,
+    [isDigger]
+  );
+
+  const ACTIVE_THRESHOLD = 120;
+
+  useEffect(() => {
+    const updateActiveSection = () => {
+      const ids = sectionIds.map((s) => s.id);
+      if (ids.length === 0) return;
+      let bestId = ids[0];
+      let bestTop = -Infinity;
+      for (let i = 0; i < ids.length; i++) {
+        const el = document.getElementById(ids[i]);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= ACTIVE_THRESHOLD && rect.top > bestTop) {
+          bestTop = rect.top;
+          bestId = ids[i];
+        }
+      }
+      if (bestTop === -Infinity) {
+        const firstEl = document.getElementById(ids[0]);
+        const firstTop = firstEl ? firstEl.getBoundingClientRect().top : 0;
+        if (firstTop > -100) {
+          bestId = ids[0];
+        } else {
+          for (let i = ids.length - 1; i >= 0; i--) {
+            const el = document.getElementById(ids[i]);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight) {
+              bestId = ids[i];
+              break;
+            }
+          }
+        }
+      }
+      setActiveSection(bestId);
+    };
+
+    const handleScroll = () => {
+      if (scrollingRef.current) return;
+      updateActiveSection();
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    const raf = requestAnimationFrame(updateActiveSection);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [sectionIds]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    scrollingRef.current = true;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveSection(id);
+    const t = setTimeout(() => {
+      scrollingRef.current = false;
+    }, 800);
+    return () => clearTimeout(t);
+  };
+
+  useEffect(() => {
+    if (user) {
+      setPaymentMethodsLoading(true);
+      invokeEdgeFunction<{ paymentMethods?: PaymentMethod[] }>(supabase, "manage-payment-methods", { method: "GET" })
+        .then((data) => setPaymentMethods(data.paymentMethods || []))
+        .catch((err) => console.error("Error loading payment methods:", err))
+        .finally(() => setPaymentMethodsLoading(false));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!addPaymentDialogOpen) setShowAddFormInDialog(false);
+  }, [addPaymentDialogOpen]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data: emailData } = await (supabase as any)
+          .from("email_preferences")
+          .select("enabled, report_frequency")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (emailData) {
+          const freq = emailData.report_frequency === "none" ? "Off" : (emailData.report_frequency as string).charAt(0).toUpperCase() + (emailData.report_frequency as string).slice(1);
+          setEmailPrefsSummary({ enabled: !!emailData.enabled, frequency: emailData.enabled ? freq : "Off" });
+        } else {
+          setEmailPrefsSummary({ enabled: true, frequency: "Monthly" });
+        }
+      } catch {
+        setEmailPrefsSummary(null);
+      }
+    })();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !isDigger) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("digger_profiles")
+          .select("lead_limit_enabled, lead_limit, lead_limit_period")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (data) {
+          setLeadLimitsSummary({
+            enabled: !!data.lead_limit_enabled,
+            limit: String(data.lead_limit ?? "—"),
+            period: (data.lead_limit_period as string) || "monthly",
+          });
+        } else {
+          setLeadLimitsSummary({ enabled: false, limit: "—", period: "monthly" });
+        }
+      } catch {
+        setLeadLimitsSummary(null);
+      }
+    })();
+  }, [user, isDigger]);
 
   useEffect(() => {
     if (location.hash === "#payout-account") {
@@ -213,11 +374,51 @@ export default function Account() {
 
   const isEmailVerified = Boolean(user.email_confirmed_at);
 
-  const renderLink = ({ path, label, icon: Icon, description, badge }: SettingsLink) => (
+  const loadPaymentMethods = async () => {
+    if (!user) return;
+    try {
+      setPaymentMethodsLoading(true);
+      const data = await invokeEdgeFunction<{ paymentMethods?: PaymentMethod[] }>(supabase, "manage-payment-methods", { method: "GET" });
+      setPaymentMethods(data.paymentMethods || []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load payment methods");
+    } finally {
+      setPaymentMethodsLoading(false);
+    }
+  };
+
+  const handlePaymentDelete = async (paymentMethodId: string) => {
+    if (!confirm("Are you sure you want to delete this payment method?")) return;
+    try {
+      setPaymentDeletingId(paymentMethodId);
+      await invokeEdgeFunction(supabase, "manage-payment-methods", { method: "DELETE", body: { paymentMethodId } });
+      toast.success("Payment method deleted");
+      loadPaymentMethods();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    } finally {
+      setPaymentDeletingId(null);
+    }
+  };
+
+  const handlePaymentSetDefault = async (paymentMethodId: string) => {
+    try {
+      await invokeEdgeFunction(supabase, "manage-payment-methods", { method: "PATCH", body: { paymentMethodId, isDefault: true } });
+      toast.success("Default payment method updated");
+      loadPaymentMethods();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update default");
+    }
+  };
+
+  const getCardBrandIcon = (brand: string) => "💳";
+  const formatExpiry = (month: number, year: number) => `${String(month).padStart(2, "0")}/${String(year).slice(-2)}`;
+
+  const renderLink = ({ path, label, icon: Icon, description, badge, onClick }: SettingsLink) => (
     <button
       key={path}
       type="button"
-      onClick={() => navigate(path)}
+      onClick={() => (onClick ? onClick() : navigate(path))}
       className="flex w-full min-h-[48px] sm:min-h-[44px] items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 sm:px-4 sm:py-3 text-left transition-colors hover:border-border hover:bg-muted/50 active:bg-muted/60 touch-manipulation"
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted sm:h-8 sm:w-8 sm:rounded">
@@ -246,29 +447,63 @@ export default function Account() {
       : []),
   ];
 
+  const paymentMethodsDescription =
+    activeRole === "gigger"
+      ? "Add a card or bank account to pay for awards, deposits, and milestones. You pay from here—not receive."
+      : "Add a card or bank for penalties or other charges only. You do not receive milestone payments here—use Get paid below.";
   const paymentLinks: SettingsLink[] = [
-    { path: "/payment-methods", label: "Payment methods", icon: CreditCard, description: isDigger ? "Pay referral fees when accepting awards" : "Add or update cards for gig payments" },
+    {
+      path: "/account",
+      label: "Payment methods",
+      icon: CreditCard,
+      description: paymentMethodsDescription,
+      onClick: () => setAddPaymentDialogOpen(true),
+    },
   ];
 
   return (
-    <PageLayout maxWidth="tight">
+    <PageLayout maxWidth="wide">
       <SEOHead
         title="Account settings"
         description="Manage your Digs & Gigs account, security, payments, and preferences."
       />
-      <div className="mx-auto w-full max-w-2xl px-3 py-4 sm:px-0 sm:py-6 space-y-5 sm:space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Account</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-            Security, payments, preferences.
-          </p>
-        </div>
+      <div className="mx-auto w-full px-3 py-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8">
+        {/* Left sidebar nav */}
+        <nav
+          aria-label="Account sections"
+          className="shrink-0 md:w-48 lg:w-52 md:sticky md:top-24 md:self-start md:pt-1"
+        >
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible border-b border-border/60 md:border-b-0">
+            {sectionIds.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => scrollToSection(id)}
+                className={`text-left px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors md:py-1.5 hover:bg-muted ${
+                  activeSection === id
+                    ? "bg-primary text-primary-foreground font-medium md:border-l-2 md:border-l-primary md:pl-3 md:ml-0 hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground md:border-l-2 md:border-l-transparent md:pl-3"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
 
-        <EmailVerificationBanner />
+        {/* Main content */}
+        <div className="flex-1 min-w-0 max-w-2xl space-y-5 sm:space-y-6">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Account</h1>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+              Security, payments, preferences.
+            </p>
+          </div>
 
-        {/* Identity & Security */}
-        <Card className="border-border/60">
+          <EmailVerificationBanner />
+
+          {/* Identity & Security */}
+          <Card id="identity-security" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
           <CardHeader className="pb-3 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium sm:text-base">
               <ShieldCheck className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
@@ -441,7 +676,7 @@ export default function Account() {
         </Card>
 
         {/* Name & address (ID verification) */}
-        <Card className="border-border/60">
+        <Card id="name-address" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
           <CardHeader className="pb-3 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium sm:text-base">
               <User className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
@@ -667,35 +902,215 @@ export default function Account() {
         </Card>
 
         {isDigger && (
-          <section id="payout-account" className="scroll-mt-4">
+          <section id="payout-account" className="scroll-mt-24 transition-colors hover:bg-muted/50 rounded-lg">
             <StripeConnectBanner />
           </section>
         )}
 
         {/* Payments */}
-        <Card className="border-border/60">
+        <Card id="payments" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="text-sm font-medium sm:text-base">Payments</CardTitle>
-            <CardDescription className="text-xs sm:text-sm hidden sm:block">Pay and get paid.</CardDescription>
+            <CardDescription className="text-xs sm:text-sm hidden sm:block">
+              {""}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-0.5">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
+            {paymentMethodsLoading ? (
+              <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading payment methods…
+              </div>
+            ) : paymentMethods.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Connected payment methods</p>
+                {paymentMethods.map((pm) => (
+                  <div
+                    key={pm.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xl">
+                        {pm.type === "us_bank_account" ? (
+                          <Building2 className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          getCardBrandIcon(pm.card?.brand ?? "card")
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm">
+                            {pm.type === "us_bank_account"
+                              ? `${pm.us_bank_account?.bank_name ?? "Bank"} •••• ${pm.us_bank_account?.last4 ?? "****"}`
+                              : `${pm.card?.brand?.charAt(0).toUpperCase()}${pm.card?.brand?.slice(1) ?? ""} •••• ${pm.card?.last4 ?? ""}`}
+                          </span>
+                          {pm.is_default && (
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {pm.type === "us_bank_account" ? "US bank account" : pm.card && `Expires ${formatExpiry(pm.card.exp_month, pm.card.exp_year)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      {!pm.is_default && (
+                        <Button variant="outline" size="sm" onClick={() => handlePaymentSetDefault(pm.id)}>
+                          Default
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePaymentDelete(pm.id)}
+                        disabled={paymentDeletingId === pm.id}
+                      >
+                        {paymentDeletingId === pm.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {paymentLinks.map(renderLink)}
+            <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Payment methods</DialogTitle>
+                  <DialogDescription>
+                    Your saved payment methods. Add a card or bank account for checkout.
+                  </DialogDescription>
+                </DialogHeader>
+                {paymentMethodsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {paymentMethods.length > 0 && (
+                      <div className="space-y-2">
+                        {paymentMethods.map((pm) => (
+                          <div
+                            key={pm.id}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-3"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-2xl">
+                                {pm.type === "us_bank_account" ? (
+                                  <Building2 className="h-6 w-6 text-muted-foreground" />
+                                ) : (
+                                  getCardBrandIcon(pm.card?.brand ?? "card")
+                                )}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-sm">
+                                    {pm.type === "us_bank_account"
+                                      ? `${pm.us_bank_account?.bank_name ?? "Bank"} •••• ${pm.us_bank_account?.last4 ?? "****"}`
+                                      : `${pm.card?.brand?.charAt(0).toUpperCase()}${pm.card?.brand?.slice(1) ?? ""} •••• ${pm.card?.last4 ?? ""}`}
+                                  </span>
+                                  {pm.is_default && (
+                                    <Badge variant="secondary" className="gap-1 text-xs">
+                                      <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                                      Default
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {pm.type === "us_bank_account" ? "US bank account" : pm.card && `Expires ${formatExpiry(pm.card.exp_month, pm.card.exp_year)}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              {!pm.is_default && (
+                                <Button variant="outline" size="sm" onClick={() => handlePaymentSetDefault(pm.id)}>
+                                  Default
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePaymentDelete(pm.id)}
+                                disabled={paymentDeletingId === pm.id}
+                              >
+                                {paymentDeletingId === pm.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {showAddFormInDialog ? (
+                      <div className="border-t border-border/60 pt-4">
+                        <PaymentMethodForm
+                          onSuccess={() => {
+                            loadPaymentMethods();
+                            setShowAddFormInDialog(false);
+                          }}
+                          onCancel={() => setShowAddFormInDialog(false)}
+                        />
+                      </div>
+                    ) : (
+                      <Button onClick={() => setShowAddFormInDialog(true)} className="w-full gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Payment Method
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
         {/* Preferences */}
-        <Card className="border-border/60">
+        <Card id="preferences" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="text-sm font-medium sm:text-base">Preferences</CardTitle>
             <CardDescription className="text-xs sm:text-sm hidden sm:block">Email, notifications, limits.</CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-0.5">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Current settings</p>
+              {emailPrefsSummary && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm text-muted-foreground">Email reports</span>
+                  </div>
+                  <span className="text-sm font-medium truncate">{emailPrefsSummary.enabled ? emailPrefsSummary.frequency : "Off"}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground">Notifications</span>
+                </div>
+                <span className="text-sm font-medium truncate">
+                  {notificationUnreadCount > 0 ? `${notificationUnreadCount} unread` : "All caught up"}
+                </span>
+              </div>
+              {isDigger && leadLimitsSummary && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm text-muted-foreground">Lead limits</span>
+                  </div>
+                  <span className="text-sm font-medium truncate">
+                    {leadLimitsSummary.enabled ? `${leadLimitsSummary.limit} per ${leadLimitsSummary.period}` : "Off"}
+                  </span>
+                </div>
+              )}
+            </div>
             {preferenceLinks.map(renderLink)}
           </CardContent>
         </Card>
 
         {/* Danger zone */}
-        <Card className="border-destructive/40">
+        <Card id="danger-zone" className="border-destructive/40 scroll-mt-24 transition-colors hover:bg-muted/50">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-destructive sm:text-base">
               <ShieldAlert className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -765,6 +1180,7 @@ export default function Account() {
             </Dialog>
           </CardContent>
         </Card>
+        </div>
       </div>
     </PageLayout>
   );

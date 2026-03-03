@@ -30,6 +30,26 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import SEOHead from "@/components/SEOHead";
 
+/** Returns stable border and text classes for a gig so each project has a unique color. */
+function getProjectColorClasses(gigId: string): { border: string; text: string } {
+  const palette: { border: string; text: string }[] = [
+    { border: "border-l-primary", text: "text-primary" },
+    { border: "border-l-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+    { border: "border-l-violet-500", text: "text-violet-600 dark:text-violet-400" },
+    { border: "border-l-amber-500", text: "text-amber-600 dark:text-amber-400" },
+    { border: "border-l-rose-500", text: "text-rose-600 dark:text-rose-400" },
+    { border: "border-l-cyan-500", text: "text-cyan-600 dark:text-cyan-400" },
+    { border: "border-l-indigo-500", text: "text-indigo-600 dark:text-indigo-400" },
+    { border: "border-l-teal-500", text: "text-teal-600 dark:text-teal-400" },
+    { border: "border-l-orange-500", text: "text-orange-600 dark:text-orange-400" },
+    { border: "border-l-blue-500", text: "text-blue-600 dark:text-blue-400" },
+  ];
+  let hash = 0;
+  for (let i = 0; i < gigId.length; i++) hash = ((hash << 5) - hash) + gigId.charCodeAt(i);
+  const index = Math.abs(hash) % palette.length;
+  return palette[index];
+}
+
 interface Transaction {
   id: string;
   total_amount: number;
@@ -852,10 +872,11 @@ const Transactions = () => {
                 const dateStr = getTransactionDate(transaction);
                 const isMilestone = transaction.fromMilestone || !!transaction.milestone_payment_id;
                 const gross = transaction.total_amount / 1.03;
+                const projectColor = getProjectColorClasses(transaction.gigs.id);
                 return (
                 <Card
                   key={transaction.id}
-                  className={`overflow-hidden ${transaction.status === 'completed' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-amber-500'}`}
+                  className={`overflow-hidden border-l-4 ${projectColor.border}`}
                   aria-label={`Transaction: ${transaction.gigs.title}, ${format(new Date(dateStr), 'MMM d, yyyy')}, ${transaction.status}`}
                 >
                   {/* At a glance: date, amount, status — scan quickly */}
@@ -875,7 +896,7 @@ const Transactions = () => {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <CardTitle className="text-xl break-words">{transaction.gigs.title}</CardTitle>
+                          <CardTitle className={`text-xl break-words font-semibold ${projectColor.text}`}>{transaction.gigs.title}</CardTitle>
                           <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
                             {getTransactionRef(transaction)}
                           </span>

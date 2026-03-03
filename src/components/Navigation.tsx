@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +18,8 @@ import {
   Briefcase,
   Rocket,
   ArrowRight,
-  Receipt
+  Receipt,
+  Search
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -103,7 +105,35 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
   const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
   const [openUserMenu, setOpenUserMenu] = useState(false);
+  const [headerGigSearch, setHeaderGigSearch] = useState("");
   const isDiggerMode = activeRole === "digger";
+  const headerSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync header search from URL when on browse-gigs (e.g. landed with ?q=)
+  useEffect(() => {
+    if (location.pathname === "/browse-gigs") {
+      const q = new URLSearchParams(location.search).get("q");
+      setHeaderGigSearch(q ?? "");
+    }
+  }, [location.pathname, location.search]);
+
+  // When on browse-gigs, typing in header updates URL (debounced) so page filters as you type
+  useEffect(() => {
+    if (location.pathname !== "/browse-gigs" || !isDiggerMode) return;
+    if (headerSearchDebounceRef.current) clearTimeout(headerSearchDebounceRef.current);
+    headerSearchDebounceRef.current = setTimeout(() => {
+      const q = headerGigSearch.trim();
+      const wantSearch = q ? `?q=${encodeURIComponent(q)}` : "";
+      const currentSearch = location.search ? location.search : "";
+      if (wantSearch !== currentSearch) {
+        navigate(`/browse-gigs${wantSearch}`, { replace: true });
+      }
+      headerSearchDebounceRef.current = null;
+    }, 280);
+    return () => {
+      if (headerSearchDebounceRef.current) clearTimeout(headerSearchDebounceRef.current);
+    };
+  }, [headerGigSearch, location.pathname, location.search, isDiggerMode, navigate]);
   const isGiggerMode = activeRole === "gigger";
   const hasProjectShortcut = userRoles.includes("gigger") || userRoles.includes("digger");
   const { gigs: recentPostedGigs, totalOpenCount, loading: recentPostedGigsLoading } = useRecentPostedGigs(isDiggerMode && hasProjectShortcut);
@@ -364,6 +394,31 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               )}
               </nav>
             </div>
+
+            {/* Center: Search gigs (Digger mode only, desktop) */}
+            {isDiggerMode && (
+              <div className="hidden md:flex flex-1 min-w-0 max-w-md mx-2 lg:mx-4">
+                <form
+                  className="relative w-full"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const q = headerGigSearch.trim();
+                    if (q) navigate(`/browse-gigs?q=${encodeURIComponent(q)}`);
+                    else navigate("/browse-gigs");
+                  }}
+                >
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    placeholder="Search gigs..."
+                    value={headerGigSearch}
+                    onChange={(e) => setHeaderGigSearch(e.target.value)}
+                    className="pl-8 h-9 w-full bg-muted/50 border-border/60 text-sm"
+                    aria-label="Search gigs"
+                  />
+                </form>
+              </div>
+            )}
 
             {/* Right: Dark mode, Sign In/Sign up or Messages, Notifications, Folder, Avatar, Cart */}
             <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-auto">
@@ -1099,6 +1154,30 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <div className="flex items-center justify-between py-2 px-1 mb-2 border-b border-border/50">
                         <ThemeToggle />
                       </div>
+                      {isDiggerMode && (
+                        <form
+                          className="mb-3"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const q = headerGigSearch.trim();
+                            setMobileMenuOpen(false);
+                            if (q) navigate(`/browse-gigs?q=${encodeURIComponent(q)}`);
+                            else navigate("/browse-gigs");
+                          }}
+                        >
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            <Input
+                              type="search"
+                              placeholder="Search gigs..."
+                              value={headerGigSearch}
+                              onChange={(e) => setHeaderGigSearch(e.target.value)}
+                              className="pl-8 h-9 w-full"
+                              aria-label="Search gigs"
+                            />
+                          </div>
+                        </form>
+                      )}
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",

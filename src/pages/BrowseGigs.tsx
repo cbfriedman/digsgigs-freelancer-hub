@@ -161,6 +161,13 @@ const BrowseGigs = () => {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
+  // Sync search term from URL ?q= (e.g. from header search). Empty or missing q = show all gigs.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q");
+    setSearchTerm(q != null && q.trim() !== "" ? q.trim() : "");
+  }, [location.search]);
+
   const toggleDescription = (gigId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
