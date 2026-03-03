@@ -654,17 +654,17 @@ export default function GiggerDetail() {
           <div className="lg:col-span-7 space-y-4 order-2 lg:order-1 min-w-0">
             <Card className="overflow-hidden border shadow-none bg-card">
               <div className="relative">
-                <div className="h-28 sm:h-32 md:h-36 w-full bg-muted" style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined} />
-                <div className="absolute left-3 sm:left-4 -bottom-8">
+                <div className="h-36 sm:h-44 md:h-52 w-full bg-muted" style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined} />
+                <div className="absolute left-3 sm:left-4 -bottom-10 sm:-bottom-12">
                   <button type="button" className={isOwner ? "cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-primary ring-offset-2 ring-offset-background block" : "cursor-default block"} onClick={isOwner ? () => setProfilePhotoDialogOpen(true) : undefined} aria-label={isOwner ? "Change profile photo" : undefined}>
-                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-background">
+                    <Avatar className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 border-2 border-background">
                       <AvatarImage src={avatarUrl} alt={displayName} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{initials}</AvatarFallback>
+                      <AvatarFallback className="bg-primary/20 text-primary text-2xl font-semibold">{initials}</AvatarFallback>
                     </Avatar>
                   </button>
                 </div>
               </div>
-              <CardContent className="pt-10 sm:pt-11 pb-4 px-3 sm:px-4">
+              <CardContent className="pt-14 sm:pt-16 pb-4 px-3 sm:px-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-1.5">

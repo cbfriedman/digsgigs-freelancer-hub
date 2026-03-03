@@ -580,26 +580,26 @@ const DiggerDetail = () => {
   const handleCompletionFactorClick = (itemId: string) => {
     switch (itemId) {
       case "profile-photo":
-        scrollToProfileSection("profile-header-section");
+        setProfilePhotoDialogOpen(true);
         break;
       case "hourly-rate":
-        // No dedicated section; rate is edited via header modal
         openProfileHeaderEditModal();
         break;
       case "about":
-        scrollToProfileSection("about-section");
+        openSectionModal("about");
         break;
       case "portfolio":
-        scrollToProfileSection("portfolio-section");
+        openSectionModal("portfolio");
         break;
       case "certifications":
-        scrollToProfileSection("certifications-section");
+        setCertificationEditId(null);
+        setCertificationEditorOpen(true);
         break;
       case "experience":
-        scrollToProfileSection("experience-section");
+        setExperienceEditId(null);
+        setExperienceEditorOpen(true);
         break;
       case "github":
-        // No section; GitHub is in sidebar, edit via modal
         setGithubModalOpen(true);
         break;
       case "professions":
@@ -1749,21 +1749,21 @@ const DiggerDetail = () => {
 
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:gap-6">
-          <div className="lg:col-span-7 space-y-4 order-2 lg:order-1 min-w-0">
+          <div className="lg:col-span-8 space-y-4 order-2 lg:order-1 min-w-0">
             {(!isOwnProfile || viewAsClient) ? (
               <>
                 {/* Hero: minimal header */}
                 <Card id="profile-header-section" className="overflow-hidden border shadow-none bg-card">
                   <div className="relative">
                     <div
-                      className="h-28 sm:h-32 md:h-36 w-full bg-muted"
+                      className="h-36 sm:h-44 md:h-52 w-full bg-muted"
                       style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                     />
-                    <div className="absolute left-3 sm:left-4 -bottom-10">
+                    <div className="absolute left-3 sm:left-4 -bottom-12 sm:-bottom-14 md:-bottom-16">
                       <div className="relative size-fit">
-                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background shrink-0">
+                        <Avatar className="h-28 w-28 sm:h-32 sm:w-32 md:h-40 md:w-40 border-2 border-background shrink-0">
                           <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
-                          <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">
+                          <AvatarFallback className="bg-primary/20 text-primary text-2xl font-semibold">
                             {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -1775,7 +1775,7 @@ const DiggerDetail = () => {
                       </div>
                     </div>
                   </div>
-                  <CardContent className="pt-12 sm:pt-14 pb-4 px-3 sm:px-4">
+                  <CardContent className="pt-16 sm:pt-20 md:pt-24 pb-4 px-3 sm:px-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-1.5">
@@ -1924,14 +1924,14 @@ const DiggerDetail = () => {
               <section id="profile-header-section" className="overflow-hidden border-b border-border bg-card">
                 <div className="relative">
                   <div
-                    className="h-28 sm:h-32 md:h-36 w-full bg-muted"
+                    className="h-36 sm:h-44 md:h-52 w-full bg-muted"
                     style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
                   />
-                  <div className="absolute left-3 sm:left-4 -bottom-10">
+                  <div className="absolute left-3 sm:left-4 -bottom-12 sm:-bottom-14 md:-bottom-16">
                     <div className="relative size-fit">
-                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-background shrink-0">
+                      <Avatar className="h-28 w-28 sm:h-32 sm:w-32 md:h-40 md:w-40 border-2 border-background shrink-0">
                         <AvatarImage src={effectiveAvatarUrl} />
-                        <AvatarFallback className="bg-primary/20 text-primary text-xl font-semibold">{getInitials(digger.handle || digger.business_name)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/20 text-primary text-2xl font-semibold">{getInitials(digger.handle || digger.business_name)}</AvatarFallback>
                       </Avatar>
                       <span
                         className={`absolute bottom-[7%] right-[7%] w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background box-content ${isOnline ? "bg-green-500" : "bg-muted-foreground/50"}`}
@@ -1941,7 +1941,7 @@ const DiggerDetail = () => {
                     </div>
                   </div>
                 </div>
-                <CardContent className="pt-12 sm:pt-14 pb-4 px-3 sm:px-4">
+                <CardContent className="pt-16 sm:pt-20 md:pt-24 pb-4 px-3 sm:px-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-1.5">
@@ -2142,8 +2142,8 @@ const DiggerDetail = () => {
             )}
           </div>
 
-          {/* Sidebar - 30% width on desktop */}
-          <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
+          {/* Sidebar - 20% width on desktop (8:2 with main) */}
+          <div className="lg:col-span-2 order-1 lg:order-2 min-w-0 w-full">
             <div className="space-y-3 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
               <Card className="w-full border shadow-none">
                 <CardHeader className="py-2 px-3">

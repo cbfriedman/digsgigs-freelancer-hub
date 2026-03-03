@@ -919,7 +919,7 @@ const GigDetail = () => {
       <div className="min-h-screen bg-background">
         <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8" aria-busy="true" aria-label="Loading gig">
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6 min-w-0">
+            <div className="lg:col-span-8 space-y-4 sm:space-y-6 min-w-0">
               <Card className="border border-border rounded-lg shadow-none">
                 <CardHeader className="p-4 sm:p-5 md:p-6">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -951,7 +951,7 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             </div>
-            <aside className="lg:col-span-3 space-y-4 sm:space-y-6 min-w-0">
+            <aside className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
               <Card className="border border-border rounded-lg shadow-none p-4 sm:p-5">
                 <Skeleton className="h-5 w-32 rounded mb-3" />
                 <Skeleton className="h-4 w-full rounded mb-2" />
@@ -999,7 +999,7 @@ const GigDetail = () => {
 
       <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
-          <div className="lg:col-span-7 space-y-4 sm:space-y-6 min-w-0">
+          <div className="lg:col-span-8 space-y-4 sm:space-y-6 min-w-0">
             <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors">
               <CardHeader className="p-4 sm:p-5 md:p-6">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -1448,8 +1448,8 @@ const GigDetail = () => {
             )}
           </div>
 
-          {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = Contact client + client info */}
-          <aside className="lg:col-span-3 space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
+          {/* Right sidebar (2 cols, 8:2 with main): for owner = bids stats + filters; for Diggers = Contact client + client info */}
+          <aside className="lg:col-span-2 space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
             {/* Contact the client now — in sidebar for non-owners who have not yet purchased the lead */}
             {isOwner && activeRole === "digger" && (
               <Card className="border border-border rounded-lg shadow-none border-accent/30 bg-accent/5">
