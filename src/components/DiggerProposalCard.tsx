@@ -211,8 +211,8 @@ export function DiggerProposalCard({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           {/* Left: Digger info — bigger avatar with online/offline, real name + username, headline, location + flag */}
           <div className="flex gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="relative shrink-0">
-              <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-border/50">
+            <div className="relative h-16 w-16 shrink-0 sm:h-20 sm:w-20">
+              <Avatar className="h-full w-full rounded-xl border-2 border-border/50">
                 {(diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url) ? (
                   <img
                     src={diggerProfile.profile_image_url || diggerProfile.profiles?.avatar_url || ""}
@@ -227,7 +227,8 @@ export function DiggerProposalCard({
               </Avatar>
               <span
                 className={cn(
-                  "absolute bottom-0 right-0 h-3 w-3 sm:h-4 sm:w-4 rounded-full border-2 border-background",
+                  "absolute rounded-full border-2 border-background",
+                  "h-3 w-3 right-1 bottom-1 sm:h-4 sm:w-4 sm:right-0 sm:bottom-0",
                   isOnline ? "bg-green-500" : "bg-muted-foreground/50"
                 )}
                 aria-label={isOnline ? "Online" : "Offline"}
