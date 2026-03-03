@@ -220,6 +220,8 @@ interface BidsListProps {
   onAwardSuccess?: () => void;
   /** Gig status so ContractMilestonesCard can hide when status is 'awarded' (Digger sees Accept/Decline on page). */
   gigStatus?: string | null;
+  /** Current awarded bid id from the gig. When set, only this bid shows as Awarded/Hired (avoids stale DB awarded flag after cancel + re-award). */
+  awardedBidId?: string | null;
   /** Called when Gigger cancels the award from the proposal list; parent should refetch. */
   onCancelAward?: () => void | Promise<void>;
   /** When true, show loading state on Cancel award button (e.g. while parent is calling edge function). */
@@ -253,6 +255,7 @@ export const BidsList = ({
   currentUserId,
   onAwardSuccess,
   gigStatus,
+  awardedBidId = null,
   onCancelAward,
   cancelAwardLoading = false,
   onEditProposal,
@@ -349,11 +352,12 @@ export const BidsList = ({
         return amin - bmin;
       });
     }
-    // Awarded bids first for Giggers
+    // Awarded bids first for Giggers (use gig's awarded_bid_id as source of truth when available)
     if (isOwner) {
+      const effectiveAwarded = (b: Bid) => awardedBidId != null ? b.id === awardedBidId : !!(b.awarded);
       sorted = [...sorted].sort((a, b) => {
-        const aAwarded = !!(a.awarded);
-        const bAwarded = !!(b.awarded);
+        const aAwarded = effectiveAwarded(a);
+        const bAwarded = effectiveAwarded(b);
         if (aAwarded && !bAwarded) return -1;
         if (!aAwarded && bAwarded) return 1;
         return 0;
@@ -370,7 +374,7 @@ export const BidsList = ({
       });
     }
     return sorted;
-  }, [filtered, sortBy, isOwner, pinnedBidIds]);
+  }, [filtered, sortBy, isOwner, pinnedBidIds, awardedBidId]);
 
   const loadBids = useCallback(async () => {
     try {
@@ -771,10 +775,12 @@ export const BidsList = ({
         </Card>
       )}
       {/* Digger viewing own bid: use same card style as gigger sees. */}
-      {!isOwner && currentDiggerId && !loading && displayedBids.length > 0 && displayedBids.map((bid) => (
+      {!isOwner && currentDiggerId && !loading && displayedBids.length > 0 && displayedBids.map((bid) => {
+        const effectiveAwarded = awardedBidId != null ? bid.id === awardedBidId : !!(bid.awarded);
+        return (
         <DiggerProposalCard
           key={bid.id}
-          bid={bid}
+          bid={{ ...bid, awarded: effectiveAwarded }}
           gigTitle={gigTitle}
           gigId={gigId}
           diggerProfile={bid.digger_profiles}
@@ -783,7 +789,7 @@ export const BidsList = ({
           isFixedPrice={isFixedPrice}
           isOnline={onlineDiggers.has(bid.digger_profiles.id)}
           hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
-          isAwardedWaitingResponse={!!(bid.awarded && bid.status !== "accepted")}
+          isAwardedWaitingResponse={!!(effectiveAwarded && bid.status !== "accepted")}
           showDiggerActions={!!(onEditProposal || onMessageClient)}
           onEditProposal={onEditProposal}
           onMessageClient={onMessageClient}
@@ -791,7 +797,7 @@ export const BidsList = ({
           messageClientTooltip={messageClientTooltip}
           gigStatus={gigStatus ?? undefined}
         />
-      ))}
+      );})}
       {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only. When loading, only this section shows loading. */}
       {isOwner && (
         <>
@@ -860,10 +866,12 @@ export const BidsList = ({
               </CardContent>
             </Card>
           ) : (
-          displayedBids.map((bid) => (
+          displayedBids.map((bid) => {
+            const effectiveAwarded = awardedBidId != null ? bid.id === awardedBidId : !!(bid.awarded);
+            return (
             <DiggerProposalCard
               key={bid.id}
-              bid={bid}
+              bid={{ ...bid, awarded: effectiveAwarded }}
               gigTitle={gigTitle}
               gigId={gigId}
               diggerProfile={bid.digger_profiles}
@@ -892,17 +900,19 @@ export const BidsList = ({
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}
               acceptingId={accepting}
-              isAwardedWaitingResponse={!!(bid.awarded && bid.status !== "accepted")}
+              isAwardedWaitingResponse={!!(effectiveAwarded && bid.status !== "accepted")}
               isOtherBidAwarded={displayedBids.some(
-                (b) => b.id !== bid.id && !!b.awarded && b.status !== "accepted"
+                (b) => b.id !== bid.id && (awardedBidId != null ? b.id === awardedBidId : !!b.awarded) && b.status !== "accepted"
               )}
               isOtherBidHired={displayedBids.some(
-                (b) => b.id !== bid.id && !!b.awarded && b.status === "accepted"
+                (b) => b.id !== bid.id && (awardedBidId != null ? b.id === awardedBidId : !!b.awarded) && b.status === "accepted"
               )}
               onCancelAward={gigStatus === "awarded" ? onCancelAward : undefined}
               cancelAwardLoading={cancelAwardLoading}
             />
-          )))}
+          );
+          })
+        )}
         </>
       )}
 

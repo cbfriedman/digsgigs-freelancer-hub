@@ -506,7 +506,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 : conv.lastMessageContent
                                   ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
                                   : "No messages yet";
-                              const snippet = fullSnippet;
+                              const maxPreviewLen = 28;
+                              const snippet = fullSnippet.length > maxPreviewLen ? fullSnippet.slice(0, maxPreviewLen) + "…" : fullSnippet;
                               const isToday = (d: Date) => {
                                 const today = new Date();
                                 return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
@@ -555,7 +556,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                           <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                         </TooltipTrigger>
                                         <TooltipContent side="top" className="max-w-[320px]">
-                                          <p className="break-words text-xs">{snippet}</p>
+                                          <p className="break-words text-xs">{fullSnippet}</p>
                                         </TooltipContent>
                                       </Tooltip>
                                     </div>
@@ -901,7 +902,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               : conv.lastMessageContent
                                 ? `${conv.lastMessageFromMe ? "You: " : ""}${conv.lastMessageContent}`
                                 : "No messages yet";
-                            const snippet = fullSnippet;
+                            const maxPreviewLen = 28;
+                            const snippet = fullSnippet.length > maxPreviewLen ? fullSnippet.slice(0, maxPreviewLen) + "…" : fullSnippet;
                             const d = new Date(conv.updatedAt);
                             const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
                             const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "HH:mm")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
@@ -939,7 +941,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         <p className="text-xs text-muted-foreground line-clamp-2 break-words overflow-hidden mt-0.5 cursor-default">{snippet}</p>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-[320px]">
-                                        <p className="break-words text-xs">{snippet}</p>
+                                        <p className="break-words text-xs">{fullSnippet}</p>
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>

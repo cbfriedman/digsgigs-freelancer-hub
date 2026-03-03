@@ -686,17 +686,6 @@ export const BidSubmissionTemplate = ({
               )}
             </Button>
 
-            {pricingModel === "success_based" && (
-              <Alert className="border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20">
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <AlertTitle className="text-green-900 dark:text-green-100">No fee from your pocket</AlertTitle>
-                <AlertDescription>
-                  <span className="block">Gigger awards → Gigger pays a 15% deposit (charged to their card).</span>
-                  <span className="block mt-1">Digger accepts → The 8% referral fee is taken from that deposit: the platform keeps 8%, the rest is released to you. You are not charged anything.</span>
-                  <span className="block mt-1">First milestone approved → 7% is added to you from that deposit when you complete the first milestone (no extra charge to you).</span>
-                </AlertDescription>
-              </Alert>
-            )}
           </form>
         </CardContent>
         </Card>

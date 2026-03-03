@@ -2245,10 +2245,12 @@ export function FloatingMessageWidget() {
                   {filteredConvs.map((c) => {
                     const meta = c.lastMessageMetadata;
                     const isAwardEvent = meta?._type === "award_event" && meta?.event;
-                    const display = isAwardEvent
+                    const rawPreview = isAwardEvent
                       ? (c.lastMessageFromMe ? "You: " : "") +
                         (meta!.event === "awarded" ? "🏆 Awarded" : meta!.event === "accepted" ? "✓ Accepted" : meta!.event === "cancelled" ? "⊘ Client cancelled" : "✗ Freelancer declined")
                       : (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
+                    const maxPreviewLen = 28;
+                    const display = rawPreview.length > maxPreviewLen ? rawPreview.slice(0, maxPreviewLen) + "…" : rawPreview;
                     const isOpenChat = openChats.some((o) => o.id === c.id);
                     const isMuted = mutedChats[c.id] ?? !!c.muted;
                     const isBlocked = blockedChats[c.id] ?? !!c.isBlocked;
@@ -2322,7 +2324,7 @@ export function FloatingMessageWidget() {
                                 </span>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground min-w-0 break-words line-clamp-2 overflow-hidden text-ellipsis" title={display}>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0 block overflow-hidden" title={rawPreview}>
                               {display}
                             </p>
                           </div>

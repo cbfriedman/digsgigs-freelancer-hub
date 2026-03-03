@@ -1426,6 +1426,7 @@ const GigDetail = () => {
                 onClearFilters={() => setBidFilters(defaultBidFilters)}
                 onAwardSuccess={loadData}
                 gigStatus={gig?.status}
+                awardedBidId={gig?.awarded_bid_id ?? null}
                 onCancelAward={handleCancelAward}
                 cancelAwardLoading={cancelAwardLoading}
                 onEditProposal={
@@ -1474,32 +1475,44 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {!hasLeadPurchase && !isOwner && gig?.status === "open" && (showDiggerContent || !canViewAsOwner) && (
-              <Card className="border border-primary/20 rounded-lg shadow-none bg-primary/5">
-                <CardHeader className="p-3 sm:p-4 pb-1">
-                  <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-                    <Unlock className="h-3.5 w-3.5 text-primary" />
-                    Unlock the Gigger’s contact
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Pay once to get contact details—reach out directly, no proposal required.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-4 pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {!hasLeadPurchase && !isOwner && gig?.status === "open" && (
+              <Card className="border border-border rounded-lg shadow-none bg-card">
+                <CardContent className="p-4 flex flex-col gap-4">
                   <div>
-                    <p className="text-lg font-semibold text-primary">
+                    <h3 className="text-sm font-semibold text-foreground">Contact the client</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      One-time payment. Secure. Get contact details to reach out directly.
+                    </p>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-lg font-semibold tabular-nums text-foreground">
                       {getLeadPriceDisplay(
                         getLeadPriceBudget().min,
                         getLeadPriceBudget().max,
                         (gig as { calculated_price_cents?: number | null }).calculated_price_cents
                       ).label}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{LEAD_PRICE_CAPTION}</p>
+                    </span>
+                    <Button onClick={handleUnlockLead} size="sm" className="gap-1.5 shrink-0 h-9">
+                      <Unlock className="h-3.5 w-3.5" />
+                      Unlock contact
+                    </Button>
                   </div>
-                  <Button onClick={handleUnlockLead} className="gap-1.5 shrink-0 h-9 w-full sm:w-auto hover:bg-orange-600 hover:text-white transition-colors">
-                    <Unlock className="h-3.5 w-3.5" />
-                    Unlock lead
-                  </Button>
+                  <p className="text-[10px] text-muted-foreground leading-snug">{LEAD_PRICE_CAPTION}</p>
+                </CardContent>
+              </Card>
+            )}
+            {!isOwner && gig?.status === "open" && (showDiggerContent || !canViewAsOwner) && (
+              <Card className="border border-border rounded-lg shadow-none bg-card">
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
+                    No fee from your pocket
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-2 text-xs text-muted-foreground">
+                  <p><span className="font-medium text-foreground">Gigger awards</span> → Gigger pays a 15% deposit (charged to their card).</p>
+                  <p><span className="font-medium text-foreground">Digger accepts</span> → The 8% referral fee is taken from that deposit: the platform keeps 8%, the rest is released to you. You are not charged anything.</p>
+                  <p><span className="font-medium text-foreground">First milestone approved</span> → 7% is added to you from that deposit when you complete the first milestone (no extra charge to you).</p>
                 </CardContent>
               </Card>
             )}
@@ -1611,8 +1624,7 @@ const GigDetail = () => {
               return (
               <Card className="border border-border rounded-lg shadow-none bg-muted/20">
                 <CardHeader className="p-3 sm:p-4 pb-1">
-                  <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5 text-primary" />
+                  <CardTitle className="text-sm font-medium">
                     About the client
                   </CardTitle>
                 </CardHeader>
@@ -1698,11 +1710,6 @@ const GigDetail = () => {
                       )}
                     </div>
                   ) : null}
-                  {!isOwner && gig.status === 'open' && (
-                    <p className="text-xs text-muted-foreground pt-1 border-t">
-                      Bid below or unlock lead to contact.
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             );})()}

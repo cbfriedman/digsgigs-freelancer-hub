@@ -2094,7 +2094,7 @@ export default function Messages() {
             </div>
 
             {/* Conversation list - scrollable, with rounded selected highlight */}
-            <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+            <ScrollArea className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 {filteredConversations.length === 0 ? (
                   <div className="p-6 text-center">
                     <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
@@ -2103,7 +2103,7 @@ export default function Messages() {
                     </p>
                   </div>
                 ) : (
-                  <div className="px-2 py-1 space-y-0.5">
+                  <div className="px-2 py-1 space-y-0.5 min-w-0 overflow-x-hidden">
                     {filteredConversations.map((conv) => {
                       const partnerName = getConversationPartner(conv);
                       const partnerProfileUrl = (() => {
@@ -2149,7 +2149,7 @@ export default function Messages() {
                           onClick={() => setSelectedConversation(conv.id)}
                           onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)}
                           className={cn(
-                            "group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl",
+                            "group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl overflow-hidden min-w-0",
                             "hover:bg-muted/60",
                             selectedConversation === conv.id
                               ? "bg-muted shadow-sm ring-1 ring-border/50"
@@ -2173,8 +2173,8 @@ export default function Messages() {
                               title={getPresenceLabel(getPartnerPresenceStatus(conv))}
                             />
                           </div>
-                          <div className="flex-1 min-w-0 w-0">
-                            <div className="flex items-center justify-between gap-2 min-w-0">
+                          <div className="flex-1 min-w-0 w-0 overflow-hidden flex flex-col">
+                            <div className="flex items-center justify-between gap-2 min-w-0 shrink-0">
                               <p className={cn(
                                 "truncate min-w-0 flex-1 text-foreground",
                                 hasUnread ? "font-semibold" : "font-medium"
@@ -2183,9 +2183,6 @@ export default function Messages() {
                               </p>
                               <div className="flex flex-col items-end gap-0.5 shrink-0">
                                 <div className="flex items-center gap-0.5">
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(conv.updated_at), "M/d/yy")}
-                                  </span>
                                   <div className="flex items-center gap-1 text-muted-foreground ml-1">
                                     {isStarred && <Star className="h-3.5 w-3.5" aria-label="Favorite" />}
                                     {isPinned && <Pin className="h-3.5 w-3.5" aria-label="Pinned" />}
@@ -2308,17 +2305,29 @@ export default function Messages() {
                                 </div>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
-                              {roleOrTitle}
-                            </p>
-                            {lastSnippet && (
-                              <p className={cn(
-                                "text-xs truncate mt-0.5 min-w-0 block",
-                                hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90"
-                              )} title={lastSnippet}>
-                                {lastSnippet}
+                            <div className="min-w-0 overflow-hidden mt-0.5 space-y-0.5">
+                              <p className="text-xs text-muted-foreground truncate min-w-0 max-w-full overflow-hidden" title={rawRoleOrTitle}>
+                                {roleOrTitle}
                               </p>
-                            )}
+                              {lastSnippet && (
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <p className={cn(
+                                    "text-xs truncate min-w-0 flex-1 overflow-hidden",
+                                    hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90"
+                                  )} title={lastSnippet}>
+                                    {lastSnippet}
+                                  </p>
+                                  <span className="text-xs text-muted-foreground shrink-0 tabular-nums" title={format(new Date(conv.updated_at), "PPp")}>
+                                    {format(new Date(conv.updated_at), "M/d/yy")}
+                                  </span>
+                                </div>
+                              )}
+                              {!lastSnippet && (
+                                <span className="text-xs text-muted-foreground shrink-0 tabular-nums" title={format(new Date(conv.updated_at), "PPp")}>
+                                  {format(new Date(conv.updated_at), "M/d/yy")}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -2534,14 +2543,14 @@ export default function Messages() {
                     </DropdownMenu>
                   </div>
                 </div>
-                <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+                <ScrollArea className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                   {filteredConversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
                       <p className="text-sm text-muted-foreground">{listSearch.trim() ? "No matches." : listFilter === "requests" ? "No message requests." : "No conversations yet."}</p>
                     </div>
                   ) : (
-                    <div className="px-2 py-1 space-y-0.5">
+                    <div className="px-2 py-1 space-y-0.5 min-w-0 overflow-x-hidden">
                       {filteredConversations.map((conv) => {
                         const partnerName = getConversationPartner(conv);
                         const partnerProfileUrl = (() => {
@@ -2578,7 +2587,7 @@ export default function Messages() {
                         const unreadCount = conv.unread_count ?? 0;
                         const hasUnread = unreadCount > 0;
                         return (
-                          <div key={conv.id} role="button" tabIndex={0} onClick={() => setSelectedConversation(conv.id)} onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)} className={cn("group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl", "hover:bg-muted/60", selectedConversation === conv.id ? "bg-muted shadow-sm ring-1 ring-border/50" : "bg-transparent")}>
+                          <div key={conv.id} role="button" tabIndex={0} onClick={() => setSelectedConversation(conv.id)} onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)} className={cn("group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl overflow-hidden min-w-0", "hover:bg-muted/60", selectedConversation === conv.id ? "bg-muted shadow-sm ring-1 ring-border/50" : "bg-transparent")}>
                             <div className="relative shrink-0">
                               <Avatar className="h-16 w-16 ring-1 ring-border/50">
                                 {conv.partner_avatar_url && <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />}
@@ -2586,14 +2595,13 @@ export default function Messages() {
                               </Avatar>
                               <span className={cn("absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background", getPresenceDotClass(getPartnerPresenceStatus(conv)))} title={getPresenceLabel(getPartnerPresenceStatus(conv))} />
                             </div>
-                            <div className="flex-1 min-w-0 w-0">
-                              <div className="flex items-center justify-between gap-2 min-w-0">
+                            <div className="flex-1 min-w-0 w-0 overflow-hidden flex flex-col">
+                              <div className="flex items-center justify-between gap-2 min-w-0 shrink-0">
                                 <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")} title={partnerName}>
                                   {partnerName}
                                 </p>
                                 <div className="flex flex-col items-end gap-0.5 shrink-0">
                                   <div className="flex items-center gap-0.5">
-                                    <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
                                     <div className="flex items-center gap-1 text-muted-foreground ml-1">
                                       {isStarred && <Star className="h-3.5 w-3.5" aria-label="Favorite" />}
                                       {isPinned && <Pin className="h-3.5 w-3.5" aria-label="Pinned" />}
@@ -2603,12 +2611,12 @@ export default function Messages() {
                                       {hasUnread && <Mail className="h-3.5 w-3.5" aria-label="Unread" />}
                                     </div>
                                     {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
-                                  </div>
-                                  <div>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank"); }}><ExternalLink className="h-4 w-4 mr-2" />Open in new window</DropdownMenuItem>
+                                    </div>
+                                    <div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank"); }}><ExternalLink className="h-4 w-4 mr-2" />Open in new window</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsUnread(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Mark as unread</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }}><Star className="h-4 w-4 mr-2" />{isStarred ? "Unfavorite" : "Favorite"}</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}><Pin className="h-4 w-4 mr-2" />{isPinned ? "Unpin" : "Pin"}</DropdownMenuItem>
@@ -2619,11 +2627,21 @@ export default function Messages() {
                                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+                                    </div>
                                   </div>
                                 </div>
+                              <div className="min-w-0 overflow-hidden mt-0.5 space-y-0.5">
+                                <p className="text-xs text-muted-foreground truncate min-w-0 max-w-full overflow-hidden" title={rawRoleOrTitle}>{roleOrTitle}</p>
+                                {lastSnippet && (
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <p className={cn("text-xs truncate min-w-0 flex-1 overflow-hidden", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet}</p>
+                                    <span className="text-xs text-muted-foreground shrink-0 tabular-nums" title={format(new Date(conv.updated_at), "PPp")}>{format(new Date(conv.updated_at), "M/d/yy")}</span>
+                                  </div>
+                                )}
+                                {!lastSnippet && (
+                                  <span className="text-xs text-muted-foreground shrink-0 tabular-nums" title={format(new Date(conv.updated_at), "PPp")}>{format(new Date(conv.updated_at), "M/d/yy")}</span>
+                                )}
                               </div>
-                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
-                              {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0 block", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet}</p>}
                             </div>
                           </div>
                         );
