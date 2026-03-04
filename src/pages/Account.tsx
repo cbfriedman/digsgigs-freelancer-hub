@@ -458,6 +458,34 @@ export default function Account() {
     })();
   }, [user, location.pathname, location.search]);
 
+  // Open verification dialog from URL (e.g. from full profile page verification card)
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const open = new URLSearchParams(location.search).get("open");
+    if (!open) return;
+    if (open === "email") {
+      navigate("/register", { replace: true });
+      return;
+    }
+    if (open === "phone") {
+      setPhoneDialogOpen(true);
+      setPhoneValue(profilePhone ?? "");
+      setPhoneOtpSent(false);
+      setPhoneOtpCode("");
+    } else if (open === "id") {
+      setIdVerificationOpen(true);
+    } else if (open === "payment") {
+      setAddPaymentDialogOpen(true);
+    } else if (open === "identity") {
+      const el = document.getElementById("identity-security");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    const params = new URLSearchParams(location.search);
+    params.delete("open");
+    const next = params.toString() ? `${location.pathname}?${params}` : location.pathname;
+    navigate(next, { replace: true });
+  }, [user, authLoading, location.search, location.pathname, navigate]);
+
   useEffect(() => {
     if (!mfaEnrollDialogOpen || mfaEnrollSecret != null) return;
     (async () => {
@@ -637,14 +665,22 @@ export default function Account() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
-            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+            <div
+              role={!isEmailVerified ? "button" : undefined}
+              tabIndex={!isEmailVerified ? 0 : undefined}
+              className={`rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 ${!isEmailVerified ? "cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20" : ""}`}
+              onClick={() => { if (!isEmailVerified) navigate("/register"); }}
+              onKeyDown={(e) => { if (!isEmailVerified && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); navigate("/register"); } }}
+            >
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-sm font-medium text-foreground break-all">{user.email}</span>
                 {isEmailVerified ? (
                   <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Verified</Badge>
                 ) : (
                   <Badge variant="secondary" className="text-xs">Unverified</Badge>
                 )}
+                {!isEmailVerified && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />}
               </div>
               {!isEmailVerified && (
                 <p className="mt-1.5 text-xs text-muted-foreground">
@@ -652,7 +688,13 @@ export default function Account() {
                 </p>
               )}
             </div>
-            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+            <div
+              role="button"
+              tabIndex={0}
+              className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              onClick={() => { setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); } }}
+            >
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-sm font-medium text-foreground break-all">
@@ -665,9 +707,10 @@ export default function Account() {
                     <Badge variant="secondary" className="text-xs">Unverified</Badge>
                   )
                 )}
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => { setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}>
+                <Button variant="outline" size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}>
                   <Phone className="h-3.5 w-3.5" />
                   {profilePhone ? "Edit / Verify" : "Add phone"}
                 </Button>
@@ -684,7 +727,13 @@ export default function Account() {
                 </div>
               </div>
             )}
-            <div className="relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10">
+            <div
+              role="button"
+              tabIndex={0}
+              className="relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10 cursor-pointer transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              onClick={() => setIdVerificationOpen(true)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIdVerificationOpen(true); } }}
+            >
               <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-primary/50" aria-hidden />
               <div className="flex flex-wrap items-center gap-2 gap-y-1 pl-1">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
@@ -696,6 +745,7 @@ export default function Account() {
                 ) : (
                   <Badge variant="secondary" className="text-xs">Unverified</Badge>
                 )}
+                <ChevronRight className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />
               </div>
               {idVerified && (
                 <p className="mt-2 text-xs text-muted-foreground pl-1">
@@ -715,7 +765,7 @@ export default function Account() {
                   <Button
                     size="sm"
                     className="mt-3 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={() => setIdVerificationOpen(true)}
+                    onClick={(e) => { e.stopPropagation(); setIdVerificationOpen(true); }}
                   >
                     <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Verify now
@@ -723,7 +773,13 @@ export default function Account() {
                 </>
               )}
             </div>
-            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+            <div
+              role="button"
+              tabIndex={0}
+              className={`rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 ${!mfaFactors.some((f) => f.factor_type === "totp") ? "cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20" : ""}`}
+              onClick={() => { if (!mfaFactors.some((f) => f.factor_type === "totp")) { setMfaEnrollDialogOpen(true); setMfaEnrollSecret(null); setMfaEnrollCode(""); } }}
+              onKeyDown={(e) => { if (!mfaFactors.some((f) => f.factor_type === "totp") && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setMfaEnrollDialogOpen(true); setMfaEnrollSecret(null); setMfaEnrollCode(""); } }}
+            >
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
                 <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-sm font-semibold text-foreground">Two-factor authentication</span>
@@ -734,13 +790,14 @@ export default function Account() {
                 ) : (
                   <Badge variant="secondary" className="text-xs">Not enabled</Badge>
                 )}
+                {!mfaFactors.some((f) => f.factor_type === "totp") && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />}
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
                 {mfaFactors.some((f) => f.factor_type === "totp")
                   ? "Your account is protected with an authenticator app."
                   : "Add an authenticator app (e.g. Google Authenticator) for extra security."}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                 {mfaFactors.some((f) => f.factor_type === "totp") ? (
                   <Button
                     variant="outline"
@@ -793,8 +850,27 @@ export default function Account() {
                 {(["google", "github", "linkedin_oidc"] as const).map((provider) => {
                   const label = provider === "linkedin_oidc" ? "LinkedIn" : provider.charAt(0).toUpperCase() + provider.slice(1);
                   const connected = linkedIdentities.some((i) => i.provider === provider);
+                  const handleConnect = async () => {
+                    setLinkingProvider(provider);
+                    try {
+                      const auth = supabase.auth as { linkIdentity?: (opts: { provider: string }) => Promise<{ error: { message: string } | null }> };
+                      const { error } = await auth.linkIdentity?.({ provider }) ?? { error: null };
+                      if (error) throw new Error(error.message);
+                    } catch (e: unknown) {
+                      toast.error(e instanceof Error ? e.message : "Failed to connect");
+                    } finally {
+                      setLinkingProvider(null);
+                    }
+                  };
                   return (
-                    <li key={provider} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/50 bg-background/50 px-3 py-2">
+                    <li
+                      key={provider}
+                      role={connected ? undefined : "button"}
+                      tabIndex={connected ? undefined : 0}
+                      className={`flex flex-wrap items-center justify-between gap-2 rounded border border-border/50 bg-background/50 px-3 py-2 ${!connected ? "cursor-pointer transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20" : ""}`}
+                      onClick={!connected ? handleConnect : undefined}
+                      onKeyDown={!connected ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleConnect(); } } : undefined}
+                    >
                       <span className="text-sm font-medium text-foreground">{label}</span>
                       {connected ? (
                         <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Connected</Badge>
@@ -804,19 +880,7 @@ export default function Account() {
                           size="sm"
                           className="gap-2"
                           disabled={linkingProvider != null}
-                          onClick={async () => {
-                            setLinkingProvider(provider);
-                            try {
-                              const auth = supabase.auth as { linkIdentity?: (opts: { provider: string }) => Promise<{ error: { message: string } | null }> };
-                              const { error } = await auth.linkIdentity?.({ provider }) ?? { error: null };
-                              if (error) throw new Error(error.message);
-                              // Redirects to OAuth; on return, identities are refetched in useEffect
-                            } catch (e: unknown) {
-                              toast.error(e instanceof Error ? e.message : "Failed to connect");
-                            } finally {
-                              setLinkingProvider(null);
-                            }
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleConnect(); }}
                         >
                           {linkingProvider === provider ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                           Connect

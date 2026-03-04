@@ -784,14 +784,34 @@ export default function GiggerDetail() {
                 <CardContent className="pt-0 px-3 pb-3">
                   {hasAnyVerification ? (
                     <div className="grid grid-cols-2 gap-2">
-                      {verificationItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-1.5">
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                            <item.icon className={`h-3 w-3 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                      {verificationItems.map((item) => {
+                        const openParam = isOwner && (item.label === "ID verified" ? "id" : item.label === "Phone" ? "phone" : item.label === "Email" ? "email" : item.label === "Payment" ? "payment" : item.label === "Social" ? "identity" : null);
+                        const content = (
+                          <>
+                            <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                              <item.icon className={`h-3 w-3 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                            </div>
+                            <span className={`text-[10px] font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                          </>
+                        );
+                        if (openParam) {
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className="flex items-center gap-1.5 w-full text-left rounded-md py-0.5 -mx-0.5 px-0.5 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              onClick={() => navigate(`/account?open=${openParam}`)}
+                            >
+                              {content}
+                            </button>
+                          );
+                        }
+                        return (
+                          <div key={item.label} className="flex items-center gap-1.5">
+                            {content}
                           </div>
-                          <span className={`text-[10px] font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground">Not specified</p>

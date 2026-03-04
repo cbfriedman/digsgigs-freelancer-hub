@@ -2153,7 +2153,11 @@ const Register = () => {
                 {/* Google Sign In Button */}
                 {!signInOtpSent && (
                   <div className="space-y-4 mb-2">
-                    <GoogleSignInButton className="h-11" label="Sign in with Google" />
+                    <GoogleSignInButton
+                      className="h-11"
+                      label="Sign in with Google"
+                      redirectTo={`${window.location.origin}/register?complete=true`}
+                    />
                     
                     {/* Divider */}
                     <div className="relative">

@@ -304,10 +304,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 logger.error('Error fetching user roles:', error);
               }
 
-              // Handle email confirmation callback
+              // Handle email confirmation callback (e.g. Google OAuth, magic link)
               if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
-                // Clear the hash from URL
-                window.history.replaceState(null, '', window.location.pathname);
+                // Clear the hash but keep pathname and search (e.g. ?complete=true) so role selection flow works
+                const path = window.location.pathname + window.location.search;
+                window.history.replaceState(null, '', path || '/');
 
                 // Check if user has completed registration by checking for roles
                 // Use RPC function to bypass RLS and avoid 500 errors
