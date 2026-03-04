@@ -54,6 +54,24 @@ export default function HireAPro() {
 
       <HireAProHero onPostProject={handlePostProject} />
       <HireAProBenefits />
+
+      {/* Mid-page CTA above the fold / above How It Works */}
+      <section className="py-12 md:py-16 text-center">
+        <div className="container-wide">
+          <Button
+            size="lg"
+            className="text-lg px-12 py-6 bg-gradient-accent text-accent-foreground shadow-accent-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            onClick={handlePostProject}
+          >
+            Post Your Project — It's Free
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <p className="text-sm text-muted-foreground mt-4">
+            No credit card required • Proposals in hours
+          </p>
+        </div>
+      </section>
+
       <HireAProHowItWorks />
       <HireAProTestimonials />
       <HireAProCTA onPostProject={handlePostProject} />
