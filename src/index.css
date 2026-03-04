@@ -412,13 +412,14 @@
     box-shadow: var(--shadow-accent-lg);
   }
 
-  /* Minimal: subtle hover only, no lift/scale */
+  /* Card hover: lift + shadow */
   .hover-lift:hover {
+    @apply -translate-y-1;
     box-shadow: var(--shadow-card-hover);
   }
 
   .hover-scale:hover {
-    /* no scale */
+    @apply scale-[1.02];
   }
 
   .hover-glow-primary:hover {

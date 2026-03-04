@@ -1,51 +1,74 @@
+import { Card } from "@/components/ui/card";
 import { DollarSign, Mail, Zap, Shield } from "lucide-react";
 
 const trustPoints = [
   {
     icon: DollarSign,
-    title: "Transparent pricing",
-    description: "See the unlock price before you pay. No hidden fees.",
+    title: "Transparent Pricing",
+    description: "Know exactly what you'll pay before you commit. No hidden fees.",
+    bgClass: "bg-success/10",
+    iconClass: "text-success",
   },
   {
     icon: Mail,
-    title: "Leads by email",
-    description: "New gigs land in your inbox as soon as Giggers post.",
+    title: "Instant Email Delivery",
+    description: "Leads hit your inbox the moment they're submitted. No delays.",
+    bgClass: "bg-info/10",
+    iconClass: "text-info",
   },
   {
     icon: Zap,
-    title: "Pay only for what you use",
-    description: "Unlock a lead or bid and pay when awarded. No subscriptions.",
+    title: "Choose Your Leads",
+    description: "Only pay for leads you actually want. No forced packages or subscriptions.",
+    bgClass: "bg-primary/10",
+    iconClass: "text-primary",
   },
   {
     icon: Shield,
-    title: "Bad leads refunded",
-    description: "Invalid or bogus leads are refundable.",
-  },
+    title: "Lead Protection",
+    description: "Bogus leads are fully refundable. We've got your back.",
+    bgClass: "bg-warning/10",
+    iconClass: "text-warning",
+  }
 ];
 
 export const TrustSection = () => {
   return (
-    <section className="section-padding">
+    <section className="section-padding bg-gradient-subtle">
       <div className="container-wide">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12 home-fade-up" style={{ animationDelay: "0.05s" }}>
-            <h2 className="mb-3">Why Diggers use Digs & Gigs</h2>
-            <p className="text-muted-foreground">Leads delivered. You choose which to unlock or bid on.</p>
+        <div className="max-w-5xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              Why Choose Us
+            </span>
+            <h2 className="mb-4">Why Diggers Love Us</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Built by freelancers, for freelancers
+            </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-8">
+          {/* Trust Grid */}
+          <div className="grid md:grid-cols-2 gap-6">
             {trustPoints.map((point, index) => (
-              <div key={index} className="flex gap-4 home-fade-up" style={{ animationDelay: `${0.12 + index * 0.08}s` }}>
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <point.icon className="h-5 w-5 text-muted-foreground" />
+              <Card 
+                key={index} 
+                className="group p-6 bg-card border-border/50 shadow-card hover:shadow-card-hover hover-lift"
+              >
+                <div className="flex items-start gap-5">
+                  <div className={`w-12 h-12 rounded-xl ${point.bgClass} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <point.icon className={`h-6 w-6 ${point.iconClass}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                      {point.title}
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {point.description}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-1">{point.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {point.description}
-                  </p>
-                </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>

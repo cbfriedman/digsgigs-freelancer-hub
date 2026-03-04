@@ -1,50 +1,149 @@
 import { Footer } from "@/components/Footer";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Target,
+  Heart,
+  Shield,
+  Users,
+  Zap,
+  Globe
+} from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
 export default function About() {
+  const values = [
+    {
+      icon: Shield,
+      title: "Transparency",
+      description: "No hidden fees or surprise charges"
+    },
+    {
+      icon: Target,
+      title: "Fairness",
+      description: "Freelancers should keep their earnings"
+    },
+    {
+      icon: Zap,
+      title: "Opportunity",
+      description: "Better matching, higher quality projects"
+    },
+    {
+      icon: Users,
+      title: "Simplicity",
+      description: "No bidding wars, no commissions"
+    },
+    {
+      icon: Heart,
+      title: "Community",
+      description: "Supporting freelancers as they grow"
+    }
+  ];
+
   return (
     <>
       <Helmet>
-        <title>About | Digs & Gigs</title>
-        <meta name="description" content="Digs & Gigs connects Diggers (freelancers) with Giggers (clients). Leads by email. Pay per lead or when awarded. No subscriptions." />
+        <title>About Digs & Gigs — A Better Freelance Marketplace</title>
+        <meta name="description" content="Our mission is to build a transparent, commission-free marketplace for freelancers and clients." />
       </Helmet>
-
+      
       <div className="min-h-screen bg-background">
-        <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8">
-            About Digs & Gigs
-          </h1>
-
-          <div className="space-y-8 sm:space-y-10 text-muted-foreground">
-            <p className="text-base sm:text-lg leading-relaxed">
-              Digs & Gigs is a lead marketplace. <strong className="text-foreground">Giggers</strong> (clients) post gigs. <strong className="text-foreground">Diggers</strong> (freelancers) get leads by email. Pay per lead or pay when you’re awarded—no subscriptions.
-            </p>
-
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Mission</h2>
-              <p className="text-base sm:text-lg leading-relaxed">
-                We build a transparent, fair place where Diggers keep what they earn and Giggers find talent without friction. No hidden fees, no bidding wars.
+        {/* Hero Section */}
+        <section className="relative overflow-hidden py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+                About Us
+              </Badge>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                A Better Freelance Marketplace
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Connecting talented freelancers with clients who value their work.
               </p>
             </div>
+          </div>
+        </section>
 
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">What we stand for</h2>
-              <ul className="space-y-2 sm:space-y-3 text-base sm:text-lg leading-relaxed list-none pl-0">
-                <li><strong className="text-foreground">Transparency</strong> — See the unlock price before you pay.</li>
-                <li><strong className="text-foreground">Fairness</strong> — Diggers keep 100% of what they earn.</li>
-                <li><strong className="text-foreground">Simplicity</strong> — No commissions, no membership required.</li>
-                <li><strong className="text-foreground">Trust</strong> — Bad leads are refundable.</li>
-              </ul>
+        {/* Mission Section */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 shadow-card hover:shadow-card-hover transition-shadow">
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6">
+                    <Target className="h-8 w-8 text-primary" />
+                  </div>
+                  <Badge className="mb-4">💡 Our Mission</Badge>
+                  <p className="text-2xl md:text-3xl font-medium text-foreground">
+                    To create the most transparent, fair, and opportunity-rich freelance marketplace — where freelancers keep what they earn and consumers find top talent without friction.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
+          </div>
+        </section>
 
-            <p className="text-base sm:text-lg leading-relaxed pt-2">
-              Questions? <a href="/contact" className="text-primary hover:underline">Contact us</a>.
+        {/* Vision Section */}
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Card className="border-accent/20 bg-gradient-to-br from-accent/5 to-primary/5 shadow-card hover:shadow-card-hover transition-shadow">
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-accent/20 flex items-center justify-center mb-6">
+                    <Globe className="h-8 w-8 text-accent" />
+                  </div>
+                  <Badge className="mb-4">🌍 Our Vision</Badge>
+                  <p className="text-2xl md:text-3xl font-medium text-foreground">
+                    A global, accessible platform where freelancers thrive and clients discover exceptional talent fast.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Values Section */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+                  💖 Our Values
+                </Badge>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  What We Stand For
+                </h2>
+              </div>
+              
+              <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {values.map((value, i) => (
+                  <Card key={i} className="text-center shadow-card hover:shadow-card-hover hover-lift transition-all">
+                    <CardContent className="p-6">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                        <value.icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="font-semibold mb-2">{value.title}</h3>
+                      <p className="text-sm text-muted-foreground">{value.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact CTA */}
+        <section className="py-12 border-t border-border/50">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-muted-foreground">
+              Questions? <a href="/contact" className="text-primary hover:underline font-medium">Contact us</a>.
             </p>
           </div>
-        </main>
-
-        <Footer />
+        </section>
       </div>
+      
+      <Footer />
     </>
   );
 }

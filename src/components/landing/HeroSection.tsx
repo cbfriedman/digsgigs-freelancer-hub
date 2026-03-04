@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, CheckCircle2, Mail, Sparkles } from "lucide-react";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 
 export const HeroSection = () => {
@@ -8,64 +9,108 @@ export const HeroSection = () => {
   const { trackButtonClick } = useGA4Tracking();
 
   return (
-    <section className="relative overflow-hidden section-padding min-h-[85vh] flex items-center">
-      {/* Background: animated gradient (always) + optional video on top (add /public/hero-video.mp4) */}
-      <div className="absolute inset-0 z-0">
-        <div
-          className="absolute inset-0 home-hero-bg-shift opacity-95 dark:opacity-90"
-          style={{
-            background: "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--primary-muted)) 30%, hsl(var(--accent-muted)) 70%, hsl(var(--background)) 100%)",
-            backgroundSize: "200% 200%",
-          }}
-        />
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-25 dark:opacity-15 pointer-events-none"
-          aria-hidden
-        >
-          <source src="/hero-video.mp4" type="video/mp4" />
-        </video>
-      </div>
-
-      <div className="container-wide relative z-10">
-        <div className="max-w-2xl mx-auto text-center home-fade-up" style={{ animationDelay: "0.1s" }}>
-          <h1 className="mb-6 text-foreground">
-            Leads in your inbox. Pay only for what you unlock.
+    <section className="relative overflow-hidden section-padding">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-hero" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl opacity-60" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl opacity-40" />
+      
+      <div className="container-wide relative">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Badge */}
+          <div className="animate-fade-in-down">
+            <Badge className="mb-8 bg-primary/10 text-primary border-primary/20 px-4 py-2 text-sm font-medium hover:bg-primary/15 transition-colors">
+              <Mail className="h-4 w-4 mr-2" />
+              Email-First Lead Marketplace
+              <Sparkles className="h-3 w-3 ml-2 text-accent" />
+            </Badge>
+          </div>
+          
+          {/* Headline */}
+          <h1 className="animate-fade-in-up mb-6">
+            Where{" "}
+            <span className="text-gradient-primary">
+              tech talent
+            </span>
+            {" "}meets{" "}
+            <span className="text-gradient-accent">
+              opportunity.
+            </span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-12 max-w-xl mx-auto leading-relaxed home-fade-up" style={{ animationDelay: "0.25s" }}>
-            Giggers post projects. Diggers get leads by email. Unlock contacts or bid and pay when you win. No subscriptions.
+          
+          {/* Subheadline */}
+          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up stagger-1 leading-relaxed">
+            Connect with top software developers, designers, and digital experts. 
+            Post gigs or find leads instantly.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4 home-fade-up" style={{ animationDelay: "0.4s" }}>
-            <Button
-              size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 px-6"
+          {/* Value Props Grid */}
+          <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto text-left animate-fade-in-up stagger-2">
+            {/* For Clients */}
+            <div className="group bg-card rounded-xl p-6 border border-accent/20 shadow-card hover:shadow-card-hover hover-lift">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <span className="text-xl">📋</span>
+                </div>
+                <h3 className="font-display font-semibold text-lg text-accent">For Clients</h3>
+              </div>
+              <ul className="space-y-3">
+                {["Post gigs for free", "Receive bids from Diggers", "No platform fees on gigs"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* For Freelancers */}
+            <div className="group bg-card rounded-xl p-6 border border-primary/20 shadow-card hover:shadow-card-hover hover-lift">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <span className="text-xl">🔧</span>
+                </div>
+                <h3 className="font-display font-semibold text-lg text-primary">For Freelancers</h3>
+              </div>
+              <ul className="space-y-3">
+                {["Leads emailed instantly", "Pay only for leads you want", "Keep 100% of your earnings"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-3">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-gradient-accent text-accent-foreground shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5"
               onClick={() => {
                 trackButtonClick('Post a Project', 'hero');
                 navigate("/post-gig");
               }}
             >
-              Post a gig (Gigger)
-              <ArrowRight className="ml-2 h-4 w-4" />
+              Post a Project
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 px-6 bg-background/80 backdrop-blur-sm"
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-gradient-primary text-primary-foreground shadow-primary hover:shadow-primary-lg transition-all duration-300 hover:-translate-y-0.5"
               onClick={() => {
                 trackButtonClick('Become a Digger', 'hero');
                 navigate("/register?mode=signup&type=digger");
               }}
             >
-              Get leads (Digger)
+              Become a Digger
             </Button>
           </div>
 
-          <p className="text-sm text-muted-foreground home-fade-up" style={{ animationDelay: "0.55s" }}>
-            Free to join · Pay per lead or 8% when awarded
+          {/* Subtext */}
+          <p className="text-sm text-muted-foreground mt-6 animate-fade-in stagger-4">
+            Free to join • Pay only to unlock leads • No subscriptions
           </p>
         </div>
       </div>
