@@ -158,7 +158,7 @@ export default function RoleDashboard() {
       if (userRoles.includes('gigger')) {
         const [gigsRes, gpRes, profileRes] = await Promise.all([
           supabase.from('gigs').select('id', { count: 'exact', head: true }).eq('consumer_id', user.id),
-          (supabase.from('gigger_profiles') as any).select('user_id').eq('user_id', user.id).limit(1).maybeSingle(),
+          (supabase as any).from('gigger_profiles').select('user_id').eq('user_id', user.id).limit(1).maybeSingle(),
           (supabase.from('profiles') as any).select('profile_title').eq('id', user.id).single(),
         ]);
         const giggerRow = (gpRes.data as { user_id?: string } | null);
