@@ -862,6 +862,16 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* Mobile Navigation */}
             <div className="flex md:hidden items-center gap-1">
+              {/* Post a gig - Mobile (Gigger mode only) */}
+              {user && isGiggerMode && userRoles.includes("gigger") && (
+                <Button
+                  size="sm"
+                  className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-xs px-2.5 h-8"
+                  onClick={() => navigate("/post-gig?quick=1")}
+                >
+                  Post a gig
+                </Button>
+              )}
               {/* Messages - Mobile (only when signed in); tap/hover shows recent messages */}
               {user && (
                 <HoverCard openDelay={200} closeDelay={150}>

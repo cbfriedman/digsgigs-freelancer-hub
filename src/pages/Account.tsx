@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
+import { IdVerificationDialog } from "@/components/IdVerificationDialog";
 import { useNotifications } from "@/hooks/useNotifications";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
@@ -105,6 +106,10 @@ export default function Account() {
     zip_postal: "",
     country: "",
   });
+  const [idVerified, setIdVerified] = useState<boolean>(false);
+  const [idVerificationPendingReview, setIdVerificationPendingReview] = useState<boolean>(false);
+  const [idVerificationOpen, setIdVerificationOpen] = useState(false);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   const [activeSection, setActiveSection] = useState<string>("identity-security");
   const scrollingRef = useRef(false);
@@ -270,7 +275,7 @@ export default function Account() {
       const [profileRes, diggerRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("first_name, last_name, full_name, address, city, state, zip_postal, country")
+          .select("first_name, last_name, full_name, address, city, state, zip_postal, country, id_verified")
           .eq("id", user.id)
           .single(),
         supabase
@@ -290,12 +295,16 @@ export default function Account() {
         state?: string | null;
         zip_postal?: string | null;
         country?: string | null;
+        id_verified?: boolean | null;
       } | null;
+      if (profile?.id_verified != null) setIdVerified(!!profile.id_verified);
       const digger = diggerRes.data as { location?: string | null; city?: string | null; state?: string | null; country?: string | null } | null;
 
       if (!profile) {
         setProfileIdentity(null);
+        setIdVerified(false);
       } else {
+        setIdVerified(!!profile.id_verified);
         const fullName = (profile.full_name ?? "").trim();
         const parts = fullName ? fullName.split(/\s+/) : [];
         const derivedFirst = parts[0] ?? null;
@@ -357,8 +366,16 @@ export default function Account() {
         .eq("status", "pending")
         .maybeSingle();
       setPendingIdentityRequest(!!pending);
+
+      const { data: pendingIdSubmission } = await supabase
+        .from("id_verification_submissions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "pending_review")
+        .maybeSingle();
+      setIdVerificationPendingReview(!!pendingIdSubmission);
     })();
-  }, [user]);
+  }, [user, profileRefreshKey]);
 
   if (authLoading) {
     return (
@@ -540,6 +557,45 @@ export default function Account() {
                 </div>
               </div>
             )}
+            <div className="relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10">
+              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-primary/50" aria-hidden />
+              <div className="flex flex-wrap items-center gap-2 gap-y-1 pl-1">
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold text-foreground">ID verification</span>
+                {idVerified ? (
+                  <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Verified</Badge>
+                ) : idVerificationPendingReview ? (
+                  <Badge className="bg-amber-600/10 text-amber-700 dark:text-amber-400 border-0 text-xs">Under review</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">Unverified</Badge>
+                )}
+              </div>
+              {idVerified && (
+                <p className="mt-2 text-xs text-muted-foreground pl-1">
+                  Your identity has been verified.
+                </p>
+              )}
+              {idVerificationPendingReview && (
+                <p className="mt-2 text-xs text-muted-foreground pl-1">
+                  Your submission is being reviewed. We&apos;ll update your status soon.
+                </p>
+              )}
+              {!idVerified && !idVerificationPendingReview && (
+                <>
+                  <p className="mt-2 text-xs text-muted-foreground pl-1">
+                    Verify your identity with a government-issued ID to access full features.
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-3 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={() => setIdVerificationOpen(true)}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Verify now
+                  </Button>
+                </>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2 min-h-[44px] items-center">
               <Dialog open={passwordDialogOpen} onOpenChange={(o) => { setPasswordDialogOpen(o); if (!o) { setNewPassword(""); setConfirmPassword(""); } }}>
                 <DialogTrigger asChild>
@@ -672,6 +728,22 @@ export default function Account() {
                 </Button>
               </div>
             </div>
+            <IdVerificationDialog
+              open={idVerificationOpen}
+              onOpenChange={setIdVerificationOpen}
+              userName={profileIdentity ? [profileIdentity.first_name, profileIdentity.last_name].filter(Boolean).join(" ") || undefined : undefined}
+              onSuccess={async () => {
+                if (!user) return;
+                setIdVerified(true);
+                setIdVerificationPendingReview(false);
+                setProfileRefreshKey((k) => k + 1);
+                toast.success("Identity verified. Your profile and address have been updated.");
+              }}
+              onPendingReview={() => {
+                setIdVerificationPendingReview(true);
+                setProfileRefreshKey((k) => k + 1);
+              }}
+            />
           </CardContent>
         </Card>
 

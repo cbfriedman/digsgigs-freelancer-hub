@@ -22,7 +22,12 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
-export const NotificationPanel = () => {
+interface NotificationPanelProps {
+  /** Called when a notification is clicked (e.g. to close the header dropdown). */
+  onNotificationClick?: () => void;
+}
+
+export const NotificationPanel = ({ onNotificationClick }: NotificationPanelProps) => {
   const navigate = useNavigate();
   const {
     notifications,
@@ -35,11 +40,18 @@ export const NotificationPanel = () => {
 
   const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
+    onNotificationClick?.();
+
     if (notification.type === "new_message" && notification.metadata?.conversation_id) {
       navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
-    } else if (notification.type === "new_gig" && notification.metadata?.gig_id) {
-      navigate(notification.link || `/gig/${notification.metadata.gig_id}`);
-    } else if (notification.link) {
+      return;
+    }
+    // Any notification tied to a gig (e.g. "New bid received") opens the gig detail page
+    if (notification.metadata?.gig_id) {
+      navigate(`/gig/${notification.metadata.gig_id}`);
+      return;
+    }
+    if (notification.link) {
       navigate(notification.link);
     }
   };

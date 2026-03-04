@@ -103,10 +103,18 @@ const handler = async (req: Request): Promise<Response> => {
     let emailResponse;
 
     if (type === 'submitted') {
-      // Notify gig owner about new bid
+      // Notify gig owner about new bid (in-app notification is always created by DB trigger)
+      const gigOwnerId = gig.consumer_id as string;
+      const { data: prefs } = await supabase
+        .from('email_preferences')
+        .select('bid_notifications_enabled')
+        .eq('user_id', gigOwnerId)
+        .maybeSingle();
+      const sendEmail = (prefs?.bid_notifications_enabled ?? true) === true;
+
       const gigOwnerEmail = (gig.profiles as any)?.email;
-      
-      if (gigOwnerEmail) {
+
+      if (sendEmail && gigOwnerEmail) {
         emailResponse = await resend.emails.send({
           from: "Digs and Gigs <noreply@digsandgigs.net>",
           to: [gigOwnerEmail],
