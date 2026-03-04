@@ -112,10 +112,10 @@ export default function FoundingDigger() {
                 </Card>
                 
                 {/* Benefit 4 */}
-                <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-purple-500/10">
+                <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
                   <CardHeader className="text-center">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-purple-500/20 flex items-center justify-center mb-4">
-                      <Star className="h-8 w-8 text-purple-600" />
+                    <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                      <Star className="h-8 w-8 text-primary" />
                     </div>
                     <CardTitle className="text-xl">4. Priority Digger Ranking</CardTitle>
                   </CardHeader>

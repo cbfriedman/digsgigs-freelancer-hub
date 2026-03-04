@@ -134,7 +134,7 @@ export const ProfileHeader = ({
               </Badge>
             )}
             {isLicensed === 'yes' && (
-              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:text-primary dark:border-primary/40">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Licensed
               </Badge>

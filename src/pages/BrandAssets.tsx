@@ -12,7 +12,7 @@ const BrandAssets = () => {
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   const colors = [
-    { name: "Primary Purple", hex: "#5B21B6", hsl: "250 70% 45%", usage: "Gradient start, primary actions" },
+    { name: "Primary Purple", hex: "#6B5B8E", hsl: "262 52% 47%", usage: "Balanced purple — gradient start, primary actions" },
     { name: "Accent Orange", hex: "#F97316", hsl: "25 95% 53%", usage: "Gradient end, highlights" },
     { name: "Dark Gray", hex: "#1F2937", hsl: "215 28% 17%", usage: "Body text, headings" },
     { name: "White", hex: "#FFFFFF", hsl: "0 0% 100%", usage: "Backgrounds, text on dark" },
@@ -72,7 +72,7 @@ const BrandAssets = () => {
     });
     y += 5;
 
-    doc.text("Gradient: Linear gradient from Primary Purple (#5B21B6) to Accent Orange (#F97316)", 20, y);
+    doc.text("Gradient: Linear gradient from Primary Purple (#6B5B8E) to Accent Orange (#F97316)", 20, y);
     y += 7;
     doc.text("Direction: Left to right (90 degrees)", 20, y);
     y += 15;
@@ -235,7 +235,7 @@ const BrandAssets = () => {
                 <div className="p-4">
                   <p className="font-medium mb-2">Brand Gradient</p>
                   <code className="text-xs font-mono bg-muted px-2 py-1 rounded block">
-                    background: linear-gradient(90deg, #5B21B6, #F97316);
+                    background: linear-gradient(90deg, #6B5B8E, #F97316);
                   </code>
                 </div>
               </div>

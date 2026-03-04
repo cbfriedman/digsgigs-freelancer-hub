@@ -86,7 +86,7 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
           <span>$15/lead</span>
         </div>
         <div className="flex items-center gap-1">
-          <Badge variant="secondary" className="bg-purple-100 text-purple-800 px-1.5 py-0">HV</Badge>
+          <Badge variant="secondary" className="bg-primary/10 text-primary px-1.5 py-0">HV</Badge>
           <span>$25/lead</span>
         </div>
       </div>

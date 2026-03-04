@@ -55,7 +55,7 @@ const AdvertiserPortal = () => {
       price: "From $499/month",
       icon: Target,
       features: ["Exclusive category placement", "Logo on all listings", "Custom messaging"],
-      color: "bg-purple-500"
+      color: "bg-primary"
     },
     {
       id: "email_sponsor",

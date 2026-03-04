@@ -48,7 +48,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
       case 'MV':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
       case 'HV':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
+        return 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary';
     }
   };
 
@@ -265,7 +265,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 px-1.5 py-0">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary px-1.5 py-0">
                     HV
                   </Badge>
                   <span className="text-muted-foreground">

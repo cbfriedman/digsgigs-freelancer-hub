@@ -632,8 +632,8 @@ const PostGig = () => {
             <span className="text-xs text-muted-foreground">Verified Pros</span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
-            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-2">
-              <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="p-2 rounded-full bg-primary/10 dark:bg-primary/20 mb-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
             </div>
             <span className="text-xs text-muted-foreground">Direct Contact</span>
           </div>

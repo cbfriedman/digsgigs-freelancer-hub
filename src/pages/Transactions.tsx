@@ -35,7 +35,7 @@ function getProjectColorClasses(gigId: string): { border: string; text: string }
   const palette: { border: string; text: string }[] = [
     { border: "border-l-primary", text: "text-primary" },
     { border: "border-l-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-    { border: "border-l-violet-500", text: "text-violet-600 dark:text-violet-400" },
+    { border: "border-l-primary", text: "text-primary" },
     { border: "border-l-amber-500", text: "text-amber-600 dark:text-amber-400" },
     { border: "border-l-rose-500", text: "text-rose-600 dark:text-rose-400" },
     { border: "border-l-cyan-500", text: "text-cyan-600 dark:text-cyan-400" },

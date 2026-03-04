@@ -80,7 +80,7 @@ type UserAppRole = 'digger' | 'gigger' | 'telemarketer' | 'admin';
 const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: string }> = {
   digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' },
   gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
-  telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100' },
+  telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary' },
   admin: { label: 'Admin', emoji: '👑', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' },
 };
 
@@ -191,8 +191,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
-  const navLinkActiveClass = "text-foreground bg-accent/50";
+  const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-muted";
+  const navLinkActiveClass = "text-foreground bg-muted";
 
   const NavDropdown = ({
     id,
@@ -231,7 +231,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   /** Minimal status text color (no badge). */
   const gigStatusClass = (status: string) => {
     if (status === "completed") return "text-green-700 dark:text-green-600";
-    if (status === "open") return "text-violet-600 dark:text-violet-400";
+    if (status === "open") return "text-primary";
     if (status === "in_progress") return "text-blue-600 dark:text-blue-400";
     if (status === "pending" || status === "pending_confirmation") return "text-gray-500 dark:text-gray-400";
     if (status === "awarded") return "text-green-500 dark:text-green-400";

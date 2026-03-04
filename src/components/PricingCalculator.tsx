@@ -450,17 +450,17 @@ export default function PricingCalculator() {
         )}
 
         {/* Free Estimates Calculator */}
-        <div className="mt-8 pt-0 border-2 border-purple-500 rounded-lg">
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-t-lg">
+        <div className="mt-8 pt-0 border-2 border-primary rounded-lg">
+          <div className="bg-gradient-to-r from-primary to-primary-hover text-primary-foreground p-6 rounded-t-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Calculator className="h-6 w-6 text-white" />
-              <Badge className="bg-white text-purple-600">Free Estimates Calculator</Badge>
+              <Badge className="bg-white text-primary">Free Estimates Calculator</Badge>
             </div>
             <h3 className="text-center text-2xl font-semibold mb-2 text-white">Cost Calculator for Free Estimates</h3>
-            <p className="text-center text-purple-50">
+            <p className="text-center text-primary-foreground">
               Calculate costs for free estimate leads across different plans
             </p>
-            <p className="text-center text-sm text-purple-100 italic mt-2">
+            <p className="text-center text-sm text-primary-foreground/90 italic mt-2">
               Note: No commissions apply to Free Estimates
             </p>
           </div>
@@ -591,9 +591,9 @@ export default function PricingCalculator() {
           {showFreeEstimateResults && (
             <>
             <div className="overflow-x-auto mt-6">
-              <table className="w-full text-sm border-l-4 border-l-purple-500">
+              <table className="w-full text-sm border-l-4 border-l-primary">
                 <thead>
-                  <tr className="border-b-2 border-border bg-purple-50">
+                  <tr className="border-b-2 border-border bg-primary/5">
                     <th className="text-left py-3 px-4 font-semibold">Estimated P&L</th>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>

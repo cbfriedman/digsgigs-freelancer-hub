@@ -84,8 +84,8 @@ const HowItWorks = () => {
       icon: Target,
       title: "Flat-Rate Leads",
       description: "Pay only for the leads you want. Transparent, predictable pricing.",
-      gradient: "from-purple-500/10 to-violet-500/10",
-      iconColor: "text-purple-600"
+      gradient: "from-primary/10 to-primary/10",
+      iconColor: "text-primary"
     }
   ];
 

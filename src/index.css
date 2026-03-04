@@ -16,17 +16,17 @@
 @layer base {
   /* ---------------------------------------------------------------------------
      2. COLOR PALETTE - Light Mode
-     Primary: Purple (#5B21B6) | Accent: Orange (#F97316)
+     Primary: Balanced purple (medium, user-friendly) | Accent: Orange (#F97316)
      --------------------------------------------------------------------------- */
   :root {
     /* Layout: nav bar height (match Navigation.tsx h-16) for viewport calculations */
     --header-height: 4rem;
 
-    /* Core Brand Colors */
-    --primary: 262 83% 42%;
+    /* Core Brand Colors — purple between light and heavy for a real, user-friendly feel */
+    --primary: 262 52% 47%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 262 83% 38%;
-    --primary-muted: 262 60% 95%;
+    --primary-hover: 262 52% 42%;
+    --primary-muted: 262 45% 94%;
     
     /* Accent Colors */
     --accent: 25 95% 53%;
@@ -62,10 +62,10 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    /* Borders & Inputs */
+    /* Borders & Inputs — ring neutral (no purple focus highlight) */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 262 83% 42%;
+    --ring: 220 10% 72%;
     
     /* Border Radius Scale */
     --radius: 0.625rem;
@@ -77,7 +77,7 @@
     --radius-full: 9999px;
 
     /* Gradients — minimal: very subtle only */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 42%) 0%, hsl(280 70% 50%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(262 52% 47%) 0%, hsl(272 48% 52%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(35 95% 55%) 100%);
     --gradient-hero: linear-gradient(180deg, hsl(220 14% 98%) 0%, hsl(0 0% 100%) 100%);
     --gradient-card: none;
@@ -92,8 +92,8 @@
     --shadow-2xl: 0 12px 24px -8px hsl(222 47% 11% / 0.08);
 
     /* Brand — minimal: no glow */
-    --shadow-primary: 0 2px 8px 0 hsl(262 83% 42% / 0.12);
-    --shadow-primary-lg: 0 4px 12px 0 hsl(262 83% 42% / 0.15);
+    --shadow-primary: 0 2px 8px 0 hsl(262 52% 47% / 0.12);
+    --shadow-primary-lg: 0 4px 12px 0 hsl(262 52% 47% / 0.15);
     --shadow-accent: 0 2px 8px 0 hsl(25 95% 53% / 0.12);
     --shadow-accent-lg: 0 4px 12px 0 hsl(25 95% 53% / 0.15);
     --shadow-card: 0 1px 2px hsl(222 47% 11% / 0.04);
@@ -102,7 +102,7 @@
     /* Sidebar */
     --sidebar-background: 220 14% 98%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 262 83% 42%;
+    --sidebar-primary: 262 52% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 94%;
     --sidebar-accent-foreground: 222 47% 11%;
@@ -118,10 +118,10 @@
      3. COLOR PALETTE - Dark Mode
      --------------------------------------------------------------------------- */
   .dark {
-    --primary: 262 83% 58%;
+    --primary: 262 52% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 262 83% 52%;
-    --primary-muted: 262 40% 15%;
+    --primary-hover: 262 52% 50%;
+    --primary-muted: 262 35% 16%;
     
     --accent: 25 95% 55%;
     --accent-foreground: 0 0% 100%;
@@ -157,10 +157,10 @@
 
     --border: 222 30% 18%;
     --input: 222 30% 18%;
-    --ring: 262 83% 58%;
+    --ring: 220 10% 45%;
 
     /* Dark Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 50%) 0%, hsl(280 70% 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(262 52% 54%) 0%, hsl(272 48% 58%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(25 95% 55%) 0%, hsl(35 95% 58%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(262 83% 50% / 0.1) 0%, hsl(25 95% 53% / 0.1) 100%);
     --gradient-card: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 10%) 100%);
@@ -174,8 +174,8 @@
     --shadow-xl: 0 8px 16px -4px hsl(0 0% 0% / 0.25), 0 4px 8px -4px hsl(0 0% 0% / 0.2);
     --shadow-2xl: 0 12px 24px -8px hsl(0 0% 0% / 0.35);
 
-    --shadow-primary: 0 2px 8px 0 hsl(262 83% 58% / 0.2);
-    --shadow-primary-lg: 0 4px 12px 0 hsl(262 83% 58% / 0.25);
+    --shadow-primary: 0 2px 8px 0 hsl(262 52% 56% / 0.2);
+    --shadow-primary-lg: 0 4px 12px 0 hsl(262 52% 56% / 0.25);
     --shadow-accent: 0 2px 8px 0 hsl(25 95% 55% / 0.2);
     --shadow-accent-lg: 0 4px 12px 0 hsl(25 95% 55% / 0.25);
     --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.15);
@@ -184,7 +184,7 @@
     /* Dark Sidebar */
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary: 262 52% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 30% 14%;
     --sidebar-accent-foreground: 210 40% 98%;

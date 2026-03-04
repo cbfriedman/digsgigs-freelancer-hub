@@ -2370,7 +2370,7 @@ const DiggerDetail = () => {
                     >
                       {getDisplayedProfessions().map((name, idx) => (
                         <span key={idx} className="inline-flex items-center gap-1 rounded border border-border bg-muted/20 px-1.5 py-0.5 text-xs">
-                          <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-violet-500" />
+                          <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-primary" />
                           {name}
                         </span>
                       ))}
@@ -2492,7 +2492,7 @@ const DiggerDetail = () => {
                         <div className="flex flex-wrap gap-1.5">
                           {(digger.digger_categories || []).map((dc, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                              <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
+                              <span className="h-2 w-2 rounded-full shrink-0 bg-primary" />
                               {dc.categories?.name || ""}
                             </span>
                           ))}

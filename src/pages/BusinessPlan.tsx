@@ -622,7 +622,7 @@ const BusinessPlan = () => {
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <div className="text-3xl font-bold text-purple-600">12</div>
+              <div className="text-3xl font-bold text-primary">12</div>
               <div className="text-sm text-muted-foreground">Month Price Lock</div>
             </CardContent>
           </Card>
@@ -805,7 +805,7 @@ const BusinessPlan = () => {
             {/* Premium */}
             <div>
               <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                <Badge variant="secondary" className="bg-purple-500/10 text-purple-700">$500 - $2,000+</Badge>
+                <Badge variant="secondary" className="bg-primary/10 text-primary">$500 - $2,000+</Badge>
                 Premium Backlinks
               </h3>
               <Table>
@@ -824,21 +824,21 @@ const BusinessPlan = () => {
                     <TableCell>Contributed Content</TableCell>
                     <TableCell><Badge variant="outline">DA 95</Badge></TableCell>
                     <TableCell>$1,200-$2,400/yr</TableCell>
-                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                    <TableCell><Badge className="bg-primary">Exceptional</Badge></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">Entrepreneur.com</TableCell>
                     <TableCell>Sponsored Content</TableCell>
                     <TableCell><Badge variant="outline">DA 92</Badge></TableCell>
                     <TableCell>$1,500-$3,000</TableCell>
-                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                    <TableCell><Badge className="bg-primary">Exceptional</Badge></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">TechCrunch</TableCell>
                     <TableCell>Press Coverage</TableCell>
                     <TableCell><Badge variant="outline">DA 94</Badge></TableCell>
                     <TableCell>$500-$2,000 (PR)</TableCell>
-                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                    <TableCell><Badge className="bg-primary">Exceptional</Badge></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">HubSpot Guest Post</TableCell>
@@ -865,7 +865,7 @@ const BusinessPlan = () => {
                     <div className="text-sm text-muted-foreground">Moderate (+ Mid-range)</div>
                   </div>
                   <div className="text-center p-4 bg-background rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">$8,000-$15,000</div>
+                    <div className="text-2xl font-bold text-primary">$8,000-$15,000</div>
                     <div className="text-sm text-muted-foreground">Aggressive (+ Premium)</div>
                   </div>
                 </div>

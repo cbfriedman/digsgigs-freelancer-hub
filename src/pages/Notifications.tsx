@@ -17,7 +17,7 @@ const getNotificationIcon = (type: string) => {
     case "new_message":
       return <MessageSquare className="h-5 w-5 text-blue-500" />;
     case "new_gig":
-      return <Briefcase className="h-5 w-5 text-purple-500" />;
+      return <Briefcase className="h-5 w-5 text-primary" />;
     case "bid_status":
       return <Mail className="h-5 w-5 text-orange-500" />;
     default:

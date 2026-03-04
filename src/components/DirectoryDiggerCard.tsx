@@ -145,7 +145,7 @@ export const DirectoryDiggerCard = ({
                 </Badge>
               )}
               {isBonded && (
-                <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs">
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs">
                   Bonded
                 </Badge>
               )}

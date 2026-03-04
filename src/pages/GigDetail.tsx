@@ -1009,7 +1009,7 @@ const GigDetail = () => {
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={cn(
                     "text-xs font-normal",
-                    gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                    gig.status === "open" && "text-primary",
                     gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
                     gig.status === "completed" && "text-green-700 dark:text-green-600",
                     gig.status === "awarded" && "text-green-500 dark:text-green-400",

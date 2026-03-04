@@ -333,7 +333,7 @@ export default function ManageGigsTab() {
                       <TableCell>
                         <span className={cn(
                           "text-xs font-normal",
-                          g.status === "open" && "text-violet-600 dark:text-violet-400",
+                          g.status === "open" && "text-primary",
                           g.status === "in_progress" && "text-blue-600 dark:text-blue-400",
                           g.status === "completed" && "text-green-700 dark:text-green-600",
                           (g.status === "pending" || g.status === "pending_confirmation") && "text-gray-500 dark:text-gray-400",

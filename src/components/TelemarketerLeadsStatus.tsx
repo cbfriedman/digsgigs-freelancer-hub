@@ -82,7 +82,7 @@ export function TelemarketerLeadsStatus({ telemarketerId }: TelemarketerLeadsSta
     }
     
     if (nonExclusiveCount > 0) {
-      return { label: `Non-Exclusive (${nonExclusiveCount})`, color: "bg-purple-500" };
+      return { label: `Non-Exclusive (${nonExclusiveCount})`, color: "bg-primary" };
     }
     
     return { label: "Open", color: "bg-yellow-500" };

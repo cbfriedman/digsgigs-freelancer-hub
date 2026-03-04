@@ -70,7 +70,7 @@ export default function CompetitiveAdvantageShowcase() {
       value: "Higher quality contacts"
     },
     {
-      icon: <Zap className="h-5 w-5 text-purple-600" />,
+      icon: <Zap className="h-5 w-5 text-primary" />,
       title: "No Wasted Spend",
       description: "Pay only for real leads from people actively seeking your services. No clicks, no tire-kickers.",
       value: "Real leads only"

@@ -117,7 +117,7 @@ export default function EscrowDashboard() {
   const getStatusClass = (status: string) => {
     if (status === "completed" || status === "funded") return "text-green-700 dark:text-green-600";
     if (status === "in_progress") return "text-blue-600 dark:text-blue-400";
-    if (status === "pending" || status === "open") return status === "open" ? "text-violet-600 dark:text-violet-400" : "text-gray-500 dark:text-gray-400";
+    if (status === "pending" || status === "open") return status === "open" ? "text-primary" : "text-gray-500 dark:text-gray-400";
     return "text-gray-500 dark:text-gray-400";
   };
   const getMilestoneStatusLabel = (status: string) => {

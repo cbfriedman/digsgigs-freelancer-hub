@@ -479,7 +479,7 @@ function BidRow({
     gigStatus === "completed" ? "Completed" : gigStatus === "in_progress" ? "In progress" : gigStatus === "awarded" ? "Awarded" : gigStatus === "open" ? "Open" : gigStatus;
   const gigStatusClass = cn(
     "text-xs md:text-sm font-normal shrink-0",
-    gigStatus === "open" && "text-violet-600 dark:text-violet-400",
+    gigStatus === "open" && "text-primary",
     gigStatus === "in_progress" && "text-blue-600 dark:text-blue-400",
     gigStatus === "completed" && "text-green-700 dark:text-green-600",
     (gigStatus === "pending_confirmation" || gigStatus === "pending") && "text-gray-500 dark:text-gray-400",

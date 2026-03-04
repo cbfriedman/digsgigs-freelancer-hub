@@ -639,7 +639,7 @@ const MyGigs = () => {
                           </h3>
                           <span className={cn(
                             "text-xs font-normal shrink-0",
-                            gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                            gig.status === "open" && "text-primary",
                             gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
                             gig.status === "completed" && "text-green-700 dark:text-green-600",
                             (gig.status === "pending_confirmation" || gig.status === "pending") && "text-gray-500 dark:text-gray-400",

@@ -783,7 +783,7 @@ const BrowseGigs = () => {
                                   )}
                                   <span className={cn(
                                     "text-[10px] font-normal",
-                                    gig.status === "open" && "text-violet-600 dark:text-violet-400",
+                                    gig.status === "open" && "text-primary",
                                     gig.status === "awarded" && "text-green-500 dark:text-green-400",
                                     gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
                                     gig.status === "completed" && "text-green-700 dark:text-green-600",
@@ -801,7 +801,7 @@ const BrowseGigs = () => {
                                     <span className="text-[10px] text-blue-600 dark:text-blue-400">Escrow</span>
                                   )}
                                 </div>
-                                <h3 className="text-base font-medium leading-tight text-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-2 sm:text-[15px]">
+                                <h3 className="text-base font-medium leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2 sm:text-[15px]">
                                   {gig.title}
                                 </h3>
                                 <div className="text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>

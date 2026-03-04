@@ -210,7 +210,7 @@ export const MarketingEmailsTab = () => {
       return <Badge variant="default">Marketing</Badge>;
     }
     if (type === 'community') {
-      return <Badge className="bg-purple-500 hover:bg-purple-600">Community</Badge>;
+      return <Badge className="bg-primary hover:bg-primary-hover">Community</Badge>;
     }
     return (
       <Badge variant="secondary">
@@ -245,7 +245,7 @@ export const MarketingEmailsTab = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Community</CardTitle>
-            <MessageSquare className="h-4 w-4 text-purple-500" />
+            <MessageSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCommunity}</div>
@@ -288,10 +288,10 @@ export const MarketingEmailsTab = () => {
       </div>
 
       {/* Community Email Campaign - Featured */}
-      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/15">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-purple-500" />
+            <MessageSquare className="h-5 w-5 text-primary" />
             🚀 Community Launch Email Campaign
           </CardTitle>
           <CardDescription>
@@ -355,7 +355,7 @@ export const MarketingEmailsTab = () => {
           <Button
             onClick={sendCommunityEmail}
             disabled={sendingCommunity || (communityAudience === 'single' && !communityEmail)}
-            className="w-full bg-purple-600 hover:bg-purple-700"
+            className="w-full bg-primary hover:bg-primary-hover"
           >
             {sendingCommunity ? (
               <>

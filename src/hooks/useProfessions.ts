@@ -139,7 +139,7 @@ export const useProfessions = () => {
     switch (tier) {
       case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
       case 'mid': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
-      case 'high': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
+      case 'high': return 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary';
     }
   };
 

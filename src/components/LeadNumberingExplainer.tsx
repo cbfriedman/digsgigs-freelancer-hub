@@ -5,7 +5,7 @@ import { Calendar, Hash } from "lucide-react";
 export default function LeadNumberingExplainer() {
   const monthlyExample = [
     { month: "JAN", leads: ["JAN#1", "JAN#2", "JAN#3", "...", "JAN#10"], tier: "Standard Rate", color: "text-blue-600" },
-    { month: "FEB", leads: ["FEB#1", "FEB#2", "...", "FEB#15"], tier: "Volume Discount (11-50)", color: "text-purple-600" },
+    { month: "FEB", leads: ["FEB#1", "FEB#2", "...", "FEB#15"], tier: "Volume Discount (11-50)", color: "text-primary" },
     { month: "MAR", leads: ["MAR#1", "MAR#2", "...", "MAR#55"], tier: "Best Rate (51+)", color: "text-amber-600" },
   ];
 
@@ -110,7 +110,7 @@ export default function LeadNumberingExplainer() {
                 </td>
               </tr>
               <tr className="border-b border-border/50 hover:bg-accent/5">
-                <td className="py-3 px-4 font-mono text-purple-600">Lead #11 - #50</td>
+                <td className="py-3 px-4 font-mono text-primary">Lead #11 - #50</td>
                 <td className="py-3 px-4">Volume Discount</td>
                 <td className="py-3 px-4 text-xs">
                   <code className="px-2 py-1 bg-background rounded border border-border">JAN#11</code> to{" "}

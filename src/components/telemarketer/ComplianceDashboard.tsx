@@ -226,7 +226,7 @@ export function ComplianceDashboard({ telemarketerId }: ComplianceDashboardProps
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <PhoneCall className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+            <PhoneCall className="w-6 h-6 mx-auto mb-2 text-primary" />
             <div className="text-2xl font-bold">{stats.totalCalls}</div>
             <div className="text-xs text-muted-foreground">Calls Made</div>
           </CardContent>

@@ -98,7 +98,7 @@ const BreakevenCalculator = () => {
             </div>
             <div className="text-center">
               <p className="text-muted-foreground">Premium Net Earnings</p>
-              <p className="text-lg font-bold text-purple-600">
+              <p className="text-lg font-bold text-primary">
                 ${premiumNetEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
@@ -279,7 +279,7 @@ const BreakevenCalculator = () => {
 
           {/* Premium Plan Breakdown */}
           <div className="space-y-2">
-            <h4 className="font-semibold text-purple-600 mb-3">Premium Plan Breakdown</h4>
+            <h4 className="font-semibold text-primary mb-3">Premium Plan Breakdown</h4>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Monthly Subscription</span>
@@ -309,7 +309,7 @@ const BreakevenCalculator = () => {
                 <span>Total Costs</span>
                 <span>${premiumTotalCosts.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between font-bold text-purple-600">
+              <div className="flex justify-between font-bold text-primary">
                 <span>Net Earnings</span>
                 <span>${premiumNetEarnings.toFixed(2)}</span>
               </div>
