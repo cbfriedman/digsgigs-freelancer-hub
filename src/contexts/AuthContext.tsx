@@ -286,6 +286,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           setTimeout(async () => {
             try {
+              // Never redirect while 2FA verification is pending (user must enter code on login page)
+              if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mfaPendingVerification') === 'true') {
+                return;
+              }
+
               // Handle password recovery before other flows
               if (event === 'PASSWORD_RECOVERY') {
                 logger.log('Password recovery mode activated');

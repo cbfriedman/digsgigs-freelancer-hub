@@ -744,7 +744,7 @@ const AdminUserManagement = () => {
                                 }}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete profile
+                                Delete profile (keep account)
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
@@ -755,7 +755,7 @@ const AdminUserManagement = () => {
                                 }}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete user
+                                Delete user (entire account)
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -856,8 +856,8 @@ const AdminUserManagement = () => {
               {actionType === "remove" && `Are you sure you want to remove the "${selectedRole}" role from this user?`}
               {actionType === "suspend" && "The user will be blocked from signing in until unsuspended. Continue?"}
               {actionType === "unsuspend" && "The user will be able to sign in again. Continue?"}
-              {actionType === "delete_profile" && "This will remove digger/gigger profile records and related role assignments, but keep the login account. This action cannot be undone. Continue?"}
-              {actionType === "delete" && "This will permanently delete the user account. This action cannot be undone. Continue?"}
+              {actionType === "delete_profile" && "This will remove digger/gigger/telemarketer profile records and related role assignments, but keep the login account. This action cannot be undone. Continue?"}
+              {actionType === "delete" && "This will permanently delete the user account (auth, profile, roles, and all data). This action cannot be undone. If deletion fails with only roles removed, run: supabase db push, then supabase functions deploy admin-manage-user. Continue?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

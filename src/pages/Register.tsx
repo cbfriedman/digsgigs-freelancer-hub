@@ -211,6 +211,11 @@ const Register = () => {
   const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
   const [isDiggerLogin, setIsDiggerLogin] = useState(false); // Track if login is for Digger (requires OTP every time)
 
+  // 2FA: after password sign-in, require TOTP if user has MFA enrolled
+  const [mfaRequiredAfterSignIn, setMfaRequiredAfterSignIn] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaVerificationCode, setMfaVerificationCode] = useState("");
+
   // Step 2: Role Selection - pre-select based on URL params (e.g., ?type=digger from /apply-digger or ?role=digger)
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1586,11 +1591,29 @@ const Register = () => {
     }
   };
 
+  const navigateAfterSignIn = async (userId: string) => {
+    let roles: any[] = [];
+    let rolesError: any = null;
+    try {
+      const { data: rpcRoles, error: rpcError } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: userId });
+      if (!rpcError && rpcRoles) roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
+      else rolesError = rpcError || new Error("RPC function not available");
+    } catch (rpcException) {
+      rolesError = rpcException;
+    }
+    if (rolesError) {
+      toast.success("Welcome back!");
+      window.location.href = "/role-dashboard";
+      return;
+    }
+    toast.success(roles.length > 0 ? "Welcome back!" : "Please complete your profile.");
+    window.location.href = roles.length > 0 ? "/role-dashboard" : "/register?complete=true";
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     console.log("handleSignIn");
     e.preventDefault();
-    
-    // If OTP was already sent (shouldn't happen in normal flow, but handle it), verify the code instead
+
     if (signInOtpSent) {
       await handleSignInVerification(e);
       return;
@@ -1599,16 +1622,19 @@ const Register = () => {
     console.log("Sign in started");
     setLoading(true);
 
+    // Block redirect BEFORE sign-in so auth listener cannot redirect when session is set
+    sessionStorage.setItem("mfaPendingVerification", "true");
+
     try {
       console.log("Attempting sign in with email:", email);
-      
-      // Sign in with password - standard sign-in flow (NO OTP required)
+
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) {
+        sessionStorage.removeItem("mfaPendingVerification");
         console.error("Sign in error:", signInError);
         toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
         setLoading(false);
@@ -1616,50 +1642,93 @@ const Register = () => {
       }
 
       if (!signInData.user) {
+        sessionStorage.removeItem("mfaPendingVerification");
         console.error("No user data returned");
         toast.error("No user data returned from sign in");
         setLoading(false);
         return;
       }
 
-      // User authenticated successfully - sign them in immediately
-      // No OTP required for regular sign-ins (only for sign-up)
-      
-      // Check if user has roles to determine where to redirect using RPC function
-      let roles: any[] = [];
-      let rolesError = null;
-      
-      try {
-        const { data: rpcRoles, error: rpcError } = await (supabase
-          .rpc as any)('get_user_app_roles_safe', { _user_id: signInData.user.id });
-        
-        if (!rpcError && rpcRoles) {
-          roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
-        } else {
-          rolesError = rpcError || new Error('RPC function not available');
+      // If user has 2FA enrolled, require verification before granting access.
+      // We rely on listFactors() only; AAL can be unreliable right after sign-in.
+      let needMfa = false;
+      let firstFactorId: string | null = null;
+      const mfa = (supabase.auth as { mfa?: { listFactors: () => Promise<{ data?: unknown }> } }).mfa;
+      if (mfa?.listFactors) {
+        try {
+          const factorsResult = await mfa.listFactors();
+          const data = factorsResult?.data as { totp?: { id: string }[]; all?: { id: string; factor_type?: string }[] } | undefined;
+          const rawList = data?.totp ?? data?.all;
+          const list = Array.isArray(rawList) ? rawList : [];
+          // Any factor counts (TOTP or other); after password sign-in we always require second factor if any exist
+          const withId = list.filter((f: { id?: string }) => f?.id);
+          if (withId.length > 0) {
+            firstFactorId = (withId[0] as { id: string }).id;
+            needMfa = true;
+          }
+        } catch (_) {
+          // MFA API not available or failed - continue without 2FA step
         }
-      } catch (rpcException) {
-        console.warn('RPC function not available:', rpcException);
-        rolesError = rpcException as any;
       }
 
-      if (rolesError) {
-        console.error("Error checking roles:", rolesError);
-        toast.success("Welcome back!");
-        window.location.href = '/role-dashboard';
+      if (needMfa && firstFactorId) {
+        setMfaFactorId(firstFactorId);
+        setMfaRequiredAfterSignIn(true);
+        setLoading(false);
         return;
       }
 
-      toast.success(roles.length > 0 ? "Welcome back!" : "Please complete your profile.");
-      if (roles.length > 0) {
-        window.location.href = '/role-dashboard';
-      } else {
-        window.location.href = '/register?complete=true';
-      }
+      sessionStorage.removeItem("mfaPendingVerification");
+      await navigateAfterSignIn(signInData.user.id);
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
       setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaFactorId || mfaVerificationCode.length !== 6) {
+      toast.error("Please enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const mfa = supabase.auth as {
+        mfa?: {
+          challenge: (opts: { factorId: string }) => Promise<{ data: { id: string } | null; error: { message: string } | null }>;
+          verify: (opts: { factorId: string; challengeId: string; code: string }) => Promise<{ data: unknown; error: { message: string } | null }>;
+        };
+      };
+      const { data: challengeData, error: challengeError } = await mfa.mfa?.challenge?.({ factorId: mfaFactorId }) ?? { data: null, error: null };
+      if (challengeError || !challengeData?.id) {
+        toast.error(challengeError?.message ?? "Failed to start verification.");
+        setLoading(false);
+        return;
+      }
+      const { error: verifyError } = await mfa.mfa?.verify?.({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaVerificationCode.replace(/\D/g, "").slice(0, 6),
+      }) ?? { error: null };
+      if (verifyError) {
+        toast.error(verifyError.message ?? "Invalid verification code.");
+        setLoading(false);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        sessionStorage.removeItem("mfaPendingVerification");
+        setMfaRequiredAfterSignIn(false);
+        setMfaFactorId(null);
+        setMfaVerificationCode("");
+        await navigateAfterSignIn(user.id);
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Verification failed.");
     } finally {
       setLoading(false);
     }
@@ -2034,6 +2103,52 @@ const Register = () => {
 
             {/* Sign In Form */}
             {!isPasswordResetMode && isSignInMode && (
+              <>
+                {/* 2FA verification step (after password sign-in when user has MFA enrolled) */}
+                {mfaRequiredAfterSignIn ? (
+                  <form onSubmit={handleMfaVerify} className="space-y-4">
+                    <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
+                      <h4 className="font-medium text-foreground">Two-factor authentication</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Enter the 6-digit code from your authenticator app to sign in.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="mfa-code">Verification code</Label>
+                        <Input
+                          id="mfa-code"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          placeholder="000000"
+                          maxLength={6}
+                          value={mfaVerificationCode}
+                          onChange={(e) => setMfaVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          className="text-center text-2xl tracking-widest font-mono"
+                          disabled={loading}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading || mfaVerificationCode.length !== 6}>
+                        {loading ? "Verifying…" : "Verify and sign in"}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full"
+                        disabled={loading}
+                        onClick={async () => {
+                          sessionStorage.removeItem("mfaPendingVerification");
+                          await supabase.auth.signOut();
+                          setMfaRequiredAfterSignIn(false);
+                          setMfaFactorId(null);
+                          setMfaVerificationCode("");
+                        }}
+                      >
+                        Back to sign in
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
               <form onSubmit={handleSignIn} className="space-y-4">
                 {/* Google Sign In Button */}
                 {!signInOtpSent && (
@@ -2202,6 +2317,8 @@ const Register = () => {
                   </Button>
                 </p>
               </form>
+                )}
+              </>
             )}
 
             {/* Step 1: Basic Information */}

@@ -405,14 +405,27 @@ export default function Account() {
     })();
   }, [user, profileRefreshKey]);
 
+  const fetchMfaFactors = async (): Promise<{ id: string; friendly_name?: string; factor_type: string }[]> => {
+    const mfa = (supabase.auth as { mfa?: { listFactors: () => Promise<{ data?: { all?: unknown[]; totp?: unknown[]; factors?: unknown[] } }> } }).mfa;
+    if (!mfa?.listFactors) return [];
+    const result = await mfa.listFactors();
+    const data = result.data as { all?: { id: string; friendly_name?: string; factor_type?: string; type?: string }[]; totp?: { id: string; friendly_name?: string; factor_type?: string; type?: string }[]; factors?: { id: string; friendly_name?: string; factor_type?: string; type?: string }[] } | undefined;
+    const raw = data?.totp ?? data?.all ?? data?.factors ?? [];
+    const list = Array.isArray(raw) ? raw : [];
+    return list.map((f) => ({
+      id: f.id,
+      friendly_name: f.friendly_name,
+      factor_type: f.factor_type ?? f.type ?? "totp",
+    }));
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setMfaLoading(true);
       try {
-        const mfa = (supabase.auth as { mfa?: { listFactors: () => Promise<{ data: { factors?: { id: string; friendly_name?: string; factor_type: string }[] } }> } }).mfa;
-        const result = mfa?.listFactors ? await mfa.listFactors() : { data: { factors: [] as { id: string; friendly_name?: string; factor_type: string }[] } };
-        setMfaFactors(result.data?.factors ?? []);
+        const factors = await fetchMfaFactors();
+        setMfaFactors(factors);
       } catch {
         setMfaFactors([]);
       } finally {
@@ -451,7 +464,17 @@ export default function Account() {
       try {
         const mfa = (supabase.auth as { mfa?: { enroll: (opts: { factorType: string; friendlyName: string }) => Promise<{ data: { id: string; totp?: { qr_code: string; secret: string } } | null; error: { message: string } | null }> } }).mfa;
         const { data, error } = await mfa?.enroll?.({ factorType: "totp", friendlyName: "Authenticator app" }) ?? { data: null, error: null };
-        if (error) throw new Error(error.message);
+        if (error) {
+          const msg = error?.message ?? "";
+          if (msg.includes("already exists") || msg.includes("already exist")) {
+            const factors = await fetchMfaFactors();
+            setMfaFactors(factors);
+            setMfaEnrollDialogOpen(false);
+            toast.success("Two-factor authentication is already enabled.");
+            return;
+          }
+          throw new Error(msg);
+        }
         if (data?.totp && data.id) setMfaEnrollSecret({ qr_code: data.totp.qr_code, secret: data.totp.secret, factorId: data.id });
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Failed to start 2FA setup");

@@ -23,6 +23,16 @@ export async function getEdgeFunctionErrorMessage(
   let serverMessage: string | null = null;
   if (data != null && typeof data === "object" && "error" in data && typeof (data as { error: unknown }).error === "string") {
     serverMessage = (data as { error: string }).error;
+    const debug = (data as { debug?: string }).debug;
+    const blockingTables = (data as { blocking_tables?: { schema_name?: string; table_name?: string; row_count?: number }[] }).blocking_tables;
+    if (Array.isArray(blockingTables) && blockingTables.length > 0) {
+      const blockingStr = blockingTables
+        .map((r) => `${r.schema_name ?? "public"}.${r.table_name ?? "?"} (${r.row_count ?? 0})`)
+        .join(", ");
+      serverMessage += ` Blocking: ${blockingStr}.`;
+    } else if (typeof debug === "string" && debug) {
+      serverMessage += ` (${debug})`;
+    }
   }
   if (!serverMessage && error != null && typeof error === "object" && "context" in error) {
     try {
@@ -36,6 +46,16 @@ export async function getEdgeFunctionErrorMessage(
               : null;
         if (body != null && typeof body === "object" && "error" in body && typeof (body as { error: unknown }).error === "string") {
           serverMessage = (body as { error: string }).error;
+          const blockingTables = (body as { blocking_tables?: { schema_name?: string; table_name?: string; row_count?: number }[] }).blocking_tables;
+          if (Array.isArray(blockingTables) && blockingTables.length > 0) {
+            const blockingStr = blockingTables
+              .map((r) => `${r.schema_name ?? "public"}.${r.table_name ?? "?"} (${r.row_count ?? 0})`)
+              .join(", ");
+            serverMessage += ` Blocking: ${blockingStr}.`;
+          } else {
+            const debug = (body as { debug?: string }).debug;
+            if (typeof debug === "string" && debug) serverMessage += ` (${debug})`;
+          }
         }
       }
     } catch {
@@ -45,7 +65,20 @@ export async function getEdgeFunctionErrorMessage(
   const fallback = (error != null && typeof error === "object" && "message" in error && typeof (error as { message: unknown }).message === "string")
     ? (error as { message: string }).message
     : defaultMessage;
-  return serverMessage ?? fallback;
+  const message = serverMessage ?? fallback;
+  // When backend returns "Database error deleting user" without blocking table names, show actionable hint
+  if (
+    message.includes("Database error deleting user") &&
+    !message.includes("Blocking:") &&
+    !message.includes("blocking_tables")
+  ) {
+    return "User could not be deleted (database constraint). Run: supabase db push (include latest migration), then supabase functions deploy admin-manage-user. If it still fails, check the toast for details or Dashboard > Edge Functions > Logs.";
+  }
+  // When cleanup RPC fails (e.g. function missing), suggest applying migrations
+  if (message.includes("Cleanup failed:") && (message.includes("does not exist") || message.includes("function"))) {
+    return message + " Apply migrations: supabase db push, then redeploy: supabase functions deploy admin-manage-user.";
+  }
+  return message;
 }
 
 /**

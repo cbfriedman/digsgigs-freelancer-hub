@@ -62,14 +62,18 @@ const AccountDeletionRequestsTab = () => {
   const handleApprove = async (req: DeletionRequest) => {
     if (req.status !== "pending") return;
     setProcessingId(req.id);
+    const body = {
+      action: "delete" as const,
+      userId: req.user_id,
+      confirmFullUserDeletion: true,
+    };
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[AccountDeletion] Approve payload:", { user_id: req.user_id, body });
+    }
     try {
       await invokeEdgeFunction(supabase, "admin-manage-user", {
         method: "POST",
-        body: {
-          action: "delete",
-          userId: req.user_id,
-          confirmFullUserDeletion: true,
-        },
+        body,
       });
 
       await supabase
@@ -84,7 +88,11 @@ const AccountDeletionRequestsTab = () => {
       toast.success("Account deleted successfully.");
       await loadRequests();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete account");
+      const message = e instanceof Error ? e.message : "Failed to delete account";
+      if (process.env.NODE_ENV === "development") {
+        console.error("[AccountDeletion] Approve failed:", message, e);
+      }
+      toast.error(message);
     } finally {
       setProcessingId(null);
     }

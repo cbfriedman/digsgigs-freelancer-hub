@@ -74,11 +74,14 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     if (loading) return;
 
     // CRITICAL: Check if we're in sign-in OTP flow - if so, don't redirect
-    // This prevents redirecting authenticated users who are in the middle of OTP verification
     const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
     if (isInOtpFlow) {
-      // User is in OTP flow - don't redirect, let them complete verification
-      // This applies to both redirectIfAuthenticated and requireVerified checks
+      return;
+    }
+
+    // CRITICAL: Check if we're in 2FA verification step after password sign-in - don't redirect
+    const mfaPending = sessionStorage.getItem('mfaPendingVerification') === 'true';
+    if (mfaPending) {
       return;
     }
 

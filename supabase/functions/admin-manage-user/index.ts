@@ -49,12 +49,18 @@ serve(async (req) => {
       );
     }
 
-    const body = await req.json();
-    const { action, userId, confirmFullUserDeletion } = body;
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const action = body?.action as string | undefined;
+    const userId = (body?.userId ?? body?.user_id) as string | undefined;
+    const confirmFullUserDeletion = body?.confirmFullUserDeletion;
 
-    if (!userId) {
+    if (!userId || typeof userId !== "string") {
+      const bodyKeys = typeof body === "object" && body !== null ? Object.keys(body) : [];
       return new Response(
-        JSON.stringify({ error: "userId is required" }),
+        JSON.stringify({
+          error: "userId is required",
+          debug: bodyKeys.length ? `body keys: ${bodyKeys.join(", ")}` : "body empty or invalid",
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -114,9 +120,22 @@ serve(async (req) => {
       }
 
       case "delete": {
-        if (confirmFullUserDeletion !== true) {
+        const confirmed = confirmFullUserDeletion === true || confirmFullUserDeletion === "true";
+        if (!confirmed) {
           return new Response(
-            JSON.stringify({ error: "Full user deletion requires explicit confirmation" }),
+            JSON.stringify({ error: "Full user deletion requires explicit confirmation. Pass confirmFullUserDeletion: true." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Clear storage.objects ownership and nullable FKs so auth delete can succeed
+        const { error: cleanupError } = await supabaseAdmin.rpc("admin_clear_user_references", {
+          target_user_id: userId,
+        });
+        if (cleanupError) {
+          console.error("Pre-delete cleanup error:", cleanupError);
+          return new Response(
+            JSON.stringify({ error: `Cleanup failed: ${cleanupError.message}` }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -125,8 +144,37 @@ serve(async (req) => {
 
         if (error) {
           console.error("Delete error:", error);
+          const message = error.message || "Failed to delete user";
+          const payload: Record<string, unknown> = { error: message };
+          // On DB constraint errors, run diagnostic so the client can show which tables still reference the user
+          if (message.includes("Database error deleting user")) {
+            payload.blocking_tables = [];
+            try {
+              const { data: refs, error: rpcErr } = await supabaseAdmin.rpc("admin_list_remaining_user_references", {
+                target_user_id: userId,
+              });
+              if (rpcErr) {
+                console.error("admin_list_remaining_user_references RPC error:", rpcErr);
+                payload.debug = `Diagnostic failed: ${rpcErr.message}. Run: supabase db push, then supabase functions deploy admin-manage-user.`;
+              } else if (refs && Array.isArray(refs) && refs.length > 0) {
+                payload.blocking_tables = refs;
+                payload.debug =
+                  "Blocking: " +
+                  (refs as { schema_name: string; table_name: string; row_count: number }[])
+                    .map((r) => `${r.schema_name}.${r.table_name} (${r.row_count})`)
+                    .join(", ");
+              } else {
+                payload.debug =
+                  "No refs found. Run: supabase db push (apply 20260313100000), then supabase functions deploy admin-manage-user. If it still fails, check Dashboard > Edge Functions > Logs.";
+              }
+            } catch (e) {
+              console.error("Diagnostic RPC failed:", e);
+              payload.debug =
+                "Run: supabase db push, then supabase functions deploy admin-manage-user. If it still fails, check Dashboard > Edge Functions > Logs.";
+            }
+          }
           return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify(payload),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -165,11 +213,24 @@ serve(async (req) => {
           );
         }
 
+        const { error: telemarketerDeleteError } = await supabaseAdmin
+          .from("telemarketer_profiles")
+          .delete()
+          .eq("user_id", userId);
+
+        if (telemarketerDeleteError) {
+          console.error("Delete telemarketer_profiles error:", telemarketerDeleteError);
+          return new Response(
+            JSON.stringify({ error: telemarketerDeleteError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         const { error: roleDeleteError } = await supabaseAdmin
           .from("user_app_roles")
           .delete()
           .eq("user_id", userId)
-          .in("app_role", ["digger", "gigger"]);
+          .in("app_role", ["digger", "gigger", "telemarketer"]);
 
         if (roleDeleteError) {
           console.error("Delete user_app_roles error:", roleDeleteError);

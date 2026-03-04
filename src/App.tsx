@@ -130,18 +130,20 @@ const RootLayout = () => {
   const pathname = location.pathname;
   const { activeRole } = useAuth();
   const isAdminRoute = pathname.startsWith("/admin");
+  const isAuthPage = pathname === "/register"; // sign-in and sign-up
   const isBlogPost = /^\/blog\/[^/]+$/.test(pathname);
   const isBlogIndex = pathname === "/blog";
   const showBackButton = isBlogPost || isBlogIndex;
   const backTo = isBlogPost ? "/blog" : "/";
   const backLabel = isBlogPost ? "Back to Blog" : "Back to Home";
   const roleMode = activeRole === "digger" || activeRole === "gigger" ? activeRole : "";
+  const showHeader = !isAdminRoute && !isAuthPage;
   return (
     <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
       <GlobalProgressBar />
       <NewGigAlertListener />
       <AwardNotificationListener />
-      {!isAdminRoute && (
+      {showHeader && (
         <Navigation
           showBackButton={showBackButton}
           backTo={backTo}
@@ -150,7 +152,7 @@ const RootLayout = () => {
       )}
       <PageViewTracker />
       <Outlet />
-      {!isAdminRoute && (
+      {showHeader && (
         <>
           <FloatingChatButton />
           <FloatingMessageWidget />
