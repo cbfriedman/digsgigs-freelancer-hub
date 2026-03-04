@@ -728,13 +728,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             {getUserInitials()}
                           </AvatarFallback>
                         </Avatar>
-                        {/* Show current mode when user has both Digger and Gigger so they're never confused */}
-                        {user && userRoles.includes("digger") && userRoles.includes("gigger") && (
+                        {/* Show current role so it's clear (Digger, Gigger, Admin, or Telemarketer) */}
+                        {user && userRoles.length > 0 && activeRole && roleConfig[activeRole] && (
                           <span className={cn(
                             "hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border",
-                            activeRole === "digger" ? "bg-primary/10 text-primary border-primary/30" : "bg-accent/50 text-accent-foreground border-accent/50"
+                            roleConfig[activeRole].color
                           )}>
-                            {activeRole === "digger" ? "🔧 Digger" : "📋 Gigger"}
+                            {roleConfig[activeRole].emoji} {roleConfig[activeRole].label}
                           </span>
                         )}
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
@@ -1150,10 +1150,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                            {/* Show current mode when user has both roles so they're never confused */}
-                            {userRoles.includes("digger") && userRoles.includes("gigger") && (
+                            {/* Show current role (Digger, Gigger, Admin, or Telemarketer) */}
+                            {userRoles.length > 0 && activeRole && roleConfig[activeRole] && (
                               <p className="text-xs font-medium mt-1.5 text-foreground/80">
-                                Viewing as: {activeRole === "digger" ? "🔧 Digger" : "📋 Gigger"}
+                                Viewing as: {roleConfig[activeRole].emoji} {roleConfig[activeRole].label}
                               </p>
                             )}
                           </div>

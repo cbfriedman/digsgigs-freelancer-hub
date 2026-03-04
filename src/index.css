@@ -201,10 +201,10 @@
     @apply border-border;
   }
 
-  /* Disable all animations and transitions platform-wide (except AI chat, loading spinners, typing dots) */
-  *:not(#ai-chat-root):not(#ai-chat-root *):not(.animate-spin):not(.animate-typing-dot):not(.loading-spinner-wrapper),
-  *:not(#ai-chat-root):not(#ai-chat-root *)::before,
-  *:not(#ai-chat-root):not(#ai-chat-root *)::after {
+  /* Disable all animations and transitions platform-wide (except AI chat, loading spinners, typing dots, homepage) */
+  *:not(#ai-chat-root):not(#ai-chat-root *):not([data-page="home"]):not([data-page="home"] *):not(.animate-spin):not(.animate-typing-dot):not(.loading-spinner-wrapper),
+  *:not(#ai-chat-root):not(#ai-chat-root *):not([data-page="home"]):not([data-page="home"] *)::before,
+  *:not(#ai-chat-root):not(#ai-chat-root *):not([data-page="home"]):not([data-page="home"] *)::after {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
     transition-duration: 0s !important;
@@ -567,6 +567,37 @@
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+/* -----------------------------------------------------------------------------
+   HOMEPAGE: entrance animations and hero (only [data-page="home"] is exempt from global animation reset)
+   ----------------------------------------------------------------------------- */
+[data-page="home"] .home-fade-up {
+  animation: home-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+[data-page="home"] .home-fade-in {
+  animation: home-fade-in 0.5s ease-out both;
+}
+[data-page="home"] .home-hero-bg-shift {
+  animation: home-hero-bg-shift 12s ease-in-out infinite alternate;
+}
+@keyframes home-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes home-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes home-hero-bg-shift {
+  0% { opacity: 0.92; background-position: 0% 50%; }
+  100% { opacity: 1; background-position: 100% 50%; }
 }
 
 /* Role mode: Gigger vs Digger (data-role-mode in App RootLayout). See docs/GIGGER_DIGGER_UX_AND_TONE.md */

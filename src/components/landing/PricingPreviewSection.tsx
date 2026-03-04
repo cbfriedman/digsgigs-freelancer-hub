@@ -9,13 +9,13 @@ export const PricingPreviewSection = () => {
     <section className="section-padding bg-muted/30">
       <div className="container-wide">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
+          <div className="text-center mb-10 home-fade-up" style={{ animationDelay: "0.05s" }}>
             <h2 className="mb-3">Two ways to get work</h2>
             <p className="text-muted-foreground">Pay per lead or get awarded and pay the referral fee.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="p-6 rounded-lg border border-border bg-card">
+            <div className="p-6 rounded-lg border border-border bg-card home-fade-up" style={{ animationDelay: "0.15s" }}>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Pay per lead</p>
               <h3 className="font-semibold text-lg mb-2">Non-exclusive access</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -25,7 +25,7 @@ export const PricingPreviewSection = () => {
               <p className="text-xs text-muted-foreground mt-1">$20 min – $69 max</p>
             </div>
 
-            <div className="p-6 rounded-lg border border-border bg-card">
+            <div className="p-6 rounded-lg border border-border bg-card home-fade-up" style={{ animationDelay: "0.25s" }}>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Exclusive award</p>
               <h3 className="font-semibold text-lg mb-2">15% gigger deposit</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -36,7 +36,7 @@ export const PricingPreviewSection = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm text-muted-foreground">
+          <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm text-muted-foreground home-fade-up" style={{ animationDelay: "0.35s" }}>
             {["No subscriptions", "Bad leads refunded", "Transparent pricing"].map((item, i) => (
               <span key={i} className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
@@ -45,7 +45,7 @@ export const PricingPreviewSection = () => {
             ))}
           </div>
 
-          <div className="text-center">
+          <div className="text-center home-fade-up" style={{ animationDelay: "0.45s" }}>
             <Button variant="outline" className="border-2" onClick={() => navigate("/pricing")}>
               View full pricing
               <ArrowRight className="ml-2 h-4 w-4" />

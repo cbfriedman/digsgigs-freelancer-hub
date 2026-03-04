@@ -10,7 +10,7 @@ export const FinalCTASection = () => {
   return (
     <section className="section-padding bg-muted/30">
       <div className="container-wide">
-        <div className="max-w-xl mx-auto text-center">
+        <div className="max-w-xl mx-auto text-center home-fade-up" style={{ animationDelay: "0.1s" }}>
           <h2 className="mb-4">Start getting leads</h2>
           <p className="text-muted-foreground mb-8">
             Join Digs & Gigs as a Digger or post your first gig as a Gigger. Free to join.
