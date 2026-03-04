@@ -183,6 +183,7 @@ serve(async (req) => {
       const session = await stripe.checkout.sessions.create({
         customer: customerId ?? undefined,
         customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,
+        // Connect destination charges: only card and us_bank_account (PayPal/Cash App/Link not supported for Connect unless enabled)
         payment_method_types: ["card", "us_bank_account"],
         line_items: lineItems,
         mode: "payment",

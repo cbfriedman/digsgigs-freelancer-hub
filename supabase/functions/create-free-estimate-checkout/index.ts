@@ -115,6 +115,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : diggerUser.user.email,
+      payment_method_types: ["card", "us_bank_account", "paypal", "cashapp", "link"],
       line_items: [
         {
           price_data: {

@@ -114,7 +114,7 @@ serve(async (req) => {
     });
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'us_bank_account'],
+      payment_method_types: ['card', 'us_bank_account', 'paypal', 'cashapp', 'link'],
       line_items: [
         {
           price_data: {

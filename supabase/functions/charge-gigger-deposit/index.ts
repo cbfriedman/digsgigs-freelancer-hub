@@ -320,7 +320,7 @@ serve(async (req) => {
       throw new Error(`Payment did not succeed: ${paymentIntent.status}`);
     }
 
-    // Checkout flow: create Stripe Checkout Session (card or US bank)
+    // Checkout flow: create Stripe Checkout Session (card, US bank — add paypal/cashapp/link only if enabled in Dashboard)
     const session = await stripe.checkout.sessions.create({
       customer: customerId ?? undefined,
       customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,

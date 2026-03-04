@@ -138,6 +138,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      payment_method_types: ["card", "us_bank_account", "paypal", "cashapp", "link"],
       line_items: lineItems,
       mode: "payment",
       success_url: `${req.headers.get("origin")}/checkout-success?type=lead_credits`,

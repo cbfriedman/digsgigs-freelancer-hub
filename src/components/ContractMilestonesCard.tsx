@@ -131,6 +131,7 @@ export function ContractMilestonesCard({
   const [exclusiveWithDeposit, setExclusiveWithDeposit] = useState<{ bidAmount: number; depositPaid: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [payingMode, setPayingMode] = useState<"checkout" | "saved_card" | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [showConnectPaymentDialog, setShowConnectPaymentDialog] = useState(false);
@@ -500,7 +501,9 @@ export function ContractMilestonesCard({
   };
 
   const handleApproveAndPay = async (milestoneId: string, useCheckout?: boolean) => {
+    const mode = useCheckout ? "checkout" : "saved_card";
     setPayingId(milestoneId);
+    setPayingMode(mode);
     try {
       const data = await invokeEdgeFunction<{
         requiresAction?: boolean;
@@ -523,6 +526,7 @@ export function ContractMilestonesCard({
         });
         window.location.href = data.checkoutUrl;
         setPayingId(null);
+        setPayingMode(null);
         return;
       }
 
@@ -543,6 +547,7 @@ export function ContractMilestonesCard({
           };
         });
         setPayingId(null);
+        setPayingMode(null);
         return;
       }
 
@@ -561,6 +566,7 @@ export function ContractMilestonesCard({
           ),
         };
       });
+      setPayingMode(null);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Something went wrong";
       const isInsufficientFunds = /insufficient|available balance|balance_insufficient/i.test(message);
@@ -573,6 +579,7 @@ export function ContractMilestonesCard({
       });
     } finally {
       setPayingId(null);
+      setPayingMode(null);
     }
   };
 
@@ -1048,8 +1055,11 @@ export function ContractMilestonesCard({
                           disabled={!!payingId}
                           className="bg-primary"
                         >
-                          {payingId === m.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                          {payingId === m.id && payingMode === "checkout" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              Loading…
+                            </>
                           ) : (
                             <>
                               <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -1073,8 +1083,11 @@ export function ContractMilestonesCard({
                             onClick={() => handleApproveAndPay(m.id, false)}
                             disabled={!!payingId}
                           >
-                            {payingId === m.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                            {payingId === m.id && payingMode === "saved_card" ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                Loading…
+                              </>
                             ) : (
                               <>
                                 <CreditCard className="h-4 w-4 mr-1" />

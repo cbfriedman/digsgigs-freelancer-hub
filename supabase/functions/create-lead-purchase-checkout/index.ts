@@ -378,10 +378,11 @@ serve(async (req) => {
       ? 'Semi-Exclusive'
       : confirmed ? 'Non-Exclusive Confirmed' : 'Non-Exclusive';
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session (card, US bank, PayPal, Cash App, Link)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      payment_method_types: ["card", "us_bank_account", "paypal", "cashapp", "link"],
       line_items: [
         {
           price_data: {
