@@ -93,7 +93,7 @@ export function MessageModerationDashboard() {
 
   const loadEvents = useCallback(async () => {
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from("message_moderation_events")
         .select("*")
         .order("created_at", { ascending: false })
@@ -119,13 +119,13 @@ export function MessageModerationDashboard() {
 
   const loadProfiles = useCallback(async (userIds: string[]) => {
     if (userIds.length === 0) return;
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("user_moderation_profile")
       .select("*")
       .in("user_id", userIds);
     if (error) return;
     const map: Record<string, UserProfile> = {};
-    (data || []).forEach((p: UserProfile) => {
+    ((data || []) as UserProfile[]).forEach((p: UserProfile) => {
       map[p.user_id] = p;
     });
     setProfiles(map);
@@ -146,21 +146,21 @@ export function MessageModerationDashboard() {
     const { id: userId, action } = actionUser;
     try {
       if (action === "warn") {
-        await supabase.rpc("admin_warn_user", { _target_user_id: userId });
+        await (supabase as any).rpc("admin_warn_user", { _target_user_id: userId });
         toast.success("User warned");
       } else if (action === "mute") {
         const hours = parseInt(muteUntil, 10) || 24;
         const until = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
-        await supabase.rpc("admin_mute_user", { _target_user_id: userId, _until: until });
+        await (supabase as any).rpc("admin_mute_user", { _target_user_id: userId, _until: until });
         toast.success(`User muted for ${hours} hours`);
       } else if (action === "ban") {
-        await supabase.rpc("admin_ban_user", { _target_user_id: userId });
+        await (supabase as any).rpc("admin_ban_user", { _target_user_id: userId });
         toast.success("User banned");
       } else if (action === "unmute") {
-        await supabase.rpc("admin_unmute_user", { _target_user_id: userId });
+        await (supabase as any).rpc("admin_unmute_user", { _target_user_id: userId });
         toast.success("User unmuted");
       } else if (action === "unban") {
-        await supabase.rpc("admin_unban_user", { _target_user_id: userId });
+        await (supabase as any).rpc("admin_unban_user", { _target_user_id: userId });
         toast.success("User unbanned");
       }
       setActionUser(null);

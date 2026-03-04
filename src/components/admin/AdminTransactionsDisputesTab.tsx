@@ -180,7 +180,7 @@ export default function AdminTransactionsDisputesTab() {
   const loadDisputes = async () => {
     setLoadingDisputes(true);
     try {
-      const { data: disputeData, error: disputeError } = await supabase
+      const { data: disputeData, error: disputeError } = await (supabase as any)
         .from("disputes")
         .select(`
           id,
@@ -272,7 +272,7 @@ export default function AdminTransactionsDisputesTab() {
   const updateDisputeNotes = async (disputeId: string, notes: string) => {
     setSavingDisputeId(disputeId);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("disputes")
         .update({ admin_notes: notes || null, updated_at: new Date().toISOString() })
         .eq("id", disputeId);

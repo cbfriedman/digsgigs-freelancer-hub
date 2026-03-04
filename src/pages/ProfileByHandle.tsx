@@ -236,7 +236,7 @@ export default function ProfileByHandle() {
                   setBidsToShow(4);
                 }
               })
-              .catch(() => { setRecentBids([]); setBidsToShow(4); });
+              .then(() => { setRecentBids([]); setBidsToShow(4); });
           } else {
             setRecentBids([]);
             setBidsToShow(4);

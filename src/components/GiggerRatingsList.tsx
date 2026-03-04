@@ -52,7 +52,7 @@ export const GiggerRatingsList = ({
 
   const fetchRatings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("gigger_ratings")
         .select(
           `
@@ -75,10 +75,10 @@ export const GiggerRatingsList = ({
 
       // Fetch actual paid amount per gig via RPC (works for owner and visitors; escrow table RLS blocks direct read for non-owner)
       let paidByGig: Record<string, number> = {};
-      const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", {
+      const { data: paidRows } = await (supabase as any).rpc("get_gigger_paid_amounts_by_gig", {
         p_consumer_id: consumerId,
       });
-      (paidRows || []).forEach((row: { gig_id: string; total_amount: number }) => {
+      ((paidRows as any[]) || []).forEach((row: { gig_id: string; total_amount: number }) => {
         if (row.gig_id) paidByGig[row.gig_id] = Number(row.total_amount);
       });
 

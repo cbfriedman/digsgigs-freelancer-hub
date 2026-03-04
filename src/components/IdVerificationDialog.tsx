@@ -86,16 +86,16 @@ export function IdVerificationDialog({
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("countries")
         .select("id, code_alpha2, name")
         .order("name");
       if (!error && data?.length) {
-        setCountries(data as CountryRow[]);
+        setCountries(data as unknown as CountryRow[]);
         setForm((f) => {
           if (f.country) return f;
-          const us = (data as CountryRow[]).find((c) => c.name === "United States");
-          const defaultCountry = us?.name ?? (data as CountryRow[])[0]?.name ?? "";
+          const us = (data as unknown as CountryRow[]).find((c) => c.name === "United States");
+          const defaultCountry = us?.name ?? (data as unknown as CountryRow[])[0]?.name ?? "";
           return { ...f, country: defaultCountry };
         });
       }
@@ -114,13 +114,13 @@ export function IdVerificationDialog({
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("regions")
         .select("id, name")
         .eq("country_id", countryId)
         .order("name");
       if (cancelled) return;
-      if (!error && data?.length) setRegions(data as RegionRow[]);
+      if (!error && data?.length) setRegions(data as unknown as RegionRow[]);
       else setRegions([]);
     })();
     return () => { cancelled = true; };

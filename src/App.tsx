@@ -114,6 +114,7 @@ import Subscribe from "./pages/Subscribe";
 import ImportSubscribers from "./pages/admin/ImportSubscribers";
 import BecomeADigger from "./pages/BecomeADigger";
 import HireAPro from "./pages/HireAPro";
+import EmbedWidget from "./pages/EmbedWidget";
 
 const queryClient = new QueryClient();
 
@@ -602,6 +603,10 @@ const router = createBrowserRouter(
       {
         path: "/hire-a-pro",
         element: <HireAPro />,
+      },
+      {
+        path: "/embed-widget",
+        element: <EmbedWidget />,
       },
       {
         path: "*",

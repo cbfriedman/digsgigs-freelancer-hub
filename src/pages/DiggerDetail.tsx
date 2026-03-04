@@ -1466,7 +1466,7 @@ const DiggerDetail = () => {
   const occupationBadge = getOccupationBadge();
   // User-level verification (same as Gigger profile when user has both roles)
   const p = digger.profiles as { id_verified?: boolean | null; phone_verified?: boolean | null; email_verified?: boolean | null; payment_verified?: boolean | null } | undefined;
-  const payoutConnected = !!(digger.stripe_connect_account_id && digger.stripe_connect_charges_enabled);
+  const payoutConnected = !!((digger as any).stripe_connect_account_id && (digger as any).stripe_connect_charges_enabled);
   const verificationItems = [
     { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
     { label: "Phone", isActive: !!p?.phone_verified, icon: Phone },

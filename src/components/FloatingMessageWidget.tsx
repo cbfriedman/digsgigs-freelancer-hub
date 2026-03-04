@@ -728,11 +728,11 @@ export function FloatingMessageWidget() {
           .eq("id", gigId)
           .single();
         if (gigError || !gig) {
-          toast({ title: "Project not found", variant: "destructive" });
+          toast.error("Project not found");
           return;
         }
         if (!gig.consumer_id) {
-          toast({ title: "This project does not support messaging", variant: "destructive" });
+          toast.error("This project does not support messaging");
           return;
         }
 
@@ -747,7 +747,7 @@ export function FloatingMessageWidget() {
           isDigger = diggerProfile?.user_id === user.id;
         }
         if (!isGigger && !isDigger) {
-          toast({ title: "You cannot access this conversation", variant: "destructive" });
+          toast.error("You cannot access this conversation");
           return;
         }
 
@@ -830,11 +830,7 @@ export function FloatingMessageWidget() {
         };
         openChatRef.current(conv, true, true);
       } catch (err: any) {
-        toast({
-          title: "Could not start conversation",
-          description: err?.message ?? "Something went wrong",
-          variant: "destructive",
-        });
+        toast.error(err?.message ?? "Could not start conversation");
       }
     };
     window.addEventListener(OPEN_FLOATING_CHAT_EVENT, handler as EventListener);

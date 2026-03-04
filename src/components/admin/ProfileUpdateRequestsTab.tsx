@@ -46,7 +46,7 @@ const ProfileUpdateRequestsTab = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profile_identity_update_requests")
         .select("id, user_id, status, first_name, last_name, address, city, state_region, zip_postal, country, created_at, reviewed_at, rejection_reason")
         .order("created_at", { ascending: false });
@@ -54,7 +54,7 @@ const ProfileUpdateRequestsTab = () => {
       if (error) throw error;
 
       const withProfiles = await Promise.all(
-        (data || []).map(async (r) => {
+        ((data || []) as any[]).map(async (r: any) => {
           const { data: profile } = await supabase
             .from("profiles")
             .select("email, full_name")

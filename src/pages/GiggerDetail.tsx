@@ -194,7 +194,7 @@ export default function GiggerDetail() {
           profileData: profileRes.data as unknown as ProfileRow | null,
           giggerData: giggerRes.data as unknown as GiggerProfileRow | null,
           diggerData: diggerRes.data as DiggerFallbackRow | null,
-          gigList: (gigsRes.data ?? []) as (GigRow & { awarded_at?: string | null })[],
+          gigList: (gigsRes.data ?? []) as unknown as (GigRow & { awarded_at?: string | null })[],
         };
       };
       const first = await fetchAll();
@@ -217,7 +217,7 @@ export default function GiggerDetail() {
       // Owner with no profile from DB: show basic page from auth so the page always opens.
       if (!profileData && isOwnerView && session?.session?.user) {
         const u = session.session.user as { user_metadata?: { full_name?: string; avatar_url?: string; picture?: string } };
-        const synthetic: ProfileRow = {
+        const synthetic = {
           id: userId,
           full_name: u.user_metadata?.full_name ?? null,
           avatar_url: (u.user_metadata?.avatar_url ?? u.user_metadata?.picture) ?? null,
@@ -238,7 +238,7 @@ export default function GiggerDetail() {
           state: null,
           city: null,
         };
-        setProfile(synthetic);
+        setProfile(synthetic as any);
         setGiggerProfile(giggerData ?? { user_id: userId, show_to_diggers: true });
         setDiggerFallback(diggerData);
         setGigs(gigList);
@@ -246,13 +246,13 @@ export default function GiggerDetail() {
         const active = gigList.filter((g) => g.status === "in_progress" || ((g as { awarded_at?: string | null }).awarded_at != null && g.status !== "completed")).length;
         const completed = gigList.filter((g) => g.status === "completed").length;
         setStats({ open, active, completed, total: gigList.length });
-        const { data: spentTotal } = await supabase.rpc("get_gigger_total_spent", { p_consumer_id: userId });
+        const { data: spentTotal } = await (supabase as any).rpc("get_gigger_total_spent", { p_consumer_id: userId });
         if (!cancelled && spentTotal != null) {
           const n = Number(spentTotal);
           setTotalSpent(n > 0 ? n : null);
         }
-        const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
-        if (!cancelled && paidRows?.length) {
+        const { data: paidRows } = await (supabase as any).rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
+        if (!cancelled && (paidRows as any[])?.length) {
           const map: Record<string, number> = {};
           (paidRows as { gig_id: string; total_amount: number }[]).forEach((row) => {
             if (row.gig_id) map[row.gig_id] = Number(row.total_amount);
@@ -298,13 +298,13 @@ export default function GiggerDetail() {
       const active = gigList.filter((g) => g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")).length;
       const completed = gigList.filter((g) => g.status === "completed").length;
       setStats({ open, active, completed, total: gigList.length });
-      const { data: spentTotal } = await supabase.rpc("get_gigger_total_spent", { p_consumer_id: userId });
+      const { data: spentTotal } = await (supabase as any).rpc("get_gigger_total_spent", { p_consumer_id: userId });
       if (!cancelled && spentTotal != null) {
         const n = Number(spentTotal);
         setTotalSpent(n > 0 ? n : null);
       }
-      const { data: paidRows } = await supabase.rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
-      if (!cancelled && paidRows?.length) {
+      const { data: paidRows } = await (supabase as any).rpc("get_gigger_paid_amounts_by_gig", { p_consumer_id: userId });
+      if (!cancelled && (paidRows as any[])?.length) {
         const map: Record<string, number> = {};
         (paidRows as { gig_id: string; total_amount: number }[]).forEach((row) => {
           if (row.gig_id) map[row.gig_id] = Number(row.total_amount);

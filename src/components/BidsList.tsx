@@ -135,7 +135,7 @@ interface Bid {
     custom_occupation_title?: string | null;
     profile_name?: string | null;
     offers_free_estimates?: boolean;
-    profiles?: { full_name: string | null } | null;
+    profiles2?: { full_name: string | null } | null;
   };
   reference_count?: number;
 }
