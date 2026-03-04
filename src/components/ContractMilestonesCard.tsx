@@ -163,7 +163,7 @@ export function ContractMilestonesCard({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("get_milestone_auto_release_days");
+      const { data } = await (supabase as any).rpc("get_milestone_auto_release_days");
       if (!cancelled && typeof data === "number" && data >= 7 && data <= 60) setAutoReleaseDays(data);
     })();
     return () => { cancelled = true; };
@@ -204,7 +204,7 @@ export function ContractMilestonesCard({
       // Contract exists: fetch milestones and (for exclusive) bid + deposit in parallel
       const bidId = gigRow?.awarded_bid_id;
       const [milestonesRes, ...exclusiveRes] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("milestone_payments")
           .select("id, milestone_number, description, amount, status, stripe_payment_intent_id, released_at, work_log_hours, work_log_note, work_log_attachment_path")
           .eq("escrow_contract_id", contractRow.id)
@@ -331,7 +331,7 @@ export function ContractMilestonesCard({
             console.error("[ContractMilestonesCard] ratings fetch error:", myError.message, myError.code);
           }
           setMyReview(myRow ? { rating: myRow.rating, review_text: myRow.review_text, created_at: myRow.created_at } : null);
-          const { data: theirRow, error: theirError } = await supabase
+          const { data: theirRow, error: theirError } = await (supabase as any)
             .from("gigger_ratings")
             .select("rating, review_text, created_at")
             .eq("gig_id", gigId)
@@ -343,7 +343,7 @@ export function ContractMilestonesCard({
           }
           setTheirReview(theirRow ? { rating: theirRow.rating, review_text: theirRow.review_text, created_at: theirRow.created_at } : null);
         } else {
-          const { data: myRow, error: myError } = await supabase
+          const { data: myRow, error: myError } = await (supabase as any)
             .from("gigger_ratings")
             .select("rating, review_text, created_at")
             .eq("gig_id", gigId)

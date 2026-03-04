@@ -1870,6 +1870,88 @@ export type Database = {
           },
         ]
       }
+      gig_drafts: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          converted: boolean | null
+          converted_gig_id: string | null
+          created_at: string | null
+          description: string | null
+          email: string | null
+          follow_up_sent: boolean | null
+          follow_up_sent_at: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          project_types: string[] | null
+          session_id: string
+          source: string | null
+          timeline: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          converted?: boolean | null
+          converted_gig_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          follow_up_sent?: boolean | null
+          follow_up_sent_at?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          project_types?: string[] | null
+          session_id: string
+          source?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          converted?: boolean | null
+          converted_gig_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          follow_up_sent?: boolean | null
+          follow_up_sent_at?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          project_types?: string[] | null
+          session_id?: string
+          source?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_drafts_converted_gig_id_fkey"
+            columns: ["converted_gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_drafts_converted_gig_id_fkey"
+            columns: ["converted_gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_drafts_converted_gig_id_fkey"
+            columns: ["converted_gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gigger_deposits: {
         Row: {
           acceptance_deadline: string
@@ -4202,6 +4284,80 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string | null
+          id: string
+          referral_code: string
+          referred_email: string | null
+          referred_gig_id: string | null
+          referred_user_id: string | null
+          referrer_digger_id: string
+          reward_amount_cents: number | null
+          reward_paid: boolean | null
+          reward_paid_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_gig_id?: string | null
+          referred_user_id?: string | null
+          referrer_digger_id: string
+          reward_amount_cents?: number | null
+          reward_paid?: boolean | null
+          reward_paid_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_gig_id?: string | null
+          referred_user_id?: string | null
+          referrer_digger_id?: string
+          reward_amount_cents?: number | null
+          reward_paid?: boolean | null
+          reward_paid_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_gig_id_fkey"
+            columns: ["referred_gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_gig_id_fkey"
+            columns: ["referred_gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_gig_id_fkey"
+            columns: ["referred_gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_digger_id_fkey"
+            columns: ["referrer_digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
             referencedColumns: ["id"]
           },
         ]

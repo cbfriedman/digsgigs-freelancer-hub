@@ -101,7 +101,7 @@ export function PaymentContractDialog({
         }).catch(() => ({ eligible: false, reason: "unknown" })),
       ]);
       setHasPaymentMethod((paymentData?.paymentMethods?.length ?? 0) > 0);
-      const apiMt = typeof eligibilityData?.milestoneTotal === "number" ? eligibilityData.milestoneTotal : null;
+      const apiMt = typeof (eligibilityData as any)?.milestoneTotal === "number" ? (eligibilityData as any).milestoneTotal : null;
       // For exclusive gigs: contract amount is always bid - 15%; use API value only if it matches (avoids API returning full bid when deposit not in DB)
       const mt =
         isExclusive

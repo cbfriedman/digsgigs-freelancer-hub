@@ -43,14 +43,14 @@ export async function resolveLocationFromText(
     .select("id, code_alpha2, name")
     .ilike("name", c)
     .limit(1);
-  country = (byName as CountryRow[] | null)?.[0] ?? null;
+  country = (byName as unknown as CountryRow[] | null)?.[0] ?? null;
   if (!country && c.length === 2) {
     const { data: byCode } = await (supabase
       .from("countries" as any))
       .select("id, code_alpha2, name")
       .eq("code_alpha2", c.toUpperCase())
       .limit(1);
-    country = (byCode as CountryRow[] | null)?.[0] ?? null;
+    country = (byCode as unknown as CountryRow[] | null)?.[0] ?? null;
   }
   if (!country) {
     return { ...empty, countryName: c };
@@ -66,7 +66,7 @@ export async function resolveLocationFromText(
       .eq("country_id", country.id)
       .ilike("name", state)
       .limit(1);
-    const region = (regions as { id: string; name: string }[] | null)?.[0];
+    const region = (regions as unknown as { id: string; name: string }[] | null)?.[0];
     if (region) {
       regionId = region.id;
       regionName = region.name;
@@ -88,7 +88,7 @@ export async function resolveLocationFromText(
     if (regionId) q = q.eq("region_id", regionId);
     else q = q.is("region_id", null);
     const { data: cities } = await q;
-    const cityRow = (cities as { id: string; name: string }[] | null)?.[0];
+    const cityRow = (cities as unknown as { id: string; name: string }[] | null)?.[0];
     if (cityRow) {
       cityId = cityRow.id;
       resolvedCityName = cityRow.name;

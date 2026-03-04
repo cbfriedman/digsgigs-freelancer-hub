@@ -48,7 +48,7 @@ export const GiggerRatingForm = ({
         return;
       }
       if (existingRating) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("gigger_ratings")
           .update({
             rating,
@@ -58,7 +58,7 @@ export const GiggerRatingForm = ({
         if (error) throw error;
         toast.success("Rating updated successfully");
       } else {
-        const { error } = await supabase.from("gigger_ratings").insert({
+        const { error } = await (supabase as any).from("gigger_ratings").insert({
           digger_id: diggerId,
           consumer_id: consumerId,
           gig_id: gigId,

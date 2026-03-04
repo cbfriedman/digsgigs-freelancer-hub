@@ -93,7 +93,7 @@ function SetupFormStep({
         return;
       }
 
-      const { setupIntent, error: confirmError } = await stripe.confirmSetup({
+      const { setupIntent, error: confirmError } = await (stripe as any).confirmSetup({
         elements,
         clientSecret,
         confirmParams: {

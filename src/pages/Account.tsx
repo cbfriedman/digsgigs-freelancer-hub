@@ -348,7 +348,7 @@ export default function Account() {
           (digger?.state && !profile.state) ||
           (digger?.country && !profile.country);
         if (needsProfileBackfill && (city || state || country)) {
-          supabase
+          (supabase as any)
             .from("profiles")
             .update({
               ...(city != null && { city }),
@@ -387,7 +387,7 @@ export default function Account() {
           country,
         });
       }
-      const { data: pending } = await supabase
+      const { data: pending } = await (supabase as any)
         .from("profile_identity_update_requests")
         .select("id")
         .eq("user_id", user.id)
@@ -395,7 +395,7 @@ export default function Account() {
         .maybeSingle();
       setPendingIdentityRequest(!!pending);
 
-      const { data: pendingIdSubmission } = await supabase
+      const { data: pendingIdSubmission } = await (supabase as any)
         .from("id_verification_submissions")
         .select("id")
         .eq("user_id", user.id)

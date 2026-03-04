@@ -190,7 +190,7 @@ export const ExperienceEditorModal = ({
       const toDelete = experiences.filter((e) => !valid.some((v) => v.id === e.id));
 
       for (const id of toDelete.map((e) => e.id)) {
-        await supabase.from("digger_experience").delete().eq("id", id);
+        await (supabase as any).from("digger_experience").delete().eq("id", id);
       }
 
       for (let i = 0; i < valid.length; i++) {
@@ -207,9 +207,9 @@ export const ExperienceEditorModal = ({
           sort_order: i,
         };
         if (item.id && !item.id.startsWith("draft-") && existingIds.has(item.id)) {
-          await supabase.from("digger_experience").update(payload).eq("id", item.id);
+          await (supabase as any).from("digger_experience").update(payload).eq("id", item.id);
         } else {
-          await supabase.from("digger_experience").insert({
+          await (supabase as any).from("digger_experience").insert({
             digger_profile_id: diggerProfileId,
             ...payload,
           });

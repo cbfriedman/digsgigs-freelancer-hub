@@ -35,7 +35,7 @@ export const GiggerRatingDialog = ({
   const checkExisting = useCallback(async () => {
     if (!gigId || !diggerId) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("gigger_ratings")
         .select("*")
         .eq("gig_id", gigId)

@@ -63,7 +63,7 @@ const IdVerificationSubmissionsTab = () => {
   const loadSubmissions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("id_verification_submissions")
         .select("id, user_id, status, legal_name, street_address, apt, city, state, zip, country, id_type, front_file_path, back_file_path, created_at, reviewed_at, rejection_reason")
         .order("created_at", { ascending: false });
@@ -71,7 +71,7 @@ const IdVerificationSubmissionsTab = () => {
       if (error) throw error;
 
       const withProfiles = await Promise.all(
-        (data || []).map(async (r) => {
+        ((data || []) as any[]).map(async (r: any) => {
           const { data: profile } = await supabase
             .from("profiles")
             .select("email, full_name")
@@ -81,7 +81,7 @@ const IdVerificationSubmissionsTab = () => {
         })
       );
 
-      setSubmissions(withProfiles);
+      setSubmissions(withProfiles as any);
     } catch (err) {
       console.error("Error loading ID verification submissions:", err);
       toast.error("Failed to load submissions");

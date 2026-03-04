@@ -28,7 +28,7 @@ const AccountDeletionRequestsTab = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("account_deletion_requests")
         .select("id, user_id, requested_at, status, reviewed_at, reviewed_by, rejection_reason")
         .order("requested_at", { ascending: false });
@@ -76,7 +76,7 @@ const AccountDeletionRequestsTab = () => {
         body,
       });
 
-      await supabase
+      await (supabase as any)
         .from("account_deletion_requests")
         .update({
           status: "approved",
@@ -102,7 +102,7 @@ const AccountDeletionRequestsTab = () => {
     if (req.status !== "pending") return;
     setProcessingId(req.id);
     try {
-      await supabase
+      await (supabase as any)
         .from("account_deletion_requests")
         .update({
           status: "rejected",
