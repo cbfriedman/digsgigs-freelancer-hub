@@ -1469,7 +1469,7 @@ const DiggerDetail = () => {
   const payoutConnected = !!(digger.stripe_connect_account_id && digger.stripe_connect_charges_enabled);
   const verificationItems = [
     { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
-    { label: "Phone", isActive: p?.phone_verified != null ? !!p.phone_verified : (!!digger.phone && digger.phone !== "Not specified"), icon: Phone },
+    { label: "Phone", isActive: !!p?.phone_verified, icon: Phone },
     { label: "Email", isActive: p?.email_verified != null ? !!p.email_verified : !!digger.profiles?.email, icon: Mail },
     { label: "Payment", isActive: p?.payment_verified != null ? !!p.payment_verified : false, icon: CreditCard },
     { label: "Payout account", isActive: payoutConnected, icon: Wallet },

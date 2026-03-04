@@ -570,7 +570,7 @@ export default function GiggerDetail() {
   const localTime = formatLocalTime(profile.timezone) || (locationCountry ? (getLocalTimeForLocation(profile.country ?? locationCountry, profile.state) ?? "") : "");
   const verificationItems = [
     { label: "ID verified", isActive: profile.id_verified != null ? !!profile.id_verified : false, icon: User },
-    { label: "Phone", isActive: profile.phone_verified != null ? !!profile.phone_verified : !!(profile.phone?.trim() && profile.phone !== "Not specified"), icon: Phone },
+    { label: "Phone", isActive: !!profile.phone_verified, icon: Phone },
     { label: "Email", isActive: profile.email_verified != null ? !!profile.email_verified : !!profile.email, icon: Mail },
     { label: "Payment", isActive: profile.payment_verified != null ? !!profile.payment_verified : false, icon: CreditCard },
     { label: "Social", isActive: profile.social_verified != null ? !!profile.social_verified : false, icon: Share2 },

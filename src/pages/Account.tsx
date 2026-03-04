@@ -42,6 +42,9 @@ import {
   Plus,
   Star,
   Building2,
+  Phone,
+  Smartphone,
+  Link2,
 } from "lucide-react";
 
 type SettingsLink = {
@@ -110,6 +113,27 @@ export default function Account() {
   const [idVerificationPendingReview, setIdVerificationPendingReview] = useState<boolean>(false);
   const [idVerificationOpen, setIdVerificationOpen] = useState(false);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+
+  const [profilePhone, setProfilePhone] = useState<string | null>(null);
+  const [profilePhoneVerified, setProfilePhoneVerified] = useState<boolean>(false);
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const [phoneValue, setPhoneValue] = useState("");
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpCode, setPhoneOtpCode] = useState("");
+  const [phoneSubmitting, setPhoneSubmitting] = useState(false);
+  const [phoneVerifying, setPhoneVerifying] = useState(false);
+
+  const [mfaFactors, setMfaFactors] = useState<{ id: string; friendly_name?: string; factor_type: string }[]>([]);
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaEnrollDialogOpen, setMfaEnrollDialogOpen] = useState(false);
+  const [mfaEnrollSecret, setMfaEnrollSecret] = useState<{ qr_code: string; secret: string; factorId: string } | null>(null);
+  const [mfaEnrollCode, setMfaEnrollCode] = useState("");
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaUnenrollingId, setMfaUnenrollingId] = useState<string | null>(null);
+
+  const [linkedIdentities, setLinkedIdentities] = useState<{ provider: string; id: string }[]>([]);
+  const [identitiesLoading, setIdentitiesLoading] = useState(false);
+  const [linkingProvider, setLinkingProvider] = useState<string | null>(null);
 
   const [activeSection, setActiveSection] = useState<string>("identity-security");
   const scrollingRef = useRef(false);
@@ -275,7 +299,7 @@ export default function Account() {
       const [profileRes, diggerRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("first_name, last_name, full_name, address, city, state, zip_postal, country, id_verified")
+          .select("first_name, last_name, full_name, address, city, state, zip_postal, country, id_verified, phone, phone_verified")
           .eq("id", user.id)
           .single(),
         supabase
@@ -296,8 +320,12 @@ export default function Account() {
         zip_postal?: string | null;
         country?: string | null;
         id_verified?: boolean | null;
+        phone?: string | null;
+        phone_verified?: boolean | null;
       } | null;
       if (profile?.id_verified != null) setIdVerified(!!profile.id_verified);
+      setProfilePhone(profile?.phone ?? null);
+      setProfilePhoneVerified(!!profile?.phone_verified);
       const digger = diggerRes.data as { location?: string | null; city?: string | null; state?: string | null; country?: string | null } | null;
 
       if (!profile) {
@@ -376,6 +404,61 @@ export default function Account() {
       setIdVerificationPendingReview(!!pendingIdSubmission);
     })();
   }, [user, profileRefreshKey]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setMfaLoading(true);
+      try {
+        const mfa = (supabase.auth as { mfa?: { listFactors: () => Promise<{ data: { factors?: { id: string; friendly_name?: string; factor_type: string }[] } }> } }).mfa;
+        const result = mfa?.listFactors ? await mfa.listFactors() : { data: { factors: [] as { id: string; friendly_name?: string; factor_type: string }[] } };
+        setMfaFactors(result.data?.factors ?? []);
+      } catch {
+        setMfaFactors([]);
+      } finally {
+        setMfaLoading(false);
+      }
+    })();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setIdentitiesLoading(true);
+      try {
+        const auth = supabase.auth as { getUserIdentities?: () => Promise<{ data: { identities?: { provider: string; id: string }[] } }> };
+        let list: { provider: string; id: string }[] = [];
+        if (auth.getUserIdentities) {
+          const { data } = await auth.getUserIdentities();
+          list = (data?.identities ?? []) as { provider: string; id: string }[];
+        } else {
+          const { data } = await supabase.auth.getUser();
+          const identities = (data?.user as { identities?: { provider: string; id: string }[] } | undefined)?.identities ?? [];
+          list = identities.map((i) => ({ provider: i.provider, id: i.id }));
+        }
+        setLinkedIdentities(list);
+      } catch {
+        setLinkedIdentities([]);
+      } finally {
+        setIdentitiesLoading(false);
+      }
+    })();
+  }, [user, location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!mfaEnrollDialogOpen || mfaEnrollSecret != null) return;
+    (async () => {
+      try {
+        const mfa = (supabase.auth as { mfa?: { enroll: (opts: { factorType: string; friendlyName: string }) => Promise<{ data: { id: string; totp?: { qr_code: string; secret: string } } | null; error: { message: string } | null }> } }).mfa;
+        const { data, error } = await mfa?.enroll?.({ factorType: "totp", friendlyName: "Authenticator app" }) ?? { data: null, error: null };
+        if (error) throw new Error(error.message);
+        if (data?.totp && data.id) setMfaEnrollSecret({ qr_code: data.totp.qr_code, secret: data.totp.secret, factorId: data.id });
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "Failed to start 2FA setup");
+        setMfaEnrollDialogOpen(false);
+      }
+    })();
+  }, [mfaEnrollDialogOpen, mfaEnrollSecret]);
 
   if (authLoading) {
     return (
@@ -546,6 +629,27 @@ export default function Account() {
                 </p>
               )}
             </div>
+            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+              <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium text-foreground break-all">
+                  {profilePhone && profilePhone.trim() ? profilePhone : "Not set"}
+                </span>
+                {profilePhone && (
+                  profilePhoneVerified ? (
+                    <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Verified</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Unverified</Badge>
+                  )
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => { setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}>
+                  <Phone className="h-3.5 w-3.5" />
+                  {profilePhone ? "Edit / Verify" : "Add phone"}
+                </Button>
+              </div>
+            </div>
             {userRoles.length > 0 && (
               <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
                 <div className="flex flex-wrap gap-1.5">
@@ -596,6 +700,286 @@ export default function Account() {
                 </>
               )}
             </div>
+            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+              <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm font-semibold text-foreground">Two-factor authentication</span>
+                {mfaLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : mfaFactors.some((f) => f.factor_type === "totp") ? (
+                  <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Enabled</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">Not enabled</Badge>
+                )}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {mfaFactors.some((f) => f.factor_type === "totp")
+                  ? "Your account is protected with an authenticator app."
+                  : "Add an authenticator app (e.g. Google Authenticator) for extra security."}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {mfaFactors.some((f) => f.factor_type === "totp") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-destructive hover:text-destructive"
+                    disabled={mfaUnenrollingId != null}
+                    onClick={async () => {
+                      const factor = mfaFactors.find((f) => f.factor_type === "totp");
+                      if (!factor || !confirm("Disable two-factor authentication? Your account will be less secure.")) return;
+                      setMfaUnenrollingId(factor.id);
+                      try {
+                        const mfa = (supabase.auth as { mfa?: { unenroll: (opts: { factorId: string }) => Promise<{ error: { message: string } | null }> } }).mfa;
+                        const { error } = await mfa?.unenroll?.({ factorId: factor.id }) ?? { error: null };
+                        if (error) throw new Error(error.message);
+                        setMfaFactors((prev) => prev.filter((f) => f.id !== factor.id));
+                        toast.success("Two-factor authentication disabled.");
+                      } catch (e: unknown) {
+                        toast.error(e instanceof Error ? e.message : "Failed to disable 2FA");
+                      } finally {
+                        setMfaUnenrollingId(null);
+                      }
+                    }}
+                  >
+                    {mfaUnenrollingId != null ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    Disable 2FA
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => { setMfaEnrollDialogOpen(true); setMfaEnrollSecret(null); setMfaEnrollCode(""); }}
+                  >
+                    <Smartphone className="h-3.5 w-3.5" />
+                    Enable 2FA
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
+              <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm font-semibold text-foreground">Linked accounts</span>
+                {identitiesLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Connect Google, GitHub, or LinkedIn to sign in with them.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {(["google", "github", "linkedin_oidc"] as const).map((provider) => {
+                  const label = provider === "linkedin_oidc" ? "LinkedIn" : provider.charAt(0).toUpperCase() + provider.slice(1);
+                  const connected = linkedIdentities.some((i) => i.provider === provider);
+                  return (
+                    <li key={provider} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/50 bg-background/50 px-3 py-2">
+                      <span className="text-sm font-medium text-foreground">{label}</span>
+                      {connected ? (
+                        <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Connected</Badge>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          disabled={linkingProvider != null}
+                          onClick={async () => {
+                            setLinkingProvider(provider);
+                            try {
+                              const auth = supabase.auth as { linkIdentity?: (opts: { provider: string }) => Promise<{ error: { message: string } | null }> };
+                              const { error } = await auth.linkIdentity?.({ provider }) ?? { error: null };
+                              if (error) throw new Error(error.message);
+                              // Redirects to OAuth; on return, identities are refetched in useEffect
+                            } catch (e: unknown) {
+                              toast.error(e instanceof Error ? e.message : "Failed to connect");
+                            } finally {
+                              setLinkingProvider(null);
+                            }
+                          }}
+                        >
+                          {linkingProvider === provider ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                          Connect
+                        </Button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <Dialog
+              open={phoneDialogOpen}
+              onOpenChange={(o) => {
+                if (!o) { setPhoneOtpSent(false); setPhoneOtpCode(""); setPhoneValue(profilePhone ?? ""); }
+                setPhoneDialogOpen(o);
+              }}
+            >
+              <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md p-4 sm:p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-base sm:text-lg">{profilePhone ? "Edit & verify phone" : "Add phone"}</DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm">
+                    Use E.164 format (e.g. +1234567890). We&apos;ll send a verification code via SMS.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {!phoneOtpSent ? (
+                    <>
+                      <div>
+                        <Label htmlFor="phone-input">Phone number</Label>
+                        <Input
+                          id="phone-input"
+                          type="tel"
+                          value={phoneValue}
+                          onChange={(e) => setPhoneValue(e.target.value)}
+                          placeholder="+1234567890"
+                          className="mt-1"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setPhoneDialogOpen(false)}>Cancel</Button>
+                        <Button
+                          disabled={phoneSubmitting || !phoneValue.trim()}
+                          onClick={async () => {
+                            const raw = phoneValue.trim().replace(/\D/g, "");
+                            const normalized = raw.startsWith("1") && raw.length === 11 ? `+${raw}` : raw.length === 10 ? `+1${raw}` : `+${raw}`;
+                            setPhoneSubmitting(true);
+                            try {
+                              const { error } = await supabase.auth.updateUser({ phone: normalized });
+                              if (error) throw error;
+                              await supabase.from("profiles").update({ phone: normalized, phone_verified: false }).eq("id", user.id);
+                              setProfilePhone(normalized);
+                              setProfilePhoneVerified(false);
+                              setPhoneOtpSent(true);
+                              setPhoneValue(normalized);
+                              toast.success("Verification code sent to your phone.");
+                            } catch (e: unknown) {
+                              toast.error(e instanceof Error ? e.message : "Failed to send code");
+                            } finally {
+                              setPhoneSubmitting(false);
+                            }
+                          }}
+                        >
+                          {phoneSubmitting ? "Sending…" : "Send verification code"}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to {phoneValue}</p>
+                      <div>
+                        <Label htmlFor="phone-otp">Verification code</Label>
+                        <Input
+                          id="phone-otp"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={phoneOtpCode}
+                          onChange={(e) => setPhoneOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          placeholder="000000"
+                          className="mt-1"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setPhoneOtpSent(false)}>Back</Button>
+                        <Button
+                          disabled={phoneVerifying || phoneOtpCode.length !== 6}
+                          onClick={async () => {
+                            setPhoneVerifying(true);
+                            try {
+                              const { error } = await supabase.auth.verifyOtp({ phone: phoneValue, token: phoneOtpCode, type: "phone_change" });
+                              if (error) throw error;
+                              await supabase.from("profiles").update({ phone: phoneValue, phone_verified: true }).eq("id", user.id);
+                              setProfilePhone(phoneValue);
+                              setProfilePhoneVerified(true);
+                              setPhoneDialogOpen(false);
+                              setPhoneOtpSent(false);
+                              setPhoneOtpCode("");
+                              toast.success("Phone verified.");
+                            } catch (e: unknown) {
+                              toast.error(e instanceof Error ? e.message : "Verification failed");
+                            } finally {
+                              setPhoneVerifying(false);
+                            }
+                          }}
+                        >
+                          {phoneVerifying ? "Verifying…" : "Verify"}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={mfaEnrollDialogOpen}
+              onOpenChange={(o) => {
+                if (!o) { setMfaEnrollSecret(null); setMfaEnrollCode(""); }
+                setMfaEnrollDialogOpen(o);
+              }}
+            >
+              <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md p-4 sm:p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-base sm:text-lg">Enable two-factor authentication</DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm">
+                    Scan the QR code with your authenticator app (e.g. Google Authenticator), then enter the 6-digit code.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {!mfaEnrollSecret ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-center">
+                        <img src={mfaEnrollSecret.qr_code} alt="TOTP QR code" className="h-40 w-40 rounded border border-border object-contain" />
+                      </div>
+                      <p className="text-center text-xs text-muted-foreground">
+                        Or enter this secret manually: <code className="break-all rounded bg-muted px-1">{mfaEnrollSecret.secret}</code>
+                      </p>
+                      <div>
+                        <Label htmlFor="mfa-code">Verification code</Label>
+                        <Input
+                          id="mfa-code"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={mfaEnrollCode}
+                          onChange={(e) => setMfaEnrollCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          placeholder="000000"
+                          className="mt-1"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setMfaEnrollDialogOpen(false)}>Cancel</Button>
+                        <Button
+                          disabled={mfaEnrolling || mfaEnrollCode.length !== 6}
+                          onClick={async () => {
+                            if (!mfaEnrollSecret) return;
+                            setMfaEnrolling(true);
+                            try {
+                              const mfa = supabase.auth as { mfa?: { challenge: (opts: { factorId: string }) => Promise<{ data: { id: string } | null; error: { message: string } | null }>; verify: (opts: { factorId: string; challengeId: string; code: string }) => Promise<{ error: { message: string } | null }> } };
+                              const { data: challengeData, error: challengeError } = await mfa.mfa?.challenge?.({ factorId: mfaEnrollSecret.factorId }) ?? { data: null, error: null };
+                              if (challengeError || !challengeData?.id) throw new Error(challengeError?.message ?? "Failed to create challenge");
+                              const { error: verifyError } = await mfa.mfa?.verify?.({ factorId: mfaEnrollSecret.factorId, challengeId: challengeData.id, code: mfaEnrollCode }) ?? { error: null };
+                              if (verifyError) throw new Error(verifyError.message);
+                              setMfaFactors((prev) => [...prev, { id: mfaEnrollSecret.factorId, friendly_name: "Authenticator app", factor_type: "totp" }]);
+                              setMfaEnrollDialogOpen(false);
+                              setMfaEnrollSecret(null);
+                              setMfaEnrollCode("");
+                              toast.success("Two-factor authentication enabled.");
+                            } catch (e: unknown) {
+                              toast.error(e instanceof Error ? e.message : "Verification failed");
+                            } finally {
+                              setMfaEnrolling(false);
+                            }
+                          }}
+                        >
+                          {mfaEnrolling ? "Verifying…" : "Verify and enable"}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
             <div className="flex flex-wrap gap-2 min-h-[44px] items-center">
               <Dialog open={passwordDialogOpen} onOpenChange={(o) => { setPasswordDialogOpen(o); if (!o) { setNewPassword(""); setConfirmPassword(""); } }}>
                 <DialogTrigger asChild>
