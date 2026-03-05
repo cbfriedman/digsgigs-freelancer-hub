@@ -326,9 +326,27 @@ export function DiggerProposalCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-0 px-4 pb-4 sm:px-6 sm:pb-6">
-        {/* Cover letter with View more / View less */}
+        {/* Cover letter with View more / View less. When no "View more" (short proposal), gigger clicking the proposal marks it as reviewed. */}
         <div className="min-w-0 overflow-hidden">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed break-words">
+          <p
+            className={cn(
+              "text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed break-words",
+              isOwner && !truncated && onProposalViewed && "cursor-pointer hover:opacity-90"
+            )}
+            role={isOwner && !truncated && onProposalViewed ? "button" : undefined}
+            tabIndex={isOwner && !truncated && onProposalViewed ? 0 : undefined}
+            onClick={isOwner && !truncated ? () => onProposalViewed?.() : undefined}
+            onKeyDown={
+              isOwner && !truncated && onProposalViewed
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onProposalViewed?.();
+                    }
+                  }
+                : undefined
+            }
+          >
             {displayProposal}
           </p>
           {truncated && (

@@ -296,6 +296,12 @@ const DiggerDetail = () => {
       } catch (error) {
         logger.error('Failed to record click:', error);
       }
+      // Record that gigger viewed this digger's profile (for My Bids profile icon)
+      try {
+        await (supabase as any).rpc('record_gigger_viewed_digger_profile', { _digger_profile_id: profileId });
+      } catch (error) {
+        logger.error('Failed to record gigger viewed digger profile:', error);
+      }
     }
 
     // Check if user has already paid to view this profile

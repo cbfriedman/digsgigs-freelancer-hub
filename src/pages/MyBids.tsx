@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { MessageSquare, DollarSign, Calendar, FileText, Eye } from "lucide-react";
+import { MessageSquare, DollarSign, Calendar, FileText, Eye, User } from "lucide-react";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,7 @@ interface Bid {
   withdrawn_at: string | null;
   withdrawal_penalty: number | null;
   viewed_by_gigger_at?: string | null;
+  gigger_viewed_digger_profile_at?: string | null;
   gig_id?: string;
   gigs: {
     id: string;
@@ -153,6 +154,7 @@ const MyBids = () => {
         withdrawn_at,
         withdrawal_penalty,
         viewed_by_gigger_at,
+        gigger_viewed_digger_profile_at,
         gig_id,
         gigs!gig_id (
           id,
@@ -622,6 +624,23 @@ function BidRow({
               <TooltipContent side="top" className="max-w-[80vw] sm:max-w-none">
                 <p className="text-xs">
                   {bid.viewed_by_gigger_at ? "Client has reviewed your proposal" : "Client hasn't reviewed yet"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-default" aria-label={bid.gigger_viewed_digger_profile_at ? "Client has visited your profile" : "Client hasn't visited your profile yet"}>
+                  <User
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      bid.gigger_viewed_digger_profile_at ? "text-green-600 dark:text-green-500" : "text-muted-foreground"
+                    )}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[80vw] sm:max-w-none">
+                <p className="text-xs">
+                  {bid.gigger_viewed_digger_profile_at ? "Client has visited your profile" : "Client hasn't visited your profile yet"}
                 </p>
               </TooltipContent>
             </Tooltip>
