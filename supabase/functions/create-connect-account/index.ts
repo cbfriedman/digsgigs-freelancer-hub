@@ -72,11 +72,22 @@ serve(async (req) => {
         .eq("id", diggerProfile.id);
     }
 
-    // Base URL for return/refresh: prefer SITE_URL (env) so it works from any client (e.g. mobile or serverless)
-    const baseUrl =
+    // Base URL for return/refresh: prefer SITE_URL (env) so it works from any client (e.g. mobile or serverless).
+    // Livemode requires HTTPS redirects; if origin is HTTP (e.g. localhost or preview), use SITE_URL or fallback.
+    let baseUrl =
       Deno.env.get("SITE_URL")?.replace(/\/$/, "") ||
       req.headers.get("origin") ||
       "https://digsandgigs.net";
+    if (isLive && baseUrl.startsWith("http://")) {
+      const siteUrl = Deno.env.get("SITE_URL")?.replace(/\/$/, "");
+      if (siteUrl && siteUrl.startsWith("https://")) {
+        baseUrl = siteUrl;
+      } else {
+        throw new Error(
+          "Livemode requests must use HTTPS. Set SITE_URL in Edge Function secrets to your production HTTPS URL (e.g. https://digsandgigs.com), or use the app from that URL."
+        );
+      }
+    }
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${baseUrl}/my-bids?refresh=true`,
