@@ -39,11 +39,35 @@ export interface StripeConfig {
   webhookSecretMilestone: string;
 }
 
+/** Stripe secret keys must start with sk_test_ or sk_live_ */
+const VALID_SECRET_PREFIX = /^sk_(test|live)_/;
+
 export async function getStripeConfig(supabaseAdmin: SupabaseClient): Promise<StripeConfig> {
   const mode = await getStripeMode(supabaseAdmin);
+  const rawSecret = envKey(mode, "STRIPE_SECRET_KEY");
+  const secretKey = typeof rawSecret === "string" ? rawSecret.trim() : "";
+
+  if (!secretKey) {
+    if (mode === "live") {
+      throw new Error(
+        "Stripe live mode is on but STRIPE_SECRET_KEY_LIVE is not set. " +
+        "Add your live secret key (sk_live_...) in Supabase Dashboard → Edge Functions → Secrets."
+      );
+    }
+    throw new Error(
+      "Stripe secret key not set. Add STRIPE_SECRET_KEY_TEST or STRIPE_SECRET_KEY in Supabase Dashboard → Edge Functions → Secrets."
+    );
+  }
+  if (!VALID_SECRET_PREFIX.test(secretKey)) {
+    throw new Error(
+      `Invalid Stripe secret key for ${mode} mode: key must start with sk_test_ or sk_live_. ` +
+      `Check that STRIPE_SECRET_KEY${mode === "live" ? "_LIVE" : "_TEST"} is set correctly in Edge Function secrets.`
+    );
+  }
+
   return {
     mode,
-    secretKey: envKey(mode, "STRIPE_SECRET_KEY"),
+    secretKey,
     webhookSecret: envKey(mode, "STRIPE_WEBHOOK_SECRET"),
     webhookSecretProfileView: envKey(mode, "STRIPE_WEBHOOK_SECRET_PROFILE_VIEW"),
     webhookSecretMilestone: envKey(mode, "STRIPE_WEBHOOK_MILESTONE_SECRET") || envKey(mode, "STRIPE_WEBHOOK_SECRET"),
