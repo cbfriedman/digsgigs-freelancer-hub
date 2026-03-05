@@ -3,7 +3,8 @@
  * and returns the appropriate secret key and webhook secrets (test vs live).
  * Set in Supabase secrets: STRIPE_SECRET_KEY_TEST, STRIPE_SECRET_KEY_LIVE,
  * STRIPE_WEBHOOK_SECRET_TEST, STRIPE_WEBHOOK_SECRET_LIVE, etc.
- * Fallback: if _TEST/_LIVE are not set, uses STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET.
+ * Test mode fallback: if _TEST is not set, uses STRIPE_SECRET_KEY.
+ * Live mode: only _LIVE keys are used (no fallback), so set STRIPE_SECRET_KEY_LIVE and STRIPE_PUBLISHABLE_KEY_LIVE for live.
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
@@ -23,7 +24,11 @@ export async function getStripeMode(supabaseAdmin: SupabaseClient): Promise<Stri
 
 function envKey(mode: StripeMode, base: string): string {
   const suffix = mode === "live" ? "_LIVE" : "_TEST";
-  return Deno.env.get(`${base}${suffix}`) || Deno.env.get(base) || "";
+  const modeKey = Deno.env.get(`${base}${suffix}`);
+  // Live mode: only use _LIVE key (never fall back to unsuffixed, which may be test key)
+  if (mode === "live") return modeKey || "";
+  // Test mode: use _TEST then fallback to unsuffixed for backward compatibility
+  return modeKey || Deno.env.get(base) || "";
 }
 
 export interface StripeConfig {
