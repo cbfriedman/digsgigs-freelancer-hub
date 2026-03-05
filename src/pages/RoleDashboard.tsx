@@ -482,7 +482,7 @@ export default function RoleDashboard() {
     setReferralLink(buildReferralLink(origin, diggerId));
 
     setReferralLoading(true);
-    supabase
+    (supabase as any)
       .from("referrals")
       .upsert(
         { referrer_digger_id: diggerId, referral_code: buildReferralCode(diggerId) },
