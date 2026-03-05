@@ -288,7 +288,9 @@ const MyBids = () => {
     <>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
-          <StripeConnectBanner />
+          <div className={cn(bids.length > 0 && "pt-20 md:pt-0 overflow-visible")}>
+            <StripeConnectBanner />
+          </div>
           <div className="flex flex-col md:flex-row gap-6 md:gap-8">
             {bids.length > 0 && (
               <nav
@@ -549,17 +551,18 @@ function BidRow({
   };
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0 max-w-full">
+      <CardContent className="p-4 sm:p-6 overflow-hidden">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 min-w-0">
           <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center mb-3">
-              <div className="flex items-start justify-between gap-2 min-w-0 flex-1">
-                <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words" title={bid.gigs.title}>
+            {/* Title + status: stack on mobile so title gets full width */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center mb-3 min-w-0">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2 min-w-0 flex-1">
+                <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words min-w-0" title={bid.gigs.title}>
                   {bid.gigs.title}
                 </h3>
                 {gigStatus && (
-                  <span className={cn(gigStatusClass, "shrink-0")}>{gigStatusLabel}</span>
+                  <span className={cn(gigStatusClass, "shrink-0 self-start sm:self-auto")}>{gigStatusLabel}</span>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
@@ -583,24 +586,24 @@ function BidRow({
             </div>
 
             {bid.proposal && (
-              <p className="text-muted-foreground mb-4 line-clamp-2 text-sm break-words">
+              <p className="text-muted-foreground mb-4 line-clamp-2 text-sm break-words overflow-hidden">
                 {bid.proposal.length > 150 ? `${bid.proposal.slice(0, 150).trim()}…` : bid.proposal}
               </p>
             )}
 
-            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <DollarSign className="h-4 w-4" />
-                <span>Your bid: ${bid.amount.toLocaleString()}</span>
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5 sm:gap-4 text-xs sm:text-sm min-w-0">
+              <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                <DollarSign className="h-4 w-4 shrink-0" />
+                <span className="truncate">Your bid: ${bid.amount.toLocaleString()}</span>
               </div>
               {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max) && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  <span>Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
+                <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Gig: {formatBudget(bid.gigs.budget_min, bid.gigs.budget_max)}</span>
                 </div>
               )}
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
+              <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                <Calendar className="h-4 w-4 shrink-0" />
                 <span>Bid {formatDistanceToNow(new Date(bid.created_at), { addSuffix: true })}</span>
               </div>
             </div>
@@ -608,8 +611,8 @@ function BidRow({
         </div>
 
         {/* Action row: eye (reviewed) + withdrawn msg + buttons */}
-        <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 order-first w-full sm:w-auto sm:order-none">
+        <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-2 order-first w-full sm:w-auto sm:order-none flex-shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex cursor-default" aria-label={bid.viewed_by_gigger_at ? "Client has reviewed your proposal" : "Client hasn't reviewed yet"}>
@@ -645,13 +648,13 @@ function BidRow({
               </TooltipContent>
             </Tooltip>
             {bid.withdrawn_at != null && bid.withdrawal_penalty != null && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-words">
                 Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 justify-end sm:ml-auto min-h-9">
-            <Button variant="outline" size="sm" onClick={onView} className="min-w-0 min-h-9">
+          <div className="flex flex-wrap items-center gap-2 justify-end sm:ml-auto min-h-9 w-full sm:w-auto min-w-0 max-w-full">
+            <Button variant="outline" size="sm" onClick={onView} className="min-w-0 min-h-9 shrink-0">
               <FileText className="mr-2 h-4 w-4" />
               View gig
             </Button>
@@ -660,7 +663,7 @@ function BidRow({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "min-w-0 min-h-9 gap-1.5",
+                  "min-w-0 min-h-9 gap-1.5 shrink-0",
                   showOrangeChat &&
                     "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                 )}
@@ -689,7 +692,7 @@ function BidRow({
               <>
                 <Button
                   size="sm"
-                  className="min-w-0 min-h-9 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  className="min-w-0 min-h-9 gap-1.5 bg-green-600 hover:bg-green-700 text-white shrink-0"
                   onClick={handleAcceptAward}
                   disabled={acceptLoading || declineLoading}
                   title="Accept this award and get hired"
@@ -700,7 +703,7 @@ function BidRow({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="min-w-0 min-h-9 gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                  className="min-w-0 min-h-9 gap-1.5 text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive shrink-0"
                   onClick={handleDeclineAward}
                   disabled={declineLoading || acceptLoading}
                   title="Decline this award (you will be charged a $100 penalty)"

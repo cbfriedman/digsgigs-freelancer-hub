@@ -594,7 +594,7 @@ const MyGigs = () => {
               </div>
             </nav>
           )}
-          <div className={cn("flex-1 min-w-0", gigs.length > 0 && "pt-12 md:pt-0")}>
+          <div className={cn("flex-1 min-w-0", gigs.length > 0 && "pt-20 md:pt-0")}>
         {gigs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -605,7 +605,7 @@ const MyGigs = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 md:pt-0">
             {(statusFilter === "all"
               ? gigs
               : gigs.filter((g) => g.status === statusFilter)
@@ -615,17 +615,17 @@ const MyGigs = () => {
               </p>
             ) : (
             (statusFilter === "all" ? gigs : gigs.filter((g) => g.status === statusFilter)).map((gig) => (
-              <Card key={gig.id} className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20">
-                <CardContent className="p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <h3 className="text-xl font-semibold truncate max-w-[30ch]" title={gig.title}>
-                            {gig.title.length > 30 ? `${gig.title.slice(0, 30)}…` : gig.title}
+              <Card key={gig.id} className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0 max-w-full">
+                <CardContent className="p-4 sm:p-6 overflow-hidden">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 mb-3 min-w-0">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
+                          <h3 className="text-base sm:text-xl font-semibold line-clamp-2 break-words min-w-0" title={gig.title}>
+                            {gig.title}
                           </h3>
                           <span className={cn(
-                            "text-xs font-normal shrink-0",
+                            "text-xs font-normal shrink-0 self-start sm:self-auto",
                             gig.status === "open" && "text-primary",
                             gig.status === "in_progress" && "text-blue-600 dark:text-blue-400",
                             gig.status === "completed" && "text-green-700 dark:text-green-600",
@@ -637,22 +637,24 @@ const MyGigs = () => {
                             {gig.status === "completed" ? "Completed" : gig.status === "in_progress" ? "In progress" : gig.status === "awarded" ? "Awarded" : gig.status === "cancelled" ? "Closed" : gig.status}
                           </span>
                         </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
                         {gig.purchase_count > 0 && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Users className="h-3 w-3" />
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                            <Users className="h-3 w-3 shrink-0" />
                             {gig.purchase_count} {gig.purchase_count === 1 ? "purchase" : "purchases"}
                           </span>
                         )}
                         {bidStatsByGigId[gig.id]?.count != null && bidStatsByGigId[gig.id].count > 0 && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <FileText className="h-3 w-3" />
-                            {bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "bid" : "bids"}
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                            <FileText className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "bid" : "bids"}
                             {bidStatsByGigId[gig.id].avgPrice > 0 && (
                               <span className="opacity-80"> · Avg ${Math.round(bidStatsByGigId[gig.id].avgPrice).toLocaleString()}</span>
-                            )}
+                            )}</span>
                           </span>
                         )}
-                        <div className="ml-auto flex items-center gap-2 shrink-0">
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 w-full justify-end sm:w-auto sm:ml-auto">
                           {(gig.status === "open" || gig.status === "cancelled") && (
                             <>
                               <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
@@ -754,17 +756,17 @@ const MyGigs = () => {
                         </div>
                       </div>
                       
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
+                      <p className="text-muted-foreground mb-4 line-clamp-2 text-sm break-words overflow-hidden">
                         {gig.description.length > 150 ? `${gig.description.slice(0, 150).trim()}…` : gig.description}
                       </p>
 
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{formatGigPrice(gig)}</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1.5 sm:gap-4 text-xs sm:text-sm min-w-0">
+                        <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                          <DollarSign className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{formatGigPrice(gig)}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
+                        <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                          <Calendar className="h-4 w-4 shrink-0" />
                           <span>Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</span>
                         </div>
                       </div>
@@ -772,7 +774,7 @@ const MyGigs = () => {
                   </div>
 
                   {/* Action row: hired digger info (left) + View bids & Chat (right) */}
-                  <div className="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-4">
+                  <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0">
                     {(gig.status === "in_progress" || gig.status === "awarded" || gig.status === "completed") &&
                       awardedDiggerByGigId[gig.id] && (() => {
                         const info = awardedDiggerByGigId[gig.id];
@@ -794,24 +796,24 @@ const MyGigs = () => {
                         const locationParts = [info.city, info.state, info.country].filter(Boolean);
                         const locationStr = locationParts.length > 0 ? locationParts.join(", ") : null;
                         return (
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0 overflow-hidden w-full sm:w-auto">
                             <Avatar className="h-10 w-10 shrink-0">
                               <AvatarImage src={info.profile_image_url ?? undefined} alt="" />
                               <AvatarFallback className="text-sm bg-muted">
                                 {(info.full_name || "D").slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="min-w-0 flex flex-col gap-0.5 text-sm">
+                            <div className="min-w-0 flex flex-col gap-0.5 text-sm overflow-hidden">
                               <span className="font-medium truncate">{info.full_name || "Hired Digger"}</span>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground min-w-0">
                                 {localTimeStr != null && (
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1 shrink-0">
                                     <Clock className="h-3 w-3 shrink-0" />
                                     {localTimeStr}
                                   </span>
                                 )}
                                 {locationStr && (
-                                  <span className="flex items-center gap-1 truncate">
+                                  <span className="flex items-center gap-1 min-w-0 truncate">
                                     <MapPin className="h-3 w-3 shrink-0" />
                                     {locationStr}
                                   </span>
@@ -821,13 +823,14 @@ const MyGigs = () => {
                           </div>
                         );
                       })()}
-                    <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0 max-w-full sm:ml-auto justify-end">
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => navigate(`/gig/${gig.id}`)}
-                        className="min-w-0"
+                        className="min-w-0 min-h-9 shrink-0"
                       >
-                        <FileText className="mr-2 h-4 w-4" />
+                        <FileText className="mr-2 h-4 w-4 shrink-0" />
                         {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
                       </Button>
                       {(gig.status === "in_progress" || gig.status === "awarded" || gig.status === "completed") &&
@@ -835,7 +838,7 @@ const MyGigs = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="min-w-0 gap-1.5 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
+                            className="min-w-0 min-h-9 gap-1.5 shrink-0 bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white hover:border-orange-600"
                             onClick={() => {
                               setChatLoadingGigId(gig.id);
                               openFloatingChat(gig.id, (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!);
