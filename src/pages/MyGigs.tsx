@@ -529,36 +529,41 @@ const MyGigs = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
+        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl md:ml-48 md:mr-auto">
           <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-            <div className="shrink-0 md:w-48 lg:w-52">
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col">
-                {GIG_FILTER_OPTIONS.map(({ label }) => (
-                  <Skeleton key={label} className="h-9 w-full rounded-md" />
+            <nav
+              aria-hidden="true"
+              className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:bottom-0 md:right-auto md:w-48 md:border-r md:border-border/60 md:border-b-0 shrink-0 md:pt-1 px-4 py-2 md:py-0"
+            >
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0">
+                {GIG_FILTER_OPTIONS.map(({ value }) => (
+                  <Skeleton key={value} className="h-8 w-14 md:w-full md:max-w-[7rem] rounded-md" />
                 ))}
               </div>
-            </div>
-            <div className="flex-1 min-w-0 space-y-4" aria-busy="true" aria-label="Loading your gigs">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                      <div className="flex-1 min-w-0 space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
-                          <Skeleton className="h-5 w-16 rounded-full" />
+            </nav>
+            <div className="flex-1 min-w-0 pt-12 md:pt-0">
+              <div className="space-y-4" aria-busy="true" aria-label="Loading your gigs">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="flex-1 min-w-0 space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
+                            <Skeleton className="h-5 w-16 rounded-full" />
+                          </div>
+                          <Skeleton className="h-4 w-full rounded" />
+                          <Skeleton className="h-4 max-w-[85%] w-full rounded" />
                         </div>
-                        <Skeleton className="h-4 w-full rounded" />
-                        <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                          <Skeleton className="h-9 w-24 rounded-md" />
+                          <Skeleton className="h-9 w-28 rounded-md" />
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                        <Skeleton className="h-9 w-24 rounded-md" />
-                        <Skeleton className="h-9 w-28 rounded-md" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         </div>

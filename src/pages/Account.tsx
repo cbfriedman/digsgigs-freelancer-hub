@@ -515,9 +515,23 @@ export default function Account() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageLayout maxWidth="wide">
+        <div className="mx-auto w-full px-3 pt-0 pb-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8 md:ml-48 md:mr-auto">
+          <nav
+            aria-hidden="true"
+            className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:bottom-0 md:right-auto md:w-48 md:border-r md:border-border/60 md:border-b-0 shrink-0 md:pt-1 -mx-3 px-3 py-2 md:mx-0 md:px-0 md:py-0"
+          >
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible border-b border-border/60 md:border-b-0">
+              {["Identity & Security", "Payments", "Preferences", "Danger zone"].map((label) => (
+                <div key={label} className="h-9 rounded-md bg-muted animate-pulse min-w-[7rem] md:w-full md:max-w-[10rem]" />
+              ))}
+            </div>
+          </nav>
+          <div className="flex-1 min-w-0 pt-12 md:pt-0 flex items-center justify-center min-h-[40vh]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading account" />
+          </div>
+        </div>
+      </PageLayout>
     );
   }
 
