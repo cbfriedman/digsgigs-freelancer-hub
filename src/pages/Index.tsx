@@ -11,7 +11,7 @@ import {
 
 const Index = () => {
   return (
-    <div data-page="home" className="min-h-screen bg-background">
+    <div data-page="home" className="min-h-screen bg-background w-full min-w-0 max-w-full overflow-x-hidden">
       <SEOHead
         title="Freelancer Leads & Client Gigs | Pay Per Lead or When Awarded | Digs & Gigs"
         description="For freelancers (Diggers): get leads by email, pay per lead or when awarded. For clients (Giggers): post gigs, get bids, hire talent. No subscriptions."

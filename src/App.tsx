@@ -140,7 +140,7 @@ const RootLayout = () => {
   const roleMode = activeRole === "digger" || activeRole === "gigger" ? activeRole : "";
   const showHeader = !isAdminRoute && !isAuthPage;
   return (
-    <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
+    <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="min-h-screen flex flex-col">
       <GlobalProgressBar />
       <NewGigAlertListener />
       <AwardNotificationListener />
@@ -152,7 +152,9 @@ const RootLayout = () => {
         />
       )}
       <PageViewTracker />
-      <Outlet />
+      <div style={{ paddingTop: showHeader ? "var(--header-height)" : 0 }} className="flex-1 flex flex-col min-w-0">
+        <Outlet />
+      </div>
       {showHeader && (
         <>
           <FloatingChatButton />

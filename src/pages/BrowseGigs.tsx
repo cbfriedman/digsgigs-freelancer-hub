@@ -539,7 +539,7 @@ const BrowseGigs = () => {
       />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <div className="px-3 sm:px-6 pt-2 pb-4 sm:pt-3 sm:pb-6 max-w-[1600px] mx-auto">
+      <div className="w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-6 pt-2 pb-4 sm:pt-3 sm:pb-6 box-border">
         {/* Header */}
         <div className="mb-3 sm:mb-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>

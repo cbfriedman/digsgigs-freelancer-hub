@@ -215,6 +215,7 @@
     @apply scroll-smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   body {
@@ -452,13 +453,13 @@
     @apply bg-card/90 backdrop-blur-md border border-border/50 shadow-card;
   }
 
-  /* Container Utilities */
+  /* Container Utilities — w-full min-w-0 for responsive overflow */
   .container-tight {
-    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 box-border;
   }
   
   .container-wide {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 box-border;
   }
 
   /* Spacing Utilities */

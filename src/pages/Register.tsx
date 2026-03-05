@@ -1978,9 +1978,9 @@ const Register = () => {
         canonical="/register"
       />
       
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full flex items-center justify-center">
-          <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 box-border">
+        <div className="w-full min-w-0 max-w-full flex items-center justify-center">
+          <Card className="w-full max-w-md min-w-0 overflow-hidden">
             <CardHeader className="text-center pb-4">
               {/* Logo */}
               <AuthLogo />

@@ -921,8 +921,8 @@ const GigDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8" aria-busy="true" aria-label="Loading gig">
+        <main className="w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 box-border">
+          <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8 min-w-0" aria-busy="true" aria-label="Loading gig">
             <div className="lg:col-span-8 space-y-4 sm:space-y-6 lg:space-y-6 min-w-0">
               <Card className="border border-border rounded-lg shadow-none">
                 <CardHeader className="p-4 sm:p-5 md:p-6">
@@ -1001,8 +1001,8 @@ const GigDetail = () => {
         })}
       />
 
-      <main className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
+      <main className="w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 box-border">
+        <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8 min-w-0">
           <div className="lg:col-span-8 space-y-4 sm:space-y-6 lg:space-y-6 min-w-0">
             <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors overflow-hidden">
               <CardHeader className="p-4 sm:p-5 md:p-6">

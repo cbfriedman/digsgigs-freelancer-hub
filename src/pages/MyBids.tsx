@@ -287,7 +287,7 @@ const MyBids = () => {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
+        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl md:ml-48 md:mr-auto">
           <div className={cn(bids.length > 0 && "pt-20 md:pt-0 overflow-visible")}>
             <StripeConnectBanner />
           </div>
@@ -295,7 +295,7 @@ const MyBids = () => {
             {bids.length > 0 && (
               <nav
                 aria-label="Filter bids"
-                className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:static md:border-b-0 shrink-0 md:w-48 lg:w-52 md:sticky md:top-24 md:self-start md:pt-1 px-4 py-2 md:py-0"
+                className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:bottom-0 md:right-auto md:w-48 md:border-r md:border-border/60 md:border-b-0 shrink-0 md:pt-1 px-4 py-2 md:py-0"
               >
                 <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible md:border-b-0 -mx-4 px-4 md:mx-0 md:px-0">
                   {FILTER_OPTIONS.map(({ value, label }) => (

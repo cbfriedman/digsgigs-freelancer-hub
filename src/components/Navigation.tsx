@@ -256,14 +256,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     <>
       <nav 
         className={cn(
-          "sticky top-0 z-50 w-full transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
           scrolled 
-? "bg-background border-b border-border shadow-sm"
+            ? "bg-background border-b border-border shadow-sm"
             : "bg-background border-b border-border/50"
         )}
       >
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between gap-4">
+        <div className="container mx-auto px-4 sm:px-6 w-full min-w-0 max-w-full box-border">
+          <div className="flex h-16 items-center justify-between gap-4 min-w-0">
             {/* Left: Logo + menu group (Home, Hire, Find work, Pricing) — right next to logo */}
             <div className="flex items-center min-w-0 gap-2 lg:gap-3">
               <div 
