@@ -618,11 +618,11 @@ export default function Account() {
         title="Account settings"
         description="Manage your Digs & Gigs account, security, payments, and preferences."
       />
-      <div className="mx-auto w-full px-3 py-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8">
+      <div className="mx-auto w-full px-3 pt-0 pb-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8">
         {/* Left sidebar nav */}
         <nav
           aria-label="Account sections"
-          className="shrink-0 md:w-48 lg:w-52 md:sticky md:top-24 md:self-start md:pt-1"
+          className="sticky top-[var(--header-height)] z-10 bg-background shrink-0 md:w-48 lg:w-52 md:top-24 md:self-start md:pt-1 -mx-3 px-3 py-2 md:mx-0 md:px-0 md:py-0"
         >
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible border-b border-border/60 md:border-b-0">
             {sectionIds.map(({ id, label }) => (
@@ -632,7 +632,7 @@ export default function Account() {
                 onClick={() => scrollToSection(id)}
                 className={`text-left px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors md:py-1.5 hover:bg-muted ${
                   activeSection === id
-                    ? "bg-primary text-primary-foreground font-medium md:border-l-2 md:border-l-primary md:pl-3 md:ml-0 hover:text-foreground"
+                    ? "bg-muted text-foreground font-medium md:border-l-2 md:border-l-muted-foreground/50 md:pl-3 md:ml-0 hover:text-foreground"
                     : "text-muted-foreground hover:text-foreground md:border-l-2 md:border-l-transparent md:pl-3"
                 }`}
               >

@@ -906,6 +906,14 @@ export const BidsList = ({
               )}
               onCancelAward={gigStatus === "awarded" ? onCancelAward : undefined}
               cancelAwardLoading={cancelAwardLoading}
+              onProposalViewed={() => {
+                supabase
+                  .from('bids' as any)
+                  .update({ viewed_by_gigger_at: new Date().toISOString() })
+                  .eq('id', bid.id)
+                  .is('viewed_by_gigger_at', null)
+                  .then(() => { /* fire-and-forget: digger will see green eye on My Bids after refresh */ });
+              }}
             />
           );
           })

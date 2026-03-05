@@ -246,9 +246,9 @@ export const SafeProfessionSelector = ({
   return (
     <div className="space-y-3">
       {/* Safety Disclaimer */}
-      <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-        <Shield className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+      <Alert variant="warning">
+        <Shield className="h-4 w-4" />
+        <AlertDescription className="text-sm">
           <strong>Platform Policy:</strong> Digs & Gigs supports unlicensed, creative, and business support services only. 
           Licensed legal, medical, mortgage, real estate, and contractor services are not permitted.
         </AlertDescription>
@@ -385,9 +385,9 @@ export const SafeProfessionSelector = ({
 
       {/* Industry Short Disclaimer */}
       {selectedIndustryContent?.disclaimer && (
-        <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-          <Shield className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+        <Alert variant="warning">
+          <Shield className="h-4 w-4" />
+          <AlertDescription className="text-sm">
             {selectedIndustryContent.disclaimer}
           </AlertDescription>
         </Alert>

@@ -62,10 +62,10 @@ export const StripeConnectBanner = () => {
   // Onboarded but not yet verified: Stripe still verifying
   if (isOnboarded) {
     return (
-      <Alert className="mb-6 border-amber-500/30 bg-amber-500/10">
-        <AlertCircle className="h-4 w-4 text-amber-600" />
+      <Alert variant="warning" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
         <AlertTitle>Payout account pending verification</AlertTitle>
-        <AlertDescription className="mt-2 space-y-2">
+        <AlertDescription className="mt-2 space-y-2 text-amber-800/90 dark:text-amber-200/90">
           <p><span className="font-medium text-amber-700 dark:text-amber-400">Stripe verification: Pending</span></p>
           <p>Complete identity and payout details in Stripe (use Reconnect to open the form). Once Stripe finishes verifying, you can receive payments. Click <strong>Confirm payout account</strong> to refresh and check if verification is complete.</p>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -85,7 +85,7 @@ export const StripeConnectBanner = () => {
 
   // Not connected
   return (
-    <Alert className="mb-6">
+    <Alert variant="warning" className="mb-6">
       <AlertCircle className="h-4 w-4" />
       <AlertTitle>Set up payout account</AlertTitle>
       <AlertDescription className="mt-2 space-y-2">

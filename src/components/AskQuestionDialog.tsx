@@ -173,9 +173,9 @@ export const AskQuestionDialog = ({
               </div>
 
               {clientWarning && (
-                <Alert variant="default" className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/30">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-sm">
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
                     {clientWarning}
                   </AlertDescription>
                 </Alert>

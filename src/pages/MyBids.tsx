@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { MessageSquare, DollarSign, Calendar, FileText } from "lucide-react";
+import { MessageSquare, DollarSign, Calendar, FileText, Eye } from "lucide-react";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,7 @@ interface Bid {
   created_at: string;
   withdrawn_at: string | null;
   withdrawal_penalty: number | null;
+  viewed_by_gigger_at?: string | null;
   gig_id?: string;
   gigs: {
     id: string;
@@ -151,6 +152,7 @@ const MyBids = () => {
         created_at,
         withdrawn_at,
         withdrawal_penalty,
+        viewed_by_gigger_at,
         gig_id,
         gigs!gig_id (
           id,
@@ -237,7 +239,7 @@ const MyBids = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12 max-w-5xl">
+        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
           <StripeConnectBanner />
           <div className="mb-8 flex items-center justify-between">
             <div>
@@ -283,7 +285,7 @@ const MyBids = () => {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
           <StripeConnectBanner />
           <div className="flex flex-col md:flex-row gap-6 md:gap-8">
             {bids.length > 0 && (
@@ -603,15 +605,32 @@ function BidRow({
           </div>
         </div>
 
-        {/* Action row: status (optional) + buttons */}
+        {/* Action row: eye (reviewed) + withdrawn msg + buttons */}
         <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          {bid.withdrawn_at != null && bid.withdrawal_penalty != null ? (
-            <p className="text-xs text-muted-foreground order-last sm:order-none w-full sm:w-auto">
-              Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
-            </p>
-          ) : (
-            <span className="hidden sm:inline" />
-          )}
+          <div className="flex items-center gap-2 order-first w-full sm:w-auto sm:order-none">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-default" aria-label={bid.viewed_by_gigger_at ? "Client has reviewed your proposal" : "Client hasn't reviewed yet"}>
+                  <Eye
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      bid.viewed_by_gigger_at ? "text-green-600 dark:text-green-500" : "text-muted-foreground"
+                    )}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[80vw] sm:max-w-none">
+                <p className="text-xs">
+                  {bid.viewed_by_gigger_at ? "Client has reviewed your proposal" : "Client hasn't reviewed yet"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            {bid.withdrawn_at != null && bid.withdrawal_penalty != null && (
+              <p className="text-xs text-muted-foreground">
+                Withdrawn · ${bid.withdrawal_penalty.toFixed(2)} penalty · {formatDistanceToNow(new Date(bid.withdrawn_at), { addSuffix: true })}
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2 justify-end sm:ml-auto min-h-9">
             <Button variant="outline" size="sm" onClick={onView} className="min-w-0 min-h-9">
               <FileText className="mr-2 h-4 w-4" />

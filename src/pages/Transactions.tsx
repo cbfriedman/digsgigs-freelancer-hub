@@ -526,7 +526,7 @@ const Transactions = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
           <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -578,7 +578,7 @@ const Transactions = () => {
         title="Transactions | Digs & Gigs"
         description={userType === 'digger' ? "View your earnings, milestone payments, and transaction history. Export or email your reports." : "View your payment history for completed gigs. Export transactions and manage disputes."}
       />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-6">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
@@ -727,8 +727,8 @@ const Transactions = () => {
 
           {/* Digger: payout account status + link to Account */}
           {userType === 'digger' && !payoutLoading && !canReceivePayments && (
-            <Alert className="border-amber-500/30 bg-amber-500/10">
-              <Wallet className="h-4 w-4 text-amber-600" />
+            <Alert variant="warning">
+              <Wallet className="h-4 w-4" />
               <AlertDescription>
                 {isOnboarded ? (
                   <>

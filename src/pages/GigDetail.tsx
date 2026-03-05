@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock, Briefcase, FolderOpen } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList, defaultBidFilters, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
@@ -921,9 +921,9 @@ const GigDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <main className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8" aria-busy="true" aria-label="Loading gig">
-            <div className="lg:col-span-8 space-y-4 sm:space-y-6 min-w-0">
+            <div className="lg:col-span-8 space-y-4 sm:space-y-6 lg:space-y-6 min-w-0">
               <Card className="border border-border rounded-lg shadow-none">
                 <CardHeader className="p-4 sm:p-5 md:p-6">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -1001,10 +1001,10 @@ const GigDetail = () => {
         })}
       />
 
-      <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="grid lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
-          <div className="lg:col-span-8 space-y-4 sm:space-y-6 min-w-0">
-            <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors">
+          <div className="lg:col-span-8 space-y-4 sm:space-y-6 lg:space-y-6 min-w-0">
+            <Card className="border border-border rounded-lg shadow-none hover:border-primary/20 transition-colors overflow-hidden">
               <CardHeader className="p-4 sm:p-5 md:p-6">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={cn(
@@ -1022,10 +1022,10 @@ const GigDetail = () => {
                     Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <CardTitle className="text-2xl sm:text-3xl font-semibold">{gig.title}</CardTitle>
+                <div className="flex flex-wrap items-baseline justify-between gap-3 min-w-0">
+                  <CardTitle className="text-xl sm:text-2xl md:text-3xl font-semibold break-words min-w-0 flex-1">{gig.title}</CardTitle>
                   {canSeeBudget && (gig.project_type === "hourly" ? (gig.hourly_rate_min != null || gig.hourly_rate_max != null) : (gig.budget_min != null || gig.budget_max != null)) && (
-                    <span className="text-xl font-semibold text-primary shrink-0 flex items-center gap-2">
+                    <span className="text-lg sm:text-xl font-semibold text-primary shrink-0 flex items-center gap-2">
                       {formatGigPrice(gig)}
                       {gig.project_type === "hourly" && (
                         <span className="text-xs text-muted-foreground">Hourly</span>
@@ -1042,7 +1042,7 @@ const GigDetail = () => {
                   </p>
                 )}
                 {canViewAsOwner && (
-                  <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-border">
+                  <div className="flex flex-wrap gap-2 gap-y-2 mt-4 pt-2 border-t border-border">
                     {isAdmin && (
                       <span className="text-xs text-muted-foreground">Viewing as admin</span>
                     )}
@@ -1091,8 +1091,9 @@ const GigDetail = () => {
                             Edit gig
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={() => navigate("/my-gigs")}>
-                          Manage in My Gigs
+                        <Button variant="outline" size="sm" className="gap-2 min-h-[44px] sm:min-h-0" onClick={() => navigate("/my-gigs")}>
+                            <FolderOpen className="h-4 w-4" />
+                            Manage in My Gigs
                         </Button>
                         <Button
                           variant="outline"
@@ -1454,14 +1455,14 @@ const GigDetail = () => {
           </div>
 
           {/* Right sidebar (2 cols, 8:2 with main): for owner = bids stats + filters; for Diggers = Contact client + client info */}
-          <aside className="lg:col-span-2 space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
+          <aside className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-6 lg:sticky lg:top-24 lg:self-start min-w-0">
             {/* Contact the client now — in sidebar for non-owners who have not yet purchased the lead */}
             {isOwner && activeRole === "digger" && (
-              <Card className="border border-border rounded-lg shadow-none border-accent/30 bg-accent/5">
+              <Card className="border border-border rounded-lg shadow-none border-accent/30 bg-accent/5 overflow-hidden">
                 <CardHeader className="p-4 sm:p-5">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
-                    Manage this gig
+                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-accent shrink-0" />
+                    <span className="min-w-0 break-words">Manage this gig</span>
                   </CardTitle>
                   <CardDescription className="text-sm">
                     You own this gig. Switch to Gigger mode to view bids, award a Digger, edit, or manage.
@@ -1479,16 +1480,38 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {!hasLeadPurchase && !isOwner && gig?.status === "open" && (
-              <Card className="border border-border rounded-lg shadow-none bg-card">
-                <CardContent className="p-4 flex flex-col gap-4">
+            {/* Contact the client — always visible for awarded digger once awarded / in progress / completed */}
+            {!isOwner && showDiggerContent && diggerId && gig?.awarded_digger_id === diggerId && ["awarded", "in_progress", "completed"].includes(gig?.status ?? "") && (
+              <Card className="border border-border rounded-lg shadow-none border-accent/30 bg-accent/5 overflow-hidden">
+                <CardContent className="p-4 sm:p-5 flex flex-col gap-4">
                   <div>
+                    <h3 className="text-sm font-semibold text-foreground">Contact the client</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Open the conversation with the Gigger to coordinate or follow up.
+                    </p>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-2 w-full min-h-[44px] sm:min-h-9"
+                    onClick={() => id && openFloatingChat(id, diggerId)}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Open conversation
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {!hasLeadPurchase && !isOwner && gig?.status === "open" && (
+              <Card className="border border-border rounded-lg shadow-none bg-card overflow-hidden">
+                <CardContent className="p-4 flex flex-col gap-4">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">Contact the client</h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       One-time payment. Secure. Get contact details to reach out directly.
                     </p>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
                     <span className="text-lg font-semibold tabular-nums text-foreground">
                       {getLeadPriceDisplay(
                         getLeadPriceBudget().min,
@@ -1496,7 +1519,7 @@ const GigDetail = () => {
                         (gig as { calculated_price_cents?: number | null }).calculated_price_cents
                       ).label}
                     </span>
-                    <Button onClick={handleUnlockLead} size="sm" className="gap-1.5 shrink-0 h-9">
+                    <Button onClick={handleUnlockLead} size="sm" className="gap-1.5 w-full sm:w-auto shrink-0 min-h-[44px] sm:min-h-9 sm:h-9">
                       <Unlock className="h-3.5 w-3.5" />
                       Unlock contact
                     </Button>
@@ -1506,10 +1529,10 @@ const GigDetail = () => {
               </Card>
             )}
             {!isOwner && gig?.status === "open" && (showDiggerContent || !canViewAsOwner) && (
-              <Card className="border border-border rounded-lg shadow-none bg-card">
+              <Card className="border border-border rounded-lg shadow-none bg-card overflow-hidden">
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500 shrink-0" />
                     No fee from your pocket
                   </CardTitle>
                 </CardHeader>
@@ -1523,10 +1546,10 @@ const GigDetail = () => {
             {canViewAsOwner && (
               <>
                 {/* Filters */}
-                <Card className="border border-border rounded-lg shadow-none bg-card">
+                <Card className="border border-border rounded-lg shadow-none bg-card overflow-hidden min-w-0">
                   <CardHeader className="p-4 sm:p-5 pb-2">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <Filter className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2 min-w-0">
+                      <Filter className="h-4 w-4 text-primary shrink-0" />
                       Filter Diggers
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -1625,8 +1648,10 @@ const GigDetail = () => {
               const raw = (gig as any).profiles;
               const clientProfile = raw == null ? null : Array.isArray(raw) ? raw[0] : raw;
               const p = clientProfile || gig.profiles || null;
+              const clientLocalTime = formatClientLocalTime(p?.timezone ?? null) ||
+                (p?.country ?? gig.poster_country ? getLocalTimeForLocation(p?.country ?? gig.poster_country ?? "", p?.state ?? null) : null);
               return (
-              <Card className="border border-border rounded-lg shadow-none bg-muted/20">
+              <Card className="border border-border rounded-lg shadow-none bg-muted/20 overflow-hidden min-w-0">
                 <CardHeader className="p-3 sm:p-4 pb-1">
                   <CardTitle className="text-sm font-medium">
                     About the client
@@ -1668,16 +1693,13 @@ const GigDetail = () => {
                       </div>
                     </div>
                   )}
-                  {/* Local time first, then Joined below */}
+                  {/* Local time — always show row so it's visible */}
                   <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                    {(formatClientLocalTime(p?.timezone ?? null) ||
-                      (p?.country ?? gig.poster_country ? getLocalTimeForLocation(p?.country ?? gig.poster_country ?? "", p?.state ?? null) : null)) && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 shrink-0" />
-                        {formatClientLocalTime(p?.timezone ?? null) ||
-                          (p?.country ?? gig.poster_country ? getLocalTimeForLocation(p?.country ?? gig.poster_country ?? "", p?.state ?? null) : null)}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 shrink-0" aria-hidden />
+                      <span>Local time: </span>
+                      <span>{clientLocalTime ? `${clientLocalTime} local` : "—"}</span>
+                    </span>
                     {p?.created_at && (
                       <span>Joined {format(new Date(p.created_at), "MMM yyyy")}</span>
                     )}

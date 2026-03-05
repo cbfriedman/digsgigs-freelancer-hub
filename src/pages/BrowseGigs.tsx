@@ -539,12 +539,10 @@ const BrowseGigs = () => {
       />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <div className="px-3 sm:px-6 pt-3 pb-6 sm:pt-5 sm:pb-8 max-w-[1600px] mx-auto">
+      <div className="px-3 sm:px-6 pt-2 pb-4 sm:pt-3 sm:pb-6 max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="mb-3 sm:mb-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Browse Gigs</h1>
-            <p className="text-xs text-muted-foreground mt-0.5 sm:text-sm">Bid or unlock leads.</p>
             {(diggerProfile as any)?.lead_limit_enabled && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Badge variant={limitReached ? "destructive" : "secondary"} className="text-xs">

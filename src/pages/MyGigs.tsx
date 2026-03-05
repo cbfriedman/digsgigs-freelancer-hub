@@ -529,7 +529,7 @@ const MyGigs = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+        <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
           <div className="flex flex-col md:flex-row gap-6 md:gap-8">
             <div className="shrink-0 md:w-48 lg:w-52">
               <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col">
@@ -568,7 +568,7 @@ const MyGigs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+      <div className="container mx-auto px-4 pt-0 pb-4 sm:py-6 max-w-5xl">
         <div className="flex flex-col md:flex-row gap-6 md:gap-8">
           {gigs.length > 0 && (
             <nav

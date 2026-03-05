@@ -48,7 +48,7 @@ export function PageLayout({
         className={cn(
           "flex-1 w-full mx-auto",
           maxWidthClasses[maxWidth],
-          padded && "px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12",
+          padded && "px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6",
           className
         )}
       >

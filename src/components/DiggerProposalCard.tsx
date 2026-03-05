@@ -12,7 +12,6 @@ import {
   DollarSign,
   MapPin,
   Loader2,
-  FileText,
   ChevronDown,
   ChevronUp,
   Info,
@@ -128,6 +127,8 @@ interface DiggerProposalCardProps {
   canMessageClient?: boolean;
   messageClientTooltip?: string;
   gigStatus?: string;
+  /** When the gigger clicks "View more" to expand the proposal, call this to mark the bid as reviewed (sets viewed_by_gigger_at). */
+  onProposalViewed?: () => void;
 }
 
 export function DiggerProposalCard({
@@ -157,6 +158,7 @@ export function DiggerProposalCard({
   canMessageClient = false,
   messageClientTooltip,
   gigStatus,
+  onProposalViewed,
 }: DiggerProposalCardProps) {
   const navigate = useNavigate();
   const [showFullProposal, setShowFullProposal] = useState(false);
@@ -324,25 +326,18 @@ export function DiggerProposalCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-0 px-4 pb-4 sm:px-6 sm:pb-6">
-        {/* Project title (gig title) */}
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Project</p>
-          <p className="font-medium text-foreground break-words">{gigTitle}</p>
-        </div>
-
         {/* Cover letter with View more / View less */}
         <div className="min-w-0 overflow-hidden">
-          <div className="flex items-center gap-2 mb-1.5">
-            <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cover letter</p>
-          </div>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed break-words">
             {displayProposal}
           </p>
           {truncated && (
             <button
               type="button"
-              onClick={() => setShowFullProposal(!showFullProposal)}
+              onClick={() => {
+                if (!showFullProposal) onProposalViewed?.();
+                setShowFullProposal(!showFullProposal);
+              }}
               className="mt-2 inline-flex items-center gap-1 text-primary hover:underline font-medium text-sm"
             >
               {showFullProposal ? (

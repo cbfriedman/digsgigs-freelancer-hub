@@ -452,7 +452,7 @@ const BrowseDiggers = () => {
           title="Browse Freelancers - Find Qualified Diggers"
           description="Find skilled freelancers and Diggers for your project."
         />
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
               <div className="text-center">
@@ -478,7 +478,7 @@ const BrowseDiggers = () => {
           title="Browse Freelancers - Find Qualified Diggers"
           description="Find skilled freelancers and Diggers for your project."
         />
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
               <div className="text-center">
@@ -504,7 +504,7 @@ const BrowseDiggers = () => {
         keywords="hire freelancers, find Diggers, service providers, skilled workers, verified freelancers"
       />
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-4 sm:py-6">
         <div className="mb-8">
           <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl mb-0.5">Browse Diggers</h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
