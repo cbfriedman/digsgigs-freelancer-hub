@@ -620,11 +620,11 @@ export default function Account() {
         title="Account settings"
         description="Manage your Digs & Gigs account, security, payments, and preferences."
       />
-      <div className="mx-auto w-full px-3 pt-0 pb-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8">
+      <div className="mx-auto w-full px-3 pt-0 pb-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8 md:ml-48 md:mr-auto">
         {/* Left sidebar nav */}
         <nav
           aria-label="Account sections"
-          className="sticky top-[var(--header-height)] z-10 bg-background shrink-0 md:w-48 lg:w-52 md:top-24 md:self-start md:pt-1 -mx-3 px-3 py-2 md:mx-0 md:px-0 md:py-0"
+          className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:bottom-0 md:right-auto md:w-48 md:border-r md:border-border/60 md:border-b-0 shrink-0 md:pt-1 -mx-3 px-3 py-2 md:mx-0 md:px-0 md:py-0"
         >
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible border-b border-border/60 md:border-b-0">
             {sectionIds.map(({ id, label }) => (
@@ -645,14 +645,7 @@ export default function Account() {
         </nav>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0 max-w-2xl space-y-5 sm:space-y-6">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Account</h1>
-            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-              Security, payments, preferences.
-            </p>
-          </div>
-
+        <div className="flex-1 min-w-0 max-w-2xl space-y-5 sm:space-y-6 pt-12 md:pt-0">
           <EmailVerificationBanner />
 
           {/* Identity & Security */}
