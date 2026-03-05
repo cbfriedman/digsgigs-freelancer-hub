@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,8 +92,10 @@ serve(async (req) => {
 
     logStep("Pending purchase created", { pendingPurchaseId: pendingPurchase.id });
 
-    // Initialize Stripe for payment
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    // Initialize Stripe using admin-configured mode (test vs live)
+    const { secretKey } = await getStripeConfig(supabaseAdmin);
+    if (!secretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+    const stripe = new Stripe(secretKey, {
       apiVersion: "2023-10-16",
     });
 

@@ -76,8 +76,14 @@ export default function StripeModeSettingsTab() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Stripe mode</h2>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-sm mt-1">
           Switch between test (sandbox) and live payments. Edge Functions use the matching keys from Supabase secrets (e.g. STRIPE_SECRET_KEY_TEST / STRIPE_SECRET_KEY_LIVE). Ensure both test and live keys are set in Dashboard → Edge Functions → Secrets.
+        </p>
+        <p className="mt-3 text-sm font-medium">
+          Current mode:{" "}
+          <span className={mode === "live" ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-muted-foreground"}>
+            {mode === "live" ? "Live" : "Test (sandbox)"}
+          </span>
         </p>
       </div>
 
