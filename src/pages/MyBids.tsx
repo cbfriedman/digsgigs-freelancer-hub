@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, MessageSquare, DollarSign, Calendar, FileText } from "lucide-react";
+import { MessageSquare, DollarSign, Calendar, FileText } from "lucide-react";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,53 +283,34 @@ const MyBids = () => {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12 max-w-5xl">
+        <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
           <StripeConnectBanner />
-          <header className="mb-8 flex items-center justify-between">
-            <div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="gap-1.5 -ml-2 text-muted-foreground mb-2 min-h-[36px] sm:min-h-0"
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+            {bids.length > 0 && (
+              <nav
+                aria-label="Filter bids"
+                className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:static md:border-b-0 shrink-0 md:w-48 lg:w-52 md:sticky md:top-24 md:self-start md:pt-1 px-4 py-2 md:py-0"
               >
-                <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-                Back
-              </Button>
-              <h1 className="text-4xl font-bold mb-2">My Bids</h1>
-              <p className="text-muted-foreground">
-              {bids.length === 0
-                ? "Proposals you’ve submitted. Open a bid to view the gig and messages."
-                : `${bids.length} bid${bids.length === 1 ? "" : "s"} · newest first`}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate("/browse-gigs")}>
-                Browse gigs
-              </Button>
-            </div>
-          </header>
-
-          {bids.length > 0 && (
-            <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
-              <span className="text-xs font-medium text-muted-foreground mr-1 shrink-0">Filter:</span>
-              {FILTER_OPTIONS.map(({ value, label }) => (
-                <Button
-                  key={value}
-                  variant={statusFilter === value ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    "min-h-[36px] sm:min-h-0 h-8 text-xs rounded-full touch-manipulation",
-                    statusFilter === value && "bg-primary text-primary-foreground"
-                  )}
-                  onClick={() => setStatusFilter(value)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          )}
-
+                <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible md:border-b-0 -mx-4 px-4 md:mx-0 md:px-0">
+                  {FILTER_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setStatusFilter(value)}
+                      className={cn(
+                        "text-left px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors md:py-1.5 hover:bg-muted",
+                        statusFilter === value
+                          ? "bg-muted text-foreground font-medium md:border-l-2 md:border-l-muted-foreground/50 md:pl-3 md:ml-0 hover:text-foreground"
+                          : "text-muted-foreground hover:text-foreground md:border-l-2 md:border-l-transparent md:pl-3"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            )}
+            <div className={cn("flex-1 min-w-0", bids.length > 0 && "pt-12 md:pt-0")}>
           {bids.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
@@ -344,7 +325,7 @@ const MyBids = () => {
               {statusFilter === "all" ? (
                 <>
                   {filteredActiveBids.length > 0 && (
-                    <section>
+                    <section id="my-bids-active" className="scroll-mt-24">
                       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         Active
                       </h2>
@@ -376,7 +357,7 @@ const MyBids = () => {
                     </section>
                   )}
                   {filteredPastBids.length > 0 && (
-                    <section>
+                    <section id="my-bids-past" className="scroll-mt-24">
                       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         Past
                       </h2>
@@ -402,7 +383,7 @@ const MyBids = () => {
               ) : (
                 <>
                   {filteredBidsWhenNotAll.length > 0 ? (
-                    <section>
+                    <section id="my-bids-results" className="scroll-mt-24">
                       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                         {FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label} ({filteredBidsWhenNotAll.length})
                       </h2>
@@ -441,6 +422,8 @@ const MyBids = () => {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     </>

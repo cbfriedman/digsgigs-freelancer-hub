@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +26,9 @@ serve(async (req) => {
 
     if (!user?.email) throw new Error("User not authenticated");
 
+    const { secretKey, mode } = await getStripeConfig(supabaseClient);
+    if (!secretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+
     // Get digger profile
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
@@ -36,12 +40,13 @@ serve(async (req) => {
       throw new Error("Digger profile not found");
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
+    const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
 
-    // Create or retrieve Stripe Connect account
-    let accountId = diggerProfile.stripe_connect_account_id;
+    // Use test or live Connect account depending on platform mode
+    const isLive = mode === "live";
+    let accountId = isLive
+      ? (diggerProfile as { stripe_connect_account_id_live?: string }).stripe_connect_account_id_live
+      : diggerProfile.stripe_connect_account_id;
 
     if (!accountId) {
       const account = await stripe.accounts.create({
@@ -58,10 +63,12 @@ serve(async (req) => {
 
       accountId = account.id;
 
-      // Save account ID to database
+      const updatePayload = isLive
+        ? { stripe_connect_account_id_live: accountId }
+        : { stripe_connect_account_id: accountId };
       await supabaseClient
         .from("digger_profiles")
-        .update({ stripe_connect_account_id: accountId })
+        .update(updatePayload)
         .eq("id", diggerProfile.id);
     }
 
@@ -89,12 +96,12 @@ serve(async (req) => {
         : error instanceof Error
           ? error.message
           : "Unknown error";
-    // Stripe returns this when the platform account has not enabled Connect in the Dashboard
+    // Stripe returns this when the platform account has not enabled Connect in the Dashboard (same mode: test or live).
     const isConnectNotEnabled =
       typeof rawMessage === "string" &&
       (rawMessage.includes("signed up for Connect") || rawMessage.includes("stripe.com/docs/connect"));
     const userMessage = isConnectNotEnabled
-      ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard (Connect → Get started). Please try again later or contact support."
+      ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard for the current mode: open Connect → Get started (use Test mode in Stripe if the app is in test mode, or Live if in live mode). Then try again or contact support."
       : rawMessage;
     return new Response(
       JSON.stringify({ error: userMessage }),

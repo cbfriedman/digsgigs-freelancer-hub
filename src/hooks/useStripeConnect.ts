@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 
 export const useStripeConnect = () => {
   const { toast } = useToast();
+  const { stripeMode } = useStripeConfig();
   const [loading, setLoading] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [canReceivePayments, setCanReceivePayments] = useState(false);
@@ -13,7 +15,7 @@ export const useStripeConnect = () => {
 
   useEffect(() => {
     checkConnectStatus();
-  }, []);
+  }, [stripeMode]);
 
   const checkConnectStatus = async () => {
     try {
@@ -22,13 +24,15 @@ export const useStripeConnect = () => {
 
       const { data: profile } = await supabase
         .from("digger_profiles")
-        .select("stripe_connect_account_id, stripe_connect_onboarded, stripe_connect_charges_enabled")
+        .select("stripe_connect_account_id, stripe_connect_onboarded, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_onboarded_live, stripe_connect_charges_enabled_live")
         .eq("user_id", user.id)
         .single();
 
       if (profile) {
-        setIsOnboarded(!!(profile.stripe_connect_onboarded || profile.stripe_connect_account_id));
-        setCanReceivePayments(!!profile.stripe_connect_charges_enabled);
+        const p = profile as Record<string, unknown>;
+        const isLive = stripeMode === "live";
+        setIsOnboarded(!!(isLive ? (p.stripe_connect_onboarded_live || p.stripe_connect_account_id_live) : (p.stripe_connect_onboarded || p.stripe_connect_account_id)));
+        setCanReceivePayments(!!(isLive ? p.stripe_connect_charges_enabled_live : p.stripe_connect_charges_enabled));
       }
     } catch (error) {
       console.error("Error checking Connect status:", error);

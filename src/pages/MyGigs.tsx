@@ -529,42 +529,37 @@ const MyGigs = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12 max-w-5xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <Skeleton className="h-9 w-40 mb-2 rounded" />
-              <Skeleton className="h-5 w-[320px] max-w-full rounded" />
+        <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+            <div className="shrink-0 md:w-48 lg:w-52">
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col">
+                {GIG_FILTER_OPTIONS.map(({ label }) => (
+                  <Skeleton key={label} className="h-9 w-full rounded-md" />
+                ))}
+              </div>
             </div>
-            <Skeleton className="h-10 w-36 rounded-md" />
-          </div>
-          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
-            <Skeleton className="h-8 w-12 rounded-full" />
-            <Skeleton className="h-8 w-14 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-            <Skeleton className="h-8 w-24 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-          </div>
-          <div className="space-y-4" aria-busy="true" aria-label="Loading your gigs">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                    <div className="flex-1 min-w-0 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
-                        <Skeleton className="h-5 w-16 rounded-full" />
+            <div className="flex-1 min-w-0 space-y-4" aria-busy="true" aria-label="Loading your gigs">
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Skeleton className="h-6 w-[70%] max-w-[30ch] rounded" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 max-w-[85%] w-full rounded" />
                       </div>
-                      <Skeleton className="h-4 w-full rounded" />
-                      <Skeleton className="h-4 max-w-[85%] w-full rounded" />
+                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                        <Skeleton className="h-9 w-24 rounded-md" />
+                        <Skeleton className="h-9 w-28 rounded-md" />
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                      <Skeleton className="h-9 w-24 rounded-md" />
-                      <Skeleton className="h-9 w-28 rounded-md" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -573,41 +568,33 @@ const MyGigs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">My Gigs</h1>
-            <p className="text-muted-foreground">
-              Your gigs are live. Review bids from Diggers in real time and award when you're ready.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/transactions")}>
-              View Transactions
-            </Button>
-          </div>
-        </div>
-
-        {gigs.length > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-4">
-            <span className="text-xs font-medium text-muted-foreground mr-1 shrink-0">Filter:</span>
-            {GIG_FILTER_OPTIONS.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={statusFilter === value ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "min-h-[36px] sm:min-h-0 h-8 text-xs rounded-full touch-manipulation",
-                  statusFilter === value && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setStatusFilter(value)}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-        )}
-
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+          {gigs.length > 0 && (
+            <nav
+              aria-label="Filter gigs"
+              className="fixed left-0 right-0 top-[var(--header-height)] z-10 bg-background border-b border-border/60 md:static md:border-b-0 shrink-0 md:w-48 lg:w-52 md:sticky md:top-24 md:self-start md:pt-1 px-4 py-2 md:py-0"
+            >
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-col md:overflow-visible md:border-b-0 -mx-4 px-4 md:mx-0 md:px-0">
+                {GIG_FILTER_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatusFilter(value)}
+                    className={cn(
+                      "text-left px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors md:py-1.5 hover:bg-muted",
+                      statusFilter === value
+                        ? "bg-muted text-foreground font-medium md:border-l-2 md:border-l-muted-foreground/50 md:pl-3 md:ml-0 hover:text-foreground"
+                        : "text-muted-foreground hover:text-foreground md:border-l-2 md:border-l-transparent md:pl-3"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          )}
+          <div className={cn("flex-1 min-w-0", gigs.length > 0 && "pt-12 md:pt-0")}>
         {gigs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -877,6 +864,8 @@ const MyGigs = () => {
             )))}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       <AlertDialog open={!!repostConfirmGig} onOpenChange={(open) => !open && setRepostConfirmGig(null)}>

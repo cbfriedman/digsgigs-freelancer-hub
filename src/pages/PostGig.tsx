@@ -29,6 +29,7 @@ import {
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
 import { getLeadPriceDollars } from "@/lib/leadPrice";
+import { getReferralCodeFromStorage } from "@/lib/referralUtils";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
@@ -394,6 +395,19 @@ const PostGig = () => {
       }).catch(err => {
         console.warn("Failed to send consumer onboarding email (non-critical):", err);
       });
+
+      // Attribute referral if user came from a Digger's referral link (hire-a-pro?ref=...)
+      const referralCode = getReferralCodeFromStorage();
+      if (referralCode) {
+        supabase.functions.invoke("process-referral", {
+          body: {
+            referral_code: referralCode,
+            gig_id: gigData.id,
+            referred_email: finalClientEmail.trim(),
+            referred_user_id: consumerId ?? null,
+          },
+        }).catch(err => console.warn("Referral attribution error:", err));
+      }
 
       if (isConfigured) {
         trackEvent('Lead', { content_name: 'Gig Posted', content_ids: [gigData.id] });

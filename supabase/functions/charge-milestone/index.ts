@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,23 +76,30 @@ serve(async (req) => {
 
     const useCheckoutFlow = useCheckout === true || !defaultPm;
     const origin = originFromBody || req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://digsandgigs.net";
+    const { secretKey: stripeSecretKey, mode: stripeMode } = await getStripeConfig(supabaseAdmin);
+    if (!stripeSecretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+    const isLive = stripeMode === "live";
 
     if (useCheckoutFlow) {
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-        apiVersion: "2023-10-16",
-      });
+      const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
       const amountCents = Math.round(Number(milestone.amount) * 100);
       const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100));
       const desc = (milestone as any).description?.slice(0, 50) || "Contract milestone";
 
       const { data: diggerProfile } = await supabaseAdmin
         .from("digger_profiles")
-        .select("stripe_connect_account_id, stripe_connect_charges_enabled")
+        .select("stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live")
         .eq("id", contract.digger_id)
         .single();
 
-      if (!diggerProfile?.stripe_connect_account_id || !diggerProfile.stripe_connect_charges_enabled) {
-        throw new Error("The professional hasn't set up payouts yet. Ask them to complete \"Get paid\" in their account so you can pay via Checkout.");
+      const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
+      const chargesEnabled = isLive ? (diggerProfile as any)?.stripe_connect_charges_enabled_live : diggerProfile?.stripe_connect_charges_enabled;
+      if (!connectAccountId || !chargesEnabled) {
+        throw new Error(
+          isLive
+            ? "The professional hasn't set up payouts for live payments yet. Ask them to complete \"Get paid\" while the platform is in live mode."
+            : "The professional hasn't set up payouts yet. Ask them to complete \"Get paid\" in their account so you can pay via Checkout."
+        );
       }
 
       let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100);
@@ -189,7 +197,7 @@ serve(async (req) => {
         mode: "payment",
         payment_intent_data: {
           transfer_data: {
-            destination: diggerProfile.stripe_connect_account_id,
+            destination: connectAccountId,
             amount: transferFromThisPaymentCents,
           },
         },
@@ -212,20 +220,19 @@ serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-      apiVersion: "2023-10-16",
-    });
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
 
     const amountCents = Math.round(Number(milestone.amount) * 100); // gross
     const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100)); // 3% from Gigger
 
     // Compute digger payout and 7% deposit advance before creating PI so we can use transfer_data (destination charge).
     // Using transfer_data avoids "insufficient available funds" because the transfer happens at capture, not from platform balance.
-    const { data: diggerProfile } = await supabaseAdmin
+    const { data: diggerProfileSaved } = await supabaseAdmin
       .from("digger_profiles")
-      .select("stripe_connect_account_id")
+      .select("stripe_connect_account_id, stripe_connect_account_id_live")
       .eq("id", contract.digger_id)
       .single();
+    const connectAccountIdSaved = isLive ? (diggerProfileSaved as any)?.stripe_connect_account_id_live : diggerProfileSaved?.stripe_connect_account_id;
 
     let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100); // gross - 8%
     let depositAdvanceCents = 0;
@@ -280,9 +287,9 @@ serve(async (req) => {
       },
       return_url: `${req.headers.get("origin") || ""}/my-gigs?payment=success`,
     };
-    if (diggerProfile?.stripe_connect_account_id && transferFromThisPaymentCents > 0) {
+    if (connectAccountIdSaved && transferFromThisPaymentCents > 0) {
       paymentIntentParams.transfer_data = {
-        destination: diggerProfile.stripe_connect_account_id,
+        destination: connectAccountIdSaved,
         amount: transferFromThisPaymentCents,
       };
       logStep("Using transfer_data (milestone payout only; 7% from platform)", { transferFromThisPaymentCents });
@@ -339,13 +346,13 @@ serve(async (req) => {
 
     // Milestone part sent via transfer_data. Transfer 7% from platform (deposit) to digger.
     let stripeTransferId: string | null = null;
-    if (diggerProfile?.stripe_connect_account_id && depositAdvanceCents > 0) {
+    if (connectAccountIdSaved && depositAdvanceCents > 0) {
       try {
         const transfer = await stripe.transfers.create(
           {
             amount: depositAdvanceCents,
             currency: "usd",
-            destination: diggerProfile.stripe_connect_account_id,
+            destination: connectAccountIdSaved,
             description: `Milestone 7% deposit advance - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
             metadata: {
               milestone_payment_id: milestonePaymentId,
@@ -372,7 +379,7 @@ serve(async (req) => {
         status: "paid",
         stripe_payment_intent_id: paymentIntent.id,
         ...(stripeTransferId && { stripe_transfer_id: stripeTransferId }),
-        ...(diggerProfile?.stripe_connect_account_id && { released_at: new Date().toISOString() }),
+        ...(connectAccountIdSaved && { released_at: new Date().toISOString() }),
       })
       .eq("id", milestonePaymentId);
 

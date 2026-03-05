@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,28 +29,27 @@ serve(async (req) => {
       throw new Error("No Stripe signature found");
     }
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+    const { secretKey: stripeKey, webhookSecret } = await getStripeConfig(supabaseAdmin);
     if (!stripeKey || !webhookSecret) {
       logStep("ERROR: Missing Stripe configuration", {
         hasStripeKey: !!stripeKey,
         hasWebhookSecret: !!webhookSecret
       });
-      throw new Error("Stripe keys not configured. Please set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Supabase Dashboard > Edge Functions > Secrets");
+      throw new Error("Stripe keys not configured. Set STRIPE_SECRET_KEY_TEST/LIVE and STRIPE_WEBHOOK_SECRET_TEST/LIVE in Edge Function secrets.");
     }
-    
-    // Validate Stripe key format
     if (!stripeKey.startsWith("sk_")) {
       logStep("ERROR: Invalid Stripe key format");
       throw new Error("Invalid STRIPE_SECRET_KEY format");
     }
-    
-    // Validate webhook secret format
     if (!webhookSecret.startsWith("whsec_")) {
       logStep("ERROR: Invalid webhook secret format");
       throw new Error("Invalid STRIPE_WEBHOOK_SECRET format. Must start with 'whsec_'");
     }
-
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const body = await req.text();
 

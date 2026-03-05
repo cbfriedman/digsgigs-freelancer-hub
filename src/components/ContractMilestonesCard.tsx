@@ -28,12 +28,8 @@ import { Loader2, CheckCircle2, Send, CreditCard, Shield, Star, RefreshCw, Plus,
 import { RatingDialog } from "@/components/RatingDialog";
 import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
-import { loadStripe } from "@stripe/stripe-js";
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 import { cn } from "@/lib/utils";
-
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 const BUCKET_WORK_LOG = "milestone-work-log-attachments";
 
@@ -124,6 +120,7 @@ export function ContractMilestonesCard({
   suggestedMilestonesFromBid,
 }: ContractMilestonesCardProps) {
   const { toast } = useToast();
+  const { stripePromise } = useStripeConfig();
   const [searchParams, setSearchParams] = useSearchParams();
   const [contract, setContract] = useState<ContractWithMilestones | null>(null);
   const [gigInfo, setGigInfo] = useState<{ consumer_id: string; awarded_digger_id: string | null } | null>(null);
@@ -530,7 +527,7 @@ export function ContractMilestonesCard({
         return;
       }
 
-      if (data?.requiresAction && data?.clientSecret && stripePromise) {
+      if (data?.requiresAction && data?.clientSecret && stripePromise != null) {
         const stripe = await stripePromise;
         if (!stripe) throw new Error("Stripe not loaded");
         const { error } = await stripe.confirmCardPayment(data.clientSecret);

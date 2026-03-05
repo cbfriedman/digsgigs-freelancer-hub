@@ -88,15 +88,18 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
-      const { error: updateError } = await supabaseClient
+      const onboarded = !!account.details_submitted;
+      const chargesEnabled = !!account.charges_enabled;
+      const { error: updateTest } = await supabaseClient
         .from('digger_profiles')
-        .update({
-          stripe_connect_onboarded: !!account.details_submitted,
-          stripe_connect_charges_enabled: !!account.charges_enabled,
-        })
+        .update({ stripe_connect_onboarded: onboarded, stripe_connect_charges_enabled: chargesEnabled })
         .eq('stripe_connect_account_id', account.id);
-      if (updateError) {
-        logStep('ERROR: Failed to update digger_profiles for Connect account', { error: updateError, accountId: account.id });
+      const { error: updateLive } = await supabaseClient
+        .from('digger_profiles')
+        .update({ stripe_connect_onboarded_live: onboarded, stripe_connect_charges_enabled_live: chargesEnabled })
+        .eq('stripe_connect_account_id_live', account.id);
+      if (updateTest && updateLive) {
+        logStep('ERROR: Failed to update digger_profiles for Connect account', { error: updateTest?.message ?? updateLive?.message, accountId: account.id });
       } else {
         logStep('Updated digger_profiles for Connect account', { accountId: account.id });
       }

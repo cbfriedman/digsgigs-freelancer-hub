@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,17 +19,15 @@ serve(async (req) => {
   }
 
   try {
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_MILESTONE_SECRET") ?? Deno.env.get("STRIPE_WEBHOOK_SECRET");
-
-    if (!stripeSecretKey) throw new Error("STRIPE_SECRET_KEY not set");
-
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+    const { secretKey: stripeSecretKey, webhookSecretMilestone } = await getStripeConfig(supabase);
+    const webhookSecret = webhookSecretMilestone;
+    if (!stripeSecretKey) throw new Error("STRIPE_SECRET_KEY not set. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
 
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
@@ -127,22 +126,25 @@ serve(async (req) => {
 
     const { data: diggerProfile } = await supabase
       .from("digger_profiles")
-      .select("stripe_connect_account_id")
+      .select("stripe_connect_account_id, stripe_connect_account_id_live")
       .eq("id", contract.digger_id)
       .single();
+    const { mode: stripeMode } = await getStripeConfig(supabase);
+    const isLive = stripeMode === "live";
+    const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
 
     // If the PaymentIntent was created with transfer_data (saved PM destination charge), Stripe already transferred that amount at capture. Only transfer the remainder (e.g. 7% deposit advance).
     const alreadyTransferredCents = (pi.transfer_data?.amount ?? 0) as number;
     const remainderCents = diggerPayoutCents - alreadyTransferredCents;
 
     let stripeTransferId: string | null = null;
-    if (diggerProfile?.stripe_connect_account_id && remainderCents > 0) {
+    if (connectAccountId && remainderCents > 0) {
       try {
         const transfer = await stripe.transfers.create(
           {
             amount: remainderCents,
             currency: "usd",
-            destination: diggerProfile.stripe_connect_account_id,
+            destination: connectAccountId,
             description: Number((milestone as any).milestone_number) === 1
               ? "7% deposit advance (first milestone)"
               : `Milestone - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
@@ -175,7 +177,7 @@ serve(async (req) => {
         status: "paid",
         stripe_payment_intent_id: pi.id,
         ...(stripeTransferId && { stripe_transfer_id: stripeTransferId }),
-        ...(diggerProfile?.stripe_connect_account_id && { released_at: new Date().toISOString() }),
+        ...(connectAccountId && { released_at: new Date().toISOString() }),
       })
       .eq("id", milestonePaymentId);
 

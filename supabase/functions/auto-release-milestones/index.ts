@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +40,10 @@ serve(async (req) => {
       serviceRoleKey,
       { auth: { persistSession: false } }
     );
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2023-10-16" });
+    const { secretKey, mode: stripeMode } = await getStripeConfig(supabaseAdmin);
+    if (!secretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+    const isLive = stripeMode === "live";
+    const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
 
     const { data: settingsRow } = await supabaseAdmin
       .from("platform_settings")
@@ -106,12 +110,13 @@ serve(async (req) => {
 
       const { data: diggerProfile } = await supabaseAdmin
         .from("digger_profiles")
-        .select("stripe_connect_account_id")
+        .select("stripe_connect_account_id, stripe_connect_account_id_live")
         .eq("id", contract.digger_id)
         .single();
 
-      if (!diggerProfile?.stripe_connect_account_id) {
-        logStep("Skip: digger has no Connect account", { milestonePaymentId });
+      const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
+      if (!connectAccountId) {
+        logStep("Skip: digger has no Connect account for current mode", { milestonePaymentId });
         skipped++;
         continue;
       }
@@ -171,9 +176,9 @@ serve(async (req) => {
           auto_released: "true",
         },
       };
-      if (diggerProfile.stripe_connect_account_id && transferFromThisPaymentCents > 0) {
+      if (connectAccountId && transferFromThisPaymentCents > 0) {
         paymentIntentParams.transfer_data = {
-          destination: diggerProfile.stripe_connect_account_id,
+          destination: connectAccountId,
           amount: transferFromThisPaymentCents,
         };
       }
@@ -205,13 +210,13 @@ serve(async (req) => {
       }
 
       let stripeTransferId: string | null = null;
-      if (diggerProfile.stripe_connect_account_id && depositAdvanceCents > 0) {
+      if (connectAccountId && depositAdvanceCents > 0) {
         try {
           const transfer = await stripe.transfers.create(
             {
               amount: depositAdvanceCents,
               currency: "usd",
-              destination: diggerProfile.stripe_connect_account_id,
+              destination: connectAccountId,
               description: `Milestone 7% deposit advance (auto-release) - ${(milestone as any).description?.slice(0, 50) || "Contract milestone"}`,
               metadata: {
                 milestone_payment_id: milestonePaymentId,

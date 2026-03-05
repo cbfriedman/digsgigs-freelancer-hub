@@ -45,6 +45,26 @@ serve(async (req) => {
         })
         .eq("id", existingReferral.id);
 
+      // Notify the referring digger when a gig was posted (converted)
+      if (gig_id && existingReferral.referrer_digger_id) {
+        const { data: digger } = await supabase
+          .from("digger_profiles")
+          .select("user_id")
+          .eq("id", existingReferral.referrer_digger_id)
+          .single();
+
+        if (digger?.user_id) {
+          await supabase.rpc("create_notification", {
+            p_user_id: digger.user_id,
+            p_type: "referral",
+            p_title: "New Referral!",
+            p_message: "Someone you referred just posted a project!",
+            p_link: "/dashboard",
+            p_metadata: { referral_id: existingReferral.id, gig_id },
+          });
+        }
+      }
+
       return new Response(JSON.stringify({ success: true, referral_id: existingReferral.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

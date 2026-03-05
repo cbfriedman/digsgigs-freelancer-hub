@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -25,6 +25,7 @@ import GigEmailDeliveryTab from "@/components/admin/GigEmailDeliveryTab";
 import AdminTransactionsDisputesTab from "@/components/admin/AdminTransactionsDisputesTab";
 import AdminChatHistoryTab from "@/components/admin/AdminChatHistoryTab";
 import MilestoneAutoReleaseSettingsTab from "@/components/admin/MilestoneAutoReleaseSettingsTab";
+import StripeModeSettingsTab from "@/components/admin/StripeModeSettingsTab";
 import AccountDeletionRequestsTab from "@/components/admin/AccountDeletionRequestsTab";
 import ProfileUpdateRequestsTab from "@/components/admin/ProfileUpdateRequestsTab";
 import IdVerificationSubmissionsTab from "@/components/admin/IdVerificationSubmissionsTab";
@@ -376,6 +377,7 @@ const AdminDashboard = () => {
     { id: "manage-gigs", label: "Manage gigs", icon: Briefcase },
     { id: "transactions-disputes", label: "Transactions & Disputes", icon: Receipt },
     { id: "milestone-auto-release", label: "Milestone auto-release", icon: Clock },
+    { id: "stripe-mode", label: "Stripe mode", icon: CreditCard },
     { id: "gig-email-delivery", label: "Gig email delivery", icon: Mail },
     { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
@@ -465,7 +467,7 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7, 13).map((item) => {
+                  {menuItems.slice(7, 14).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -665,6 +667,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "milestone-auto-release" && (
                   <MilestoneAutoReleaseSettingsTab />
+                )}
+
+                {activeTab === "stripe-mode" && (
+                  <StripeModeSettingsTab />
                 )}
 
                 {activeTab === "chat-history" && (

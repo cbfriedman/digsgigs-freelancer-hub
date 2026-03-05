@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,9 +37,12 @@ serve(async (req) => {
       );
     }
 
+    const { secretKey, mode: stripeMode } = await getStripeConfig(supabaseClient);
+    if (!secretKey) throw new Error("Stripe not configured.");
+
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
-      .select("id, stripe_connect_account_id")
+      .select("id, stripe_connect_account_id, stripe_connect_account_id_live")
       .eq("user_id", user.id)
       .single();
 
@@ -49,32 +53,32 @@ serve(async (req) => {
       );
     }
 
-    const accountId = diggerProfile.stripe_connect_account_id;
+    const isLive = stripeMode === "live";
+    const accountId = isLive ? (diggerProfile as any).stripe_connect_account_id_live : diggerProfile.stripe_connect_account_id;
     if (!accountId) {
       return new Response(
         JSON.stringify({
           synced: false,
           error: "no_connect_account",
-          message: "You haven't connected a payout account yet. Use \"Connect payout account\" to set it up.",
+          message: isLive
+            ? "You haven't connected a payout account for live payments yet. Use \"Connect payout account\" while the platform is in live mode."
+            : "You haven't connected a payout account yet. Use \"Connect payout account\" to set it up.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-      apiVersion: "2023-10-16",
-    });
-
+    const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
     const account = await stripe.accounts.retrieve(accountId);
     const detailsSubmitted = !!account.details_submitted;
     const chargesEnabled = !!account.charges_enabled;
 
+    const updatePayload = isLive
+      ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: chargesEnabled }
+      : { stripe_connect_onboarded: detailsSubmitted, stripe_connect_charges_enabled: chargesEnabled };
     const { error: updateError } = await supabaseClient
       .from("digger_profiles")
-      .update({
-        stripe_connect_onboarded: detailsSubmitted,
-        stripe_connect_charges_enabled: chargesEnabled,
-      })
+      .update(updatePayload)
       .eq("id", diggerProfile.id);
 
     if (updateError) {

@@ -1,5 +1,4 @@
 import { useState, FormEvent } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,
@@ -10,14 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 import { toast } from "sonner";
 import { Loader2, CreditCard } from "lucide-react";
-
-const getStripePromise = () => {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-  if (!publishableKey) return null;
-  return loadStripe(publishableKey);
-};
 
 interface PaymentMethodFormProps {
   onSuccess?: () => void;
@@ -160,10 +154,19 @@ function SetupFormStep({
 }
 
 export const PaymentMethodForm = (props: PaymentMethodFormProps) => {
-  const stripePromise = getStripePromise();
+  const { stripePromise, loading: configLoading } = useStripeConfig();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  if (configLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6 flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
   if (!stripePromise) {
     return (
       <Card>

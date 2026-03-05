@@ -23,11 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
-import { loadStripe } from "@stripe/stripe-js";
-
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null;
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -266,6 +262,7 @@ export const BidsList = ({
   showPaymentAndMilestones = true,
 }: BidsListProps) => {
   const { toast } = useToast();
+  const { stripePromise } = useStripeConfig();
   const { onlineDiggers } = useDiggerPresence();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -673,7 +670,7 @@ export const BidsList = ({
           return;
         }
 
-        if (data?.requiresAction && data?.clientSecret && stripePromise) {
+        if (data?.requiresAction && data?.clientSecret && stripePromise != null) {
           const stripe = await stripePromise;
           if (!stripe) throw new Error("Stripe not loaded");
           const { error } = await stripe.confirmCardPayment(data.clientSecret);

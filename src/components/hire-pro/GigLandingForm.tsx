@@ -69,6 +69,7 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
   const [budgetError, setBudgetError] = useState<string | null>(null);
   const [suggestedBudget, setSuggestedBudget] = useState<{ min: number; max: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<Date | null>(null);
 
   // Draft: stable session id and draft id for gig_drafts
   const sessionIdRef = useRef<string>("");
@@ -125,18 +126,20 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
           if (typeof sessionStorage !== "undefined") sessionStorage.setItem("gig_draft_id", data.id);
         }
       }
+      setLastDraftSavedAt(new Date());
     } catch (_) {
       // ignore draft save errors
     }
   }, [selectedProjectTypes, description, budgetMin, budgetMax, timeline, clientName, clientEmail, clientPhone]);
 
-  // Debounced draft save every 8s when form has content (faster capture for follow-up emails)
+  // Draft save every 8s (interval; saveDraft no-ops when form has no content)
   const DRAFT_SAVE_INTERVAL_MS = 8000;
+  const saveDraftRef = useRef(saveDraft);
+  saveDraftRef.current = saveDraft;
   useEffect(() => {
-    if (!hasDraftContent(description, clientEmail)) return;
-    const t = setTimeout(saveDraft, DRAFT_SAVE_INTERVAL_MS);
-    return () => clearTimeout(t);
-  }, [saveDraft, description, clientEmail]);
+    const interval = setInterval(() => saveDraftRef.current(), DRAFT_SAVE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   // Restore draft id from sessionStorage on mount
   useEffect(() => {
@@ -710,6 +713,13 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
                 </div>
               </div>
             </div>
+
+            {/* Draft save indicator — so users can confirm drafts are working */}
+            {lastDraftSavedAt && (
+              <p className="text-xs text-muted-foreground text-center" role="status" aria-live="polite">
+                Draft saved at {lastDraftSavedAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })}
+              </p>
+            )}
 
             {/* Submit Button */}
             <div className="pt-4">

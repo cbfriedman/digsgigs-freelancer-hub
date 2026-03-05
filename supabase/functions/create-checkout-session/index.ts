@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,9 +110,14 @@ serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2023-10-16',
-    });
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+    const { secretKey } = await getStripeConfig(supabaseAdmin);
+    if (!secretKey) throw new Error('Stripe not configured. Set STRIPE_SECRET_KEY_TEST and/or STRIPE_SECRET_KEY_LIVE in Edge Function secrets.');
+    const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'us_bank_account', 'paypal', 'cashapp', 'link'],

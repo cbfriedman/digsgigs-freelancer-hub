@@ -54,6 +54,7 @@ export default function RoleDashboard() {
   const [firstProfileDialogRole, setFirstProfileDialogRole] = useState<"digger" | "gigger" | null>(null);
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
+  const [referralsList, setReferralsList] = useState<{ id: string; status: string; referred_gig_id: string | null; referred_email: string | null; created_at: string }[]>([]);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
@@ -473,6 +474,7 @@ export default function RoleDashboard() {
   useEffect(() => {
     if (!user || !userRoles.includes("digger") || !stats.digger?.primaryProfileId) {
       setReferralLink(null);
+      setReferralsList([]);
       return;
     }
     const diggerId = stats.digger.primaryProfileId;
@@ -491,6 +493,15 @@ export default function RoleDashboard() {
       .then(() => {})
       .catch(() => {})
       .finally(() => setReferralLoading(false));
+
+    // Fetch recent referral activity so Digger can confirm who used their link
+    supabase
+      .from("referrals")
+      .select("id, status, referred_gig_id, referred_email, created_at")
+      .eq("referrer_digger_id", diggerId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => setReferralsList(data ?? []));
   }, [user, userRoles, stats.digger?.primaryProfileId]);
 
   const nextAction = (() => {
@@ -810,6 +821,32 @@ export default function RoleDashboard() {
                   Copy
                 </Button>
               </div>
+
+              {/* Recent referral activity - confirm who used your link */}
+              {referralsList.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Recent referral activity</p>
+                  <ul className="space-y-1.5 text-xs">
+                    {referralsList.map((r) => (
+                      <li key={r.id} className="flex items-center justify-between gap-2 text-muted-foreground">
+                        <span className="truncate">
+                          {r.status === "converted" ? (
+                            <>Project posted{r.referred_email ? ` (${r.referred_email})` : ""}</>
+                          ) : (
+                            <>Link clicked{r.referred_email ? ` (${r.referred_email})` : ""}</>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground/80">
+                          {new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    &quot;Project posted&quot; = someone you referred completed a gig. You get credit.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

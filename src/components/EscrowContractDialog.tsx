@@ -6,15 +6,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-if (!STRIPE_PUBLISHABLE_KEY) {
-  console.warn('VITE_STRIPE_PUBLISHABLE_KEY is not set. Stripe payments will not work.');
-}
-const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 interface Milestone {
   description: string;
@@ -40,6 +34,7 @@ export const EscrowContractDialog = ({
   onComplete,
 }: EscrowContractDialogProps) => {
   const { toast } = useToast();
+  const { stripePromise } = useStripeConfig();
   const [loading, setLoading] = useState(false);
   const [contractType, setContractType] = useState<"fixed" | "hourly">("fixed");
   const [hourlyRate, setHourlyRate] = useState<number>(0);
@@ -106,7 +101,7 @@ export const EscrowContractDialog = ({
 
       // Initialize Stripe
       if (!stripePromise) {
-        throw new Error("Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.");
+        throw new Error("Stripe is not configured. Set Stripe keys in Supabase Edge Function secrets and Stripe mode in Admin.");
       }
       const stripe = await stripePromise;
       if (!stripe) throw new Error("Stripe failed to load");
