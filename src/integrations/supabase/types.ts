@@ -1416,11 +1416,8 @@ export type Database = {
           skills: string[] | null
           state: string | null
           stripe_connect_account_id: string | null
-          stripe_connect_account_id_live: string | null
           stripe_connect_charges_enabled: boolean | null
-          stripe_connect_charges_enabled_live: boolean | null
           stripe_connect_onboarded: boolean | null
-          stripe_connect_onboarded_live: boolean | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
@@ -1502,11 +1499,8 @@ export type Database = {
           skills?: string[] | null
           state?: string | null
           stripe_connect_account_id?: string | null
-          stripe_connect_account_id_live?: string | null
           stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_charges_enabled_live?: boolean | null
           stripe_connect_onboarded?: boolean | null
-          stripe_connect_onboarded_live?: boolean | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
@@ -1588,11 +1582,8 @@ export type Database = {
           skills?: string[] | null
           state?: string | null
           stripe_connect_account_id?: string | null
-          stripe_connect_account_id_live?: string | null
           stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_charges_enabled_live?: boolean | null
           stripe_connect_onboarded?: boolean | null
-          stripe_connect_onboarded_live?: boolean | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
