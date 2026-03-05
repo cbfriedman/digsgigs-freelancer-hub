@@ -122,6 +122,8 @@ export default function Account() {
   const [phoneOtpCode, setPhoneOtpCode] = useState("");
   const [phoneSubmitting, setPhoneSubmitting] = useState(false);
   const [phoneVerifying, setPhoneVerifying] = useState(false);
+  /** Last code we sent (dev only) – so you can complete verification if SMS doesn't arrive (e.g. Twilio trial) */
+  const [phoneLastSentCode, setPhoneLastSentCode] = useState<string | null>(null);
 
   const [mfaFactors, setMfaFactors] = useState<{ id: string; friendly_name?: string; factor_type: string }[]>([]);
   const [mfaLoading, setMfaLoading] = useState(false);
@@ -894,7 +896,7 @@ export default function Account() {
             <Dialog
               open={phoneDialogOpen}
               onOpenChange={(o) => {
-                if (!o) { setPhoneOtpSent(false); setPhoneOtpCode(""); setPhoneValue(profilePhone ?? ""); }
+                if (!o) { setPhoneOtpSent(false); setPhoneOtpCode(""); setPhoneValue(profilePhone ?? ""); setPhoneLastSentCode(null); }
                 setPhoneDialogOpen(o);
               }}
             >
@@ -928,16 +930,20 @@ export default function Account() {
                             const normalized = raw.startsWith("1") && raw.length === 11 ? `+${raw}` : raw.length === 10 ? `+1${raw}` : `+${raw}`;
                             setPhoneSubmitting(true);
                             try {
-                              const { error } = await supabase.auth.updateUser({ phone: normalized });
-                              if (error) throw error;
+                              const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+                              await invokeEdgeFunction(supabase, "send-otp", {
+                                body: { phone: normalized, code: otpCode, method: "sms" },
+                              });
                               await supabase.from("profiles").update({ phone: normalized, phone_verified: false }).eq("id", user.id);
                               setProfilePhone(normalized);
                               setProfilePhoneVerified(false);
                               setPhoneOtpSent(true);
                               setPhoneValue(normalized);
+                              setPhoneLastSentCode(otpCode);
                               toast.success("Verification code sent to your phone.");
                             } catch (e: unknown) {
-                              toast.error(e instanceof Error ? e.message : "Failed to send code");
+                              const msg = e instanceof Error ? e.message : "Failed to send code";
+                              toast.error(typeof msg === "string" ? msg : "Failed to send code");
                             } finally {
                               setPhoneSubmitting(false);
                             }
@@ -950,6 +956,11 @@ export default function Account() {
                   ) : (
                     <>
                       <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to {phoneValue}</p>
+                      {import.meta.env.DEV && phoneLastSentCode && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5">
+                          Dev only (SMS may not arrive): your code is <strong>{phoneLastSentCode}</strong>
+                        </p>
+                      )}
                       <div>
                         <Label htmlFor="phone-otp">Verification code</Label>
                         <Input
@@ -964,23 +975,29 @@ export default function Account() {
                         />
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setPhoneOtpSent(false)}>Back</Button>
+                        <Button variant="outline" onClick={() => { setPhoneOtpSent(false); setPhoneLastSentCode(null); }}>Back</Button>
                         <Button
                           disabled={phoneVerifying || phoneOtpCode.length !== 6}
                           onClick={async () => {
                             setPhoneVerifying(true);
                             try {
-                              const { error } = await supabase.auth.verifyOtp({ phone: phoneValue, token: phoneOtpCode, type: "phone_change" });
-                              if (error) throw error;
+                              const result = await invokeEdgeFunction<{ success?: boolean }>(supabase, "verify-custom-otp", {
+                                body: { phone: phoneValue, code: phoneOtpCode.trim() },
+                              });
+                              if (!result?.success) {
+                                throw new Error("Invalid or expired verification code.");
+                              }
                               await supabase.from("profiles").update({ phone: phoneValue, phone_verified: true }).eq("id", user.id);
                               setProfilePhone(phoneValue);
                               setProfilePhoneVerified(true);
                               setPhoneDialogOpen(false);
                               setPhoneOtpSent(false);
                               setPhoneOtpCode("");
+                              setPhoneLastSentCode(null);
                               toast.success("Phone verified.");
                             } catch (e: unknown) {
-                              toast.error(e instanceof Error ? e.message : "Verification failed");
+                              const msg = e instanceof Error ? e.message : "Verification failed";
+                              toast.error(typeof msg === "string" ? msg : "Verification failed");
                             } finally {
                               setPhoneVerifying(false);
                             }
