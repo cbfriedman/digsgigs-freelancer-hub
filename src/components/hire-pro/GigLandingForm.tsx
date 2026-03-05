@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { normalizeToE164US } from "@/lib/phone";
+import { buildGigDraftPayload, hasDraftContent } from "@/lib/gigDraftUtils";
+import { getReferralCodeFromStorage } from "@/lib/referralUtils";
 
 interface GigLandingFormProps {
   onComplete?: (data: FormData) => void;
@@ -67,6 +69,80 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
   const [budgetError, setBudgetError] = useState<string | null>(null);
   const [suggestedBudget, setSuggestedBudget] = useState<{ min: number; max: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Draft: stable session id and draft id for gig_drafts
+  const sessionIdRef = useRef<string>("");
+  const draftIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let sid = sessionStorage.getItem("gig_draft_session_id");
+    if (!sid) {
+      sid = "gig-" + crypto.randomUUID();
+      sessionStorage.setItem("gig_draft_session_id", sid);
+    }
+    sessionIdRef.current = sid;
+  }, []);
+
+  // Save draft to gig_drafts (debounced)
+  const saveDraft = useCallback(async () => {
+    if (typeof window !== "undefined" && !sessionIdRef.current) {
+      let sid = sessionStorage.getItem("gig_draft_session_id");
+      if (!sid) {
+        sid = "gig-" + crypto.randomUUID();
+        sessionStorage.setItem("gig_draft_session_id", sid);
+      }
+      sessionIdRef.current = sid;
+    }
+    if (!hasDraftContent(description, clientEmail)) return;
+    const source = typeof window !== "undefined" ? (sessionStorage.getItem("gig_source") || "website") : "website";
+    const payload = buildGigDraftPayload({
+      sessionId: sessionIdRef.current,
+      email: clientEmail || null,
+      name: clientName || null,
+      phone: clientPhone || null,
+      projectTypes: selectedProjectTypes,
+      description: description || null,
+      budgetMin: parseCurrency(budgetMin) || null,
+      budgetMax: parseCurrency(budgetMax) || null,
+      timeline: timeline || null,
+      source,
+    });
+    try {
+      if (draftIdRef.current) {
+        await supabase
+          .from("gig_drafts")
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq("id", draftIdRef.current);
+      } else {
+        const { data, error } = await supabase
+          .from("gig_drafts")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (!error && data?.id) {
+          draftIdRef.current = data.id;
+          if (typeof sessionStorage !== "undefined") sessionStorage.setItem("gig_draft_id", data.id);
+        }
+      }
+    } catch (_) {
+      // ignore draft save errors
+    }
+  }, [selectedProjectTypes, description, budgetMin, budgetMax, timeline, clientName, clientEmail, clientPhone]);
+
+  // Debounced draft save every 8s when form has content (faster capture for follow-up emails)
+  const DRAFT_SAVE_INTERVAL_MS = 8000;
+  useEffect(() => {
+    if (!hasDraftContent(description, clientEmail)) return;
+    const t = setTimeout(saveDraft, DRAFT_SAVE_INTERVAL_MS);
+    return () => clearTimeout(t);
+  }, [saveDraft, description, clientEmail]);
+
+  // Restore draft id from sessionStorage on mount
+  useEffect(() => {
+    const stored = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("gig_draft_id") : null;
+    if (stored) draftIdRef.current = stored;
+  }, []);
 
   // Calculate suggested budget based on selected project types and description
   useEffect(() => {
@@ -322,6 +398,29 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
           projectName: title,
         },
       }).catch(err => console.warn("Consumer onboarding email error:", err));
+
+      // Attribute referral if user came from a referral link
+      const referralCode = getReferralCodeFromStorage();
+      if (referralCode) {
+        supabase.functions.invoke("process-referral", {
+          body: {
+            referral_code: referralCode,
+            gig_id: gigData.id,
+            referred_email: clientEmail.trim(),
+            referred_user_id: consumerId ?? null,
+          },
+        }).catch(err => console.warn("Referral attribution error:", err));
+      }
+
+      // Mark draft as converted so follow-up is not sent
+      if (draftIdRef.current) {
+        await supabase
+          .from("gig_drafts")
+          .update({ converted: true, converted_gig_id: gigData.id, updated_at: new Date().toISOString() })
+          .eq("id", draftIdRef.current);
+        draftIdRef.current = null;
+        if (typeof sessionStorage !== "undefined") sessionStorage.removeItem("gig_draft_id");
+      }
 
       if (onComplete) {
         onComplete({

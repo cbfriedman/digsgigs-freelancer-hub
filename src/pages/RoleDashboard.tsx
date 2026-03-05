@@ -5,13 +5,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wrench, Briefcase, Plus, ArrowRight, User } from "lucide-react";
+import { Wrench, Briefcase, Plus, ArrowRight, User, Link2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
+import { buildReferralLink, buildReferralCode } from "@/lib/referralUtils";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,8 @@ export default function RoleDashboard() {
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [firstProfileDialogRole, setFirstProfileDialogRole] = useState<"digger" | "gigger" | null>(null);
+  const [referralLink, setReferralLink] = useState<string | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
@@ -466,6 +469,30 @@ export default function RoleDashboard() {
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
   const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
 
+  // Get or create referral link for diggers
+  useEffect(() => {
+    if (!user || !userRoles.includes("digger") || !stats.digger?.primaryProfileId) {
+      setReferralLink(null);
+      return;
+    }
+    const diggerId = stats.digger.primaryProfileId;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    setReferralLink(buildReferralLink(origin, diggerId));
+
+    setReferralLoading(true);
+    supabase
+      .from("referrals")
+      .upsert(
+        { referrer_digger_id: diggerId, referral_code: buildReferralCode(diggerId) },
+        { onConflict: "referral_code" }
+      )
+      .select("id")
+      .single()
+      .then(() => {})
+      .catch(() => {})
+      .finally(() => setReferralLoading(false));
+  }, [user, userRoles, stats.digger?.primaryProfileId]);
+
   const nextAction = (() => {
     if (!hasRoles) {
       return {
@@ -746,6 +773,46 @@ export default function RoleDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Referral link for Diggers - show only when Digger mode is active */}
+        {activeRole === "digger" && userRoles.includes("digger") && hasDiggerProfile && referralLink && (
+          <Card className="border shadow-none animate-fade-in-up">
+            <CardHeader className="px-4 py-3 sm:p-5 pb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link2 className="h-5 w-5 text-muted-foreground shrink-0" />
+                <CardTitle className="text-base font-medium">Your referral link</CardTitle>
+              </div>
+              <CardDescription className="text-xs mt-0.5">
+                Share this link with clients. When they post a project, you get attributed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0 sm:p-5 sm:pt-0">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={referralLink}
+                  className="flex-1 min-w-0 rounded-md border border-input bg-muted/50 px-3 py-2 text-sm text-foreground"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 min-h-10"
+                  disabled={referralLoading}
+                  onClick={() => {
+                    if (referralLink) {
+                      navigator.clipboard.writeText(referralLink);
+                      toast({ title: "Copied", description: "Referral link copied to clipboard." });
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-1.5" />
+                  Copy
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       </div>
 
