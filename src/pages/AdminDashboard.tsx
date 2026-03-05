@@ -467,7 +467,7 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7, 14).map((item) => {
+                  {menuItems.slice(7, 13).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -552,6 +552,26 @@ const AdminDashboard = () => {
                     >
                       <MessageSquare className="h-4 w-4" />
                       <span>Message email settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("gig-email-delivery")}
+                      isActive={activeTab === "gig-email-delivery"}
+                      tooltip="Which diggers receive new gig emails"
+                    >
+                      <Mail className="h-4 w-4" />
+                      <span>Gig email delivery</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("stripe-mode")}
+                      isActive={activeTab === "stripe-mode"}
+                      tooltip="Switch Stripe test/live mode"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span>Stripe mode</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

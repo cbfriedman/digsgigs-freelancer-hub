@@ -65,18 +65,16 @@ serve(async (req) => {
     }
 
     const settingsId = "b0000000-0000-0000-0000-000000000001";
-    const { data: settings, error: settingsError } = await supabase
+    const { data: settingsRow, error: settingsError } = await supabase
       .from("gig_email_delivery_settings")
       .select("mode, selected_digger_ids")
       .eq("id", settingsId)
       .single();
 
-    if (settingsError || !settings) {
-      return new Response(
-        JSON.stringify({ success: true, mode: "manual", emailsSent: 0 }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // If no row or error, default to "all" so diggers receive mail (admin can set manual/selected in UI)
+    const settings = settingsRow && !settingsError
+      ? settingsRow
+      : { mode: "all" as const, selected_digger_ids: [] as string[] };
 
     if (settings.mode === "manual") {
       return new Response(
@@ -206,21 +204,12 @@ serve(async (req) => {
     const gigAppLink = `/gig/${gigId}`;
     const titleSnippet = (gig.title || "").substring(0, 60) + ((gig.title?.length || 0) > 60 ? "…" : "");
 
-    // In-app notification: send to ALL diggers who have lead notifications enabled (so every digger sees the alert)
+    // In-app notification: send to ALL diggers so every digger sees the new project alert
     const { data: allDiggers, error: allDiggersErr } = await supabase
       .from("digger_profiles")
       .select("id, user_id");
     if (!allDiggersErr && allDiggers?.length) {
-      const allUserIds = allDiggers.map((x: { user_id: string }) => x.user_id);
-      const { data: appPrefs } = await supabase
-        .from("email_preferences")
-        .select("user_id, lead_notifications_enabled, enabled")
-        .in("user_id", allUserIds);
-      const appPrefsMap = new Map(
-        (appPrefs || []).map((p: any) => [p.user_id, p.lead_notifications_enabled !== false && p.enabled !== false])
-      );
       for (const d of allDiggers) {
-        if (appPrefsMap.get(d.user_id) === false) continue;
         try {
           await supabase.rpc("create_notification", {
             p_user_id: d.user_id,

@@ -64,6 +64,11 @@ export function TelemarketerLeadUpload({ telemarketerProfile }: TelemarketerLead
         body: { gigId: gig.id },
       });
 
+      // Notify all diggers (in-app) and send email to admin-selected diggers
+      supabase.functions.invoke("send-gig-email-by-settings", {
+        body: { gigId: gig.id },
+      }).catch((err) => console.error("Gig email by settings error:", err));
+
       toast({
         title: "Success",
         description: "Lead uploaded successfully and is being matched to diggers",

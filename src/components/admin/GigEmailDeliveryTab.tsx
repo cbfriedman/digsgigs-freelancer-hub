@@ -238,10 +238,10 @@ export default function GigEmailDeliveryTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
-            When a gigger posts a new project
+            New gig notifications
           </CardTitle>
           <CardDescription className="mt-1">
-            Set this before giggers post. It applies to every new project (and reposts).
+            When a gig is posted, <strong>all diggers</strong> receive an in-app notification. Use the options below to choose which diggers also receive an <strong>email</strong>. Set this before giggers post; it applies to every new project (and reposts).
           </CardDescription>
           <div className="mt-4">
             <RadioGroup
@@ -252,26 +252,26 @@ export default function GigEmailDeliveryTab() {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="manual" id="mode-manual" />
                 <Label htmlFor="mode-manual" className="font-normal cursor-pointer">
-                  <strong>Manual</strong> — Do not send any email. You send from the table below per gig.
+                  <strong>Manual</strong> — Do not send any new-gig email. You can send from the table below per gig.
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="all" id="mode-all" />
                 <Label htmlFor="mode-all" className="font-normal cursor-pointer">
-                  <strong>Send to all diggers</strong> — Every new project email goes to all diggers automatically.
+                  <strong>Email all diggers</strong> — Every new project triggers an email to all diggers (who have not unsubscribed).
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="selected" id="mode-selected" />
                 <Label htmlFor="mode-selected" className="font-normal cursor-pointer">
-                  <strong>Send to selected diggers only</strong> — Only the default recipients below get the email.
+                  <strong>Email selected diggers only</strong> — Only the diggers you choose below receive the new-project email.
                 </Label>
               </div>
             </RadioGroup>
             {settingsMode === "selected" && (
               <div className="mt-4 rounded border p-4 bg-muted/20">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Choose which diggers receive the new project email whenever a gigger posts. Save when done.
+                  Select which diggers can receive the new-project email when a gig is posted. Save when done.
                 </p>
                 <div className="flex gap-2 mb-3">
                   <Button
