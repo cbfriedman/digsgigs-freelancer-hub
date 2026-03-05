@@ -29,7 +29,7 @@ export const useStripeConnect = () => {
         .single();
 
       if (profile) {
-        const p = profile as Record<string, unknown>;
+        const p = profile as unknown as Record<string, unknown>;
         const isLive = stripeMode === "live";
         setIsOnboarded(!!(isLive ? (p.stripe_connect_onboarded_live || p.stripe_connect_account_id_live) : (p.stripe_connect_onboarded || p.stripe_connect_account_id)));
         setCanReceivePayments(!!(isLive ? p.stripe_connect_charges_enabled_live : p.stripe_connect_charges_enabled));
