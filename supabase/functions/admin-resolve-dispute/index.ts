@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const s = details ? ` - ${JSON.stringify(details)}` : "";
@@ -98,11 +99,8 @@ serve(async (req) => {
       });
     }
 
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    let stripe: Stripe | null = null;
-    if (stripeSecretKey) {
-      stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    }
+    const { secretKey: stripeSecretKey } = await getStripeConfig(supabaseAdmin);
+    let stripe: Stripe | null = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" }) : null;
 
     if (resolution_type === "refund_consumer" && stripe) {
       let paymentIntentId: string | null = null;

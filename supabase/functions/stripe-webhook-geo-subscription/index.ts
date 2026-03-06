@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { getStripeConfig } from "../_shared/stripe.ts";
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,9 +13,6 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK-GEO-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Initialize Stripe crypto provider
-Stripe.createSubtleCryptoProvider();
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,49 +23,22 @@ serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
-      throw new Error("No Stripe signature found");
-    }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-    const { secretKey: stripeKey, webhookSecret } = await getStripeConfig(supabaseAdmin);
-    if (!stripeKey || !webhookSecret) {
-      logStep("ERROR: Missing Stripe configuration", {
-        hasStripeKey: !!stripeKey,
-        hasWebhookSecret: !!webhookSecret
-      });
-      throw new Error("Stripe keys not configured. Set STRIPE_SECRET_KEY_TEST/LIVE and STRIPE_WEBHOOK_SECRET_TEST/LIVE in Edge Function secrets.");
-    }
-    if (!stripeKey.startsWith("sk_")) {
-      logStep("ERROR: Invalid Stripe key format");
-      throw new Error("Invalid STRIPE_SECRET_KEY format");
-    }
-    if (!webhookSecret.startsWith("whsec_")) {
-      logStep("ERROR: Invalid webhook secret format");
-      throw new Error("Invalid STRIPE_WEBHOOK_SECRET format. Must start with 'whsec_'");
-    }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const body = await req.text();
-
-    let event: Stripe.Event;
-    try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        signature,
-        webhookSecret,
-        undefined,
-        Stripe.createSubtleCryptoProvider()
-      );
-    } catch (err) {
-      logStep("Webhook signature verification failed", { error: err });
-      return new Response(JSON.stringify({ error: "Invalid signature" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "No Stripe signature found" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const body = await req.text();
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET");
+    if (!ctx) {
+      logStep("Webhook signature verification failed");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { event } = ctx;
+    const stripe = new Stripe(ctx.secretKey, { apiVersion: "2025-08-27.basil" });
 
     logStep("Event received", { type: event.type });
 

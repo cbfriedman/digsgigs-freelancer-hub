@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,9 +113,9 @@ serve(async (req) => {
 
     // If our DB says not verified, sync from Stripe (webhook may be delayed or missing)
     if (!diggerProfile.stripe_connect_charges_enabled) {
-      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-      if (stripeKey) {
-        try {
+      try {
+        const { secretKey: stripeKey } = await getStripeConfig(supabaseAdmin);
+        if (stripeKey) {
           const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
           const account = await stripe.accounts.retrieve(diggerProfile.stripe_connect_account_id);
           const detailsSubmitted = !!account.details_submitted;
@@ -127,9 +128,9 @@ serve(async (req) => {
             })
             .eq("id", diggerProfile.id);
           diggerProfile = { ...diggerProfile, stripe_connect_charges_enabled: chargesEnabled };
-        } catch {
-          // Stripe API error: keep DB as-is and return pending
         }
+      } catch {
+        // Stripe API error: keep DB as-is and return pending
       }
     }
 

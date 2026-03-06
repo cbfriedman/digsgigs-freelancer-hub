@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -30,52 +29,19 @@ serve(async (req) => {
   }
 
   try {
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-
-    logStep('Environment check', { 
-      hasStripeKey: !!stripeSecretKey, 
-      hasWebhookSecret: !!webhookSecret,
-      webhookSecretPrefix: webhookSecret?.substring(0, 10) 
-    });
-
-    if (!webhookSecret) {
-      logStep('CRITICAL: STRIPE_WEBHOOK_SECRET is not configured');
-      throw new Error('Webhook secret is not configured. Contact administrator.');
-    }
-
-    if (!stripeSecretKey) {
-      logStep('CRITICAL: STRIPE_SECRET_KEY is not configured');
-      throw new Error('Stripe configuration error');
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
-
     const body = await req.text();
-
-    // Use constructEventAsync with crypto provider for Deno compatibility
-    let event: Stripe.Event;
-    try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        signature,
-        webhookSecret,
-        undefined,
-        cryptoProvider
-      );
-      logStep('Webhook signature validated successfully', { eventType: event.type });
-    } catch (err) {
-      logStep('ERROR: Webhook signature verification failed', { 
-        error: err instanceof Error ? err.message : String(err),
-        signaturePrefix: signature?.substring(0, 20)
-      });
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET");
+    if (!ctx) {
+      logStep('ERROR: Webhook signature verification failed (no matching test/live secret)');
       return new Response(
         JSON.stringify({ error: 'Invalid signature' }),
         { status: 401, headers: corsHeaders }
       );
     }
+    const { event, secretKey } = ctx;
+    logStep('Webhook signature validated successfully', { eventType: event.type, mode: ctx.mode });
+
+    const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
 
     logStep('Webhook event received', { type: event.type });
 

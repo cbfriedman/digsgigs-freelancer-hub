@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -141,19 +142,11 @@ serve(async (req) => {
     }
     logStep("Digger profile verified", { profileId: diggerProfile.id });
 
-    // Initialize Stripe with validation
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const { secretKey: stripeKey } = await getStripeConfig(supabaseClient);
     if (!stripeKey) {
-      logStep("ERROR: STRIPE_SECRET_KEY not configured");
-      throw new Error("STRIPE_SECRET_KEY is not set. Please configure it in Supabase Dashboard > Edge Functions > Secrets");
+      logStep("ERROR: Stripe not configured");
+      throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
     }
-    
-    // Validate Stripe key format (should start with sk_)
-    if (!stripeKey.startsWith("sk_")) {
-      logStep("ERROR: Invalid Stripe key format");
-      throw new Error("Invalid STRIPE_SECRET_KEY format. Must start with 'sk_'");
-    }
-    
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     
     // Validate price ID exists in Stripe

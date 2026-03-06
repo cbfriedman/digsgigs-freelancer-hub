@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,17 +19,6 @@ serve(async (req) => {
   }
 
   try {
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    
-    if (!stripeSecretKey) {
-      throw new Error("Stripe secret key not configured");
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-08-27.basil",
-    });
-
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -37,14 +27,23 @@ serve(async (req) => {
 
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
-
-    let event: Stripe.Event;
-
-    if (webhookSecret && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } else {
-      event = JSON.parse(body);
+    if (!signature) {
+      logStep("Missing stripe-signature");
+      return new Response(JSON.stringify({ error: "Missing signature" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET");
+    if (!ctx) {
+      logStep("Invalid signature");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { event } = ctx;
+    const stripe = new Stripe(ctx.secretKey, { apiVersion: "2025-08-27.basil" });
 
     logStep("Webhook received", { type: event.type });
 

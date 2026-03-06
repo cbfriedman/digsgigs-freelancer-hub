@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { getStripeConfig } from "../_shared/stripe.ts";
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,28 +24,25 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
-    const { secretKey: stripeSecretKey, webhookSecretMilestone } = await getStripeConfig(supabase);
-    const webhookSecret = webhookSecretMilestone;
-    if (!stripeSecretKey) throw new Error("STRIPE_SECRET_KEY not set. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
 
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
-    let event: Stripe.Event;
-
-    if (webhookSecret && signature) {
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      } catch (e) {
-        logStep("Webhook signature verification failed", { error: String(e) });
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-    } else {
-      event = JSON.parse(body) as Stripe.Event;
+    if (!signature) {
+      return new Response(JSON.stringify({ error: "Missing stripe-signature" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_MILESTONE_SECRET");
+    if (!ctx) {
+      logStep("Webhook signature verification failed");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    const { event } = ctx;
+    const stripe = new Stripe(ctx.secretKey, { apiVersion: "2023-10-16" });
 
     if (event.type !== "payment_intent.succeeded") {
       return new Response(JSON.stringify({ received: true }), {
@@ -129,8 +126,7 @@ serve(async (req) => {
       .select("stripe_connect_account_id, stripe_connect_account_id_live")
       .eq("id", contract.digger_id)
       .single();
-    const { mode: stripeMode } = await getStripeConfig(supabase);
-    const isLive = stripeMode === "live";
+    const isLive = ctx.mode === "live";
     const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
 
     // If the PaymentIntent was created with transfer_data (saved PM destination charge), Stripe already transferred that amount at capture. Only transfer the remainder (e.g. 7% deposit advance).

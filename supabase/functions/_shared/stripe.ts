@@ -8,6 +8,7 @@
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import Stripe from "https://esm.sh/stripe@14.25.0";
 
 export type StripeMode = "test" | "live";
 
@@ -83,4 +84,62 @@ export async function getStripePublishableKey(supabaseAdmin: SupabaseClient): Pr
     Deno.env.get("STRIPE_PUBLISHABLE_KEY") ||
     "";
   return { mode, publishableKey };
+}
+
+/** Get secret key for a given mode (for webhooks after verifying which mode sent the event). */
+export function getSecretKeyForMode(mode: StripeMode): string {
+  return envKey(mode, "STRIPE_SECRET_KEY");
+}
+
+export type WebhookSecretKind = "STRIPE_WEBHOOK_SECRET" | "STRIPE_WEBHOOK_SECRET_PROFILE_VIEW" | "STRIPE_WEBHOOK_MILESTONE_SECRET";
+
+/**
+ * Verify webhook payload with either TEST or LIVE secret and return event + matching secret key.
+ * Use in webhook handlers so they work for both test and live based on which secret validates.
+ */
+export function verifyWebhookAndGetStripeContext(
+  payload: string | Uint8Array,
+  signature: string,
+  webhookSecretEnvBase: WebhookSecretKind = "STRIPE_WEBHOOK_SECRET"
+): { event: Stripe.Event; mode: StripeMode; secretKey: string } | null {
+  const secretTest = Deno.env.get(`${webhookSecretEnvBase}_TEST`) || "";
+  const secretLive = Deno.env.get(`${webhookSecretEnvBase}_LIVE`) || "";
+  for (const [secret, mode] of [[secretTest, "test" as StripeMode], [secretLive, "live" as StripeMode]]) {
+    if (!secret) continue;
+    try {
+      const event = Stripe.webhooks.constructEvent(payload, signature, secret);
+      const secretKey = envKey(mode, "STRIPE_SECRET_KEY");
+      if (!secretKey) continue;
+      return { event, mode, secretKey };
+    } catch {
+      // try next secret
+    }
+  }
+  return null;
+}
+
+/**
+ * Async version for Deno: verify with either TEST or LIVE webhook secret using constructEventAsync.
+ * Use in webhook handlers for Deno compatibility.
+ */
+export async function verifyWebhookAndGetStripeContextAsync(
+  payload: string,
+  signature: string,
+  webhookSecretEnvBase: WebhookSecretKind = "STRIPE_WEBHOOK_SECRET"
+): Promise<{ event: Stripe.Event; mode: StripeMode; secretKey: string } | null> {
+  const secretTest = Deno.env.get(`${webhookSecretEnvBase}_TEST`) || (webhookSecretEnvBase === "STRIPE_WEBHOOK_SECRET" ? Deno.env.get("STRIPE_WEBHOOK_SECRET") || "" : "");
+  const secretLive = Deno.env.get(`${webhookSecretEnvBase}_LIVE`) || "";
+  const cryptoProvider = Stripe.createSubtleCryptoProvider();
+  for (const [secret, mode] of [[secretTest, "test" as StripeMode], [secretLive, "live" as StripeMode]]) {
+    if (!secret) continue;
+    try {
+      const event = await Stripe.webhooks.constructEventAsync(payload, signature, secret, undefined, cryptoProvider);
+      const secretKey = getSecretKeyForMode(mode);
+      if (!secretKey) continue;
+      return { event, mode, secretKey };
+    } catch {
+      // try next secret
+    }
+  }
+  return null;
 }

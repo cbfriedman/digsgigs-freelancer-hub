@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,9 +30,14 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
-  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-    apiVersion: '2023-10-16',
-  });
+  let stripe: Stripe | null = null;
+  try {
+    const { secretKey } = await getStripeConfig(supabaseServiceClient);
+    if (secretKey) stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
+  } catch {
+    // fallback: no Stripe
+  }
+  if (!stripe) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
 
   try {
     logStep("Function started");

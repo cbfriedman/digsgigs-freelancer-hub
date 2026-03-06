@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,14 +28,9 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      throw new Error("Stripe secret key not configured");
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-08-27.basil",
-    });
+    const { secretKey: stripeSecretKey } = await getStripeConfig(supabaseClient);
+    if (!stripeSecretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
 
     logStep("Checking for expired awards");
 

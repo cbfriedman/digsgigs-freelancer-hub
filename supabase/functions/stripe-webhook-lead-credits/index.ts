@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,33 +23,24 @@ serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
-      throw new Error("No Stripe signature found");
-    }
-
-    const body = await req.text();
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-
-    if (!stripeSecretKey || !webhookSecret) {
-      throw new Error("Missing Stripe configuration");
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    // Verify webhook signature
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      logStep("Webhook signature verified", { type: event.type });
-    } catch (err: any) {
-      logStep("Webhook signature verification failed", { error: err?.message || String(err) });
-      return new Response(JSON.stringify({ error: `Webhook Error: ${err?.message || String(err)}` }), {
+      return new Response(JSON.stringify({ error: "No Stripe signature found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const body = await req.text();
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET");
+    if (!ctx) {
+      logStep("Webhook signature verification failed");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { event } = ctx;
+    const stripe = new Stripe(ctx.secretKey, { apiVersion: "2023-10-16" });
+    logStep("Webhook signature verified", { type: event.type });
 
     // Only handle checkout.session.completed events
     if (event.type !== "checkout.session.completed") {

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,9 +34,13 @@ serve(async (req) => {
     
     if (!user?.email) throw new Error('User email not found');
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2023-10-16',
-    });
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    const { secretKey } = await getStripeConfig(adminClient);
+    if (!secretKey) throw new Error('Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.');
+    const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
 
     // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -46,11 +51,6 @@ serve(async (req) => {
     }
 
     // Get user's digger profile
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { data: diggerProfile } = await adminClient
       .from('digger_profiles')
       .select('id')

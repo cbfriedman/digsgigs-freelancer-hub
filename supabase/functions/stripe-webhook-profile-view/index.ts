@@ -1,12 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2023-10-16",
-});
-
-const cryptoProvider = Stripe.createSubtleCryptoProvider();
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -14,23 +9,20 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
-  const signature = req.headers.get("Stripe-Signature");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET_PROFILE_VIEW");
-
-  if (!signature || !webhookSecret) {
-    logStep("Missing signature or webhook secret");
-    return new Response("Webhook Error: Missing signature or secret", { status: 400 });
+  const signature = req.headers.get("Stripe-Signature") ?? req.headers.get("stripe-signature");
+  if (!signature) {
+    logStep("Missing signature");
+    return new Response("Webhook Error: Missing signature", { status: 400 });
   }
 
   try {
     const body = await req.text();
-    const event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-      undefined,
-      cryptoProvider
-    );
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET_PROFILE_VIEW");
+    if (!ctx) {
+      logStep("Invalid signature (no matching test/live secret)");
+      return new Response("Webhook Error: Invalid signature", { status: 401 });
+    }
+    const { event } = ctx;
 
     logStep("Webhook event received", { type: event.type });
 

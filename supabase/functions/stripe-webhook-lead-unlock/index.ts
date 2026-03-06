@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { verifyWebhookAndGetStripeContextAsync } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,10 +13,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-    apiVersion: "2025-08-27.basil",
-  });
-
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -23,22 +20,17 @@ serve(async (req) => {
 
   try {
     const signature = req.headers.get("stripe-signature");
-    const body = await req.text();
-    
-    let event: Stripe.Event;
-    
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    if (webhookSecret && signature) {
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      } catch (err: any) {
-        console.error("[stripe-webhook-lead-unlock] Signature verification failed:", err.message);
-        return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 400 });
-      }
-    } else {
-      event = JSON.parse(body);
-      console.warn("[stripe-webhook-lead-unlock] No webhook secret, processing unverified");
+    if (!signature) {
+      return new Response(JSON.stringify({ error: "Missing stripe-signature" }), { status: 400 });
     }
+    const body = await req.text();
+    const ctx = await verifyWebhookAndGetStripeContextAsync(body, signature, "STRIPE_WEBHOOK_SECRET");
+    if (!ctx) {
+      console.error("[stripe-webhook-lead-unlock] Signature verification failed");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401 });
+    }
+    const { event } = ctx;
+    const stripe = new Stripe(ctx.secretKey, { apiVersion: "2025-08-27.basil" });
 
     console.log(`[stripe-webhook-lead-unlock] Event type: ${event.type}`);
 
