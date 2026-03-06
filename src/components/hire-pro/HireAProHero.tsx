@@ -21,14 +21,14 @@ export function HireAProHero({ onPostProject }: HireAProHeroProps) {
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 text-foreground">
-            Get Your Project Done{" "}
+            Get a Freelancer Started on{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              by Tomorrow
+              Your Project Today
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            Describe what you need in 2 minutes. Receive proposals from vetted, US-based
+            Describe what you need in 2 minutes. Receive proposals from vetted
             freelancers within hours — not days.
           </p>
 
