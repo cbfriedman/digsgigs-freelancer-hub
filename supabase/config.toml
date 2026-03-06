@@ -159,6 +159,9 @@ verify_jwt = false
 [functions.get-proxy-email]
 verify_jwt = true
 
+[functions.admin-id-verification]
+verify_jwt = false
+
 [functions.admin-test-lead-distribution]
 verify_jwt = true
 

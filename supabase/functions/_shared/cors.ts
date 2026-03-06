@@ -45,11 +45,12 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
 }
 
 /**
- * Handle OPTIONS preflight request
+ * Handle OPTIONS preflight request.
+ * Use 200 (not 204) so all clients treat the response as success for CORS preflight.
  */
 export function handleOptionsRequest(origin: string | null): Response {
   return new Response(null, {
-    status: 204,
+    status: 200,
     headers: getCorsHeaders(origin),
   });
 }

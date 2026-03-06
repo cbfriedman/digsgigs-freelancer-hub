@@ -1,9 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@3.0.0";
-import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const APP_NAME = "Digs and Gigs";
+
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "https://digsandgigs.net",
+  "https://www.digsandgigs.net",
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:5173",
+];
+
+function getCorsHeadersForPreflight(origin: string | null): Record<string, string> {
+  const allowOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
 const FROM_EMAIL = "Digs and Gigs <noreply@digsandgigs.net>";
 
 function escapeHtml(s: string): string {
@@ -58,10 +80,17 @@ async function sendApprovalEmail(toEmail: string, displayName: string): Promise<
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
-  const corsHeaders = getCorsHeaders(origin);
-
+  // Handle CORS preflight first so it always gets 200 (gateway may not forward OPTIONS if verify_jwt is true).
   if (req.method === "OPTIONS") {
-    return handleOptionsRequest(origin);
+    const preflightHeaders = getCorsHeadersForPreflight(origin);
+    return new Response(null, { status: 200, headers: preflightHeaders });
+  }
+
+  let corsHeaders: Record<string, string>;
+  try {
+    corsHeaders = getCorsHeaders(origin);
+  } catch {
+    corsHeaders = getCorsHeadersForPreflight(origin);
   }
 
   if (req.method === "GET") {
