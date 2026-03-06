@@ -1472,13 +1472,16 @@ const DiggerDetail = () => {
   const occupationBadge = getOccupationBadge();
   // User-level verification (same as Gigger profile when user has both roles)
   const p = digger.profiles as { id_verified?: boolean | null; phone_verified?: boolean | null; email_verified?: boolean | null; payment_verified?: boolean | null } | undefined;
-  const payoutConnected = !!((digger as any).stripe_connect_account_id && (digger as any).stripe_connect_charges_enabled);
+  const d = digger as { stripe_connect_account_id?: string | null; stripe_connect_charges_enabled?: boolean | null; stripe_connect_account_id_live?: string | null; stripe_connect_charges_enabled_live?: boolean | null };
+  const payoutVerified =
+    !!(d.stripe_connect_account_id && d.stripe_connect_charges_enabled) ||
+    !!(d.stripe_connect_account_id_live && d.stripe_connect_charges_enabled_live);
   const verificationItems = [
     { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
     { label: "Phone", isActive: !!p?.phone_verified, icon: Phone },
     { label: "Email", isActive: p?.email_verified != null ? !!p.email_verified : !!digger.profiles?.email, icon: Mail },
     { label: "Payment", isActive: p?.payment_verified != null ? !!p.payment_verified : false, icon: CreditCard },
-    { label: "Payout account", isActive: payoutConnected, icon: Wallet },
+    { label: "Payout account", isActive: payoutVerified, icon: Wallet },
   ];
 
   // Effective avatar: user-level (profiles.avatar_url) first so same as Gigger profile, then digger profile_image_url

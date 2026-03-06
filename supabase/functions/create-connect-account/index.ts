@@ -56,8 +56,9 @@ serve(async (req) => {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        // Use registered email as display name so admins can identify accounts in Stripe Dashboard → Connected accounts
         business_profile: {
-          name: diggerProfile.business_name,
+          name: user.email,
         },
       });
 
@@ -70,6 +71,11 @@ serve(async (req) => {
         .from("digger_profiles")
         .update(updatePayload)
         .eq("id", diggerProfile.id);
+    } else {
+      // Keep display name in sync with registered email for existing accounts (Stripe Dashboard → Connected accounts)
+      await stripe.accounts.update(accountId, {
+        business_profile: { name: user.email },
+      });
     }
 
     // Base URL for return/refresh: prefer SITE_URL (env) so it works from any client (e.g. mobile or serverless).
