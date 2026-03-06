@@ -337,10 +337,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
 
                 if (!roles || roles.length === 0) {
-                  toast.success('Email verified! Please complete your registration.');
-                  window.location.href = '/register?complete=true';
+                  // New user (e.g. signed in with Google): go to role-dashboard to choose Digger or Gigger
+                  toast.success('Welcome! Choose how you want to use Digs & Gigs.');
+                  window.location.href = '/role-dashboard';
                 } else {
-                  // User has roles, redirect to dashboard
                   toast.success('Welcome back! Successfully signed in.');
                   window.location.href = '/role-dashboard';
                 }

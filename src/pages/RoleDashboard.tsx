@@ -507,10 +507,10 @@ export default function RoleDashboard() {
   const nextAction = (() => {
     if (!hasRoles) {
       return {
-        title: "Complete your setup",
-        description: "Add your first role to start posting gigs or receiving leads.",
-        ctaLabel: "Complete Setup",
-        onClick: () => navigate("/register?complete=true"),
+        title: "Welcome to Digs & Gigs",
+        description: "Choose how you want to use the platform: join as a Digger to find work or as a Gigger to hire.",
+        ctaLabel: null as string | null,
+        onClick: undefined,
       };
     }
 
@@ -584,13 +584,15 @@ export default function RoleDashboard() {
           </p>
         </header>
 
-        {/* Single primary action */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto min-h-11 sm:min-h-0">
-            {nextAction.ctaLabel}
-            <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
-          </Button>
-        </div>
+        {/* Single primary action (hidden when no roles — user chooses Digger/Gigger from cards below) */}
+        {nextAction.ctaLabel && nextAction.onClick && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto min-h-11 sm:min-h-0">
+              {nextAction.ctaLabel}
+              <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
+            </Button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
           {/* Digger */}

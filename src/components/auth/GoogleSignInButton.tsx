@@ -24,7 +24,7 @@ export const GoogleSignInButton = ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectTo || `${window.location.origin}/register?complete=true`,
+          redirectTo: redirectTo || `${window.location.origin}/role-dashboard`,
         },
       });
 

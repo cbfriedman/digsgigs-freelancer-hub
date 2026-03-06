@@ -1607,7 +1607,7 @@ const Register = () => {
       return;
     }
     toast.success(roles.length > 0 ? "Welcome back!" : "Please complete your profile.");
-    window.location.href = roles.length > 0 ? "/role-dashboard" : "/register?complete=true";
+    window.location.href = "/role-dashboard";
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -1850,11 +1850,7 @@ const Register = () => {
             
             // Use full page refresh to ensure AuthContext picks up updated session and roles
             // This prevents redirect loops caused by stale auth state
-            if (roles && roles.length > 0) {
-              window.location.href = '/role-dashboard';
-            } else {
-              window.location.href = '/register?complete=true';
-            }
+            window.location.href = '/role-dashboard';
           } catch (error) {
             console.error("Error checking roles:", error);
             // Default to dashboard on error (use full page refresh)
@@ -2156,7 +2152,7 @@ const Register = () => {
                     <GoogleSignInButton
                       className="h-11"
                       label="Sign in with Google"
-                      redirectTo={`${window.location.origin}/register?complete=true`}
+                      redirectTo={`${window.location.origin}/role-dashboard`}
                     />
                     
                     {/* Divider */}
@@ -2396,7 +2392,7 @@ const Register = () => {
                   <div className="space-y-4 mb-6">
                     <GoogleSignInButton
                       label="Sign up with Google"
-                      redirectTo={`${window.location.origin}/register?complete=true`}
+                      redirectTo={`${window.location.origin}/role-dashboard`}
                     />
                     
                     {/* Divider */}

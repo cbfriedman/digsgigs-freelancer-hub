@@ -145,7 +145,7 @@ export default function FirstProfileCreate() {
         const hasGigger = roleList.some((r: { app_role: string }) => r.app_role === "gigger");
 
         if (!hasDigger && !hasGigger) {
-          navigate("/register?complete=true", { replace: true });
+          navigate("/role-dashboard", { replace: true });
           setRolesLoaded(true);
           return;
         }
@@ -181,7 +181,7 @@ export default function FirstProfileCreate() {
           return;
         }
       } catch {
-        navigate("/register?complete=true", { replace: true });
+        navigate("/role-dashboard", { replace: true });
       } finally {
         setRolesLoaded(true);
       }
