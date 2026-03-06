@@ -99,7 +99,7 @@ const DiggerDetail = () => {
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [totalEarnings, setTotalEarnings] = useState<number | null>(null);
-  const { isOnline } = useDiggerPresence(digger?.id ?? '');
+  const { isOnline } = useDiggerPresence(digger?.id != null ? String(digger.id) : undefined);
   const { recordCall, isRecording: isCallingDigger } = useProfileCallTracking();
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   

@@ -597,7 +597,7 @@ const BrowseDiggers = () => {
                  ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     {filteredDiggers.map((digger) => {
-                      const isOnline = onlineDiggers.has(digger.id);
+                      const isOnline = onlineDiggers.has(String(digger.id ?? ""));
                       return (
                         <DirectoryDiggerCard
                           key={digger.id}

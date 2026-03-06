@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { cn } from "@/lib/utils";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
 import { IdVerificationDialog } from "@/components/IdVerificationDialog";
@@ -737,11 +738,17 @@ export default function Account() {
               </div>
             )}
             <div
-              role="button"
-              tabIndex={0}
-              className="relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10 cursor-pointer transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/30"
-              onClick={() => setIdVerificationOpen(true)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIdVerificationOpen(true); } }}
+              role={idVerified ? undefined : "button"}
+              tabIndex={idVerified ? -1 : 0}
+              aria-disabled={idVerified ? true : undefined}
+              className={cn(
+                "relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10 transition-colors focus:outline-none",
+                idVerified
+                  ? "cursor-default"
+                  : "cursor-pointer hover:bg-primary/10 focus:ring-2 focus:ring-primary/30"
+              )}
+              onClick={idVerified ? undefined : () => setIdVerificationOpen(true)}
+              onKeyDown={idVerified ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIdVerificationOpen(true); } }}
             >
               <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-primary/50" aria-hidden />
               <div className="flex flex-wrap items-center gap-2 gap-y-1 pl-1">
@@ -754,7 +761,7 @@ export default function Account() {
                 ) : (
                   <Badge variant="secondary" className="text-xs">Unverified</Badge>
                 )}
-                <ChevronRight className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />
+                {!idVerified && <ChevronRight className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />}
               </div>
               {idVerified && (
                 <p className="mt-2 text-xs text-muted-foreground pl-1">
@@ -1171,7 +1178,7 @@ export default function Account() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-2 text-muted-foreground"
+                className="gap-2 text-muted-foreground border border-border"
                 onClick={async () => {
                   if (!user?.email) return;
                   try {
@@ -1209,7 +1216,7 @@ export default function Account() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2 text-muted-foreground min-h-[44px] sm:min-h-0 shrink-0"
+                  className="gap-2 text-muted-foreground min-h-[44px] sm:min-h-0 shrink-0 border border-border"
                   onClick={async () => {
                     try {
                       await signOut();

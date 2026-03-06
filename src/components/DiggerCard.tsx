@@ -17,7 +17,7 @@ interface DiggerCardProps {
 }
 
 export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl, country, diggerId }: DiggerCardProps) => {
-  const { isOnline } = useDiggerPresence(diggerId);
+  const { isOnline } = useDiggerPresence(diggerId != null ? String(diggerId) : undefined);
   
   const getCountryFlag = (countryName: string): string => {
     const flags: { [key: string]: string } = {

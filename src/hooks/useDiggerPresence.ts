@@ -40,7 +40,7 @@ const parseDiggerState = () => {
         const raw = row.digger_id ?? payload.digger_id;
         const did = typeof raw === "string" ? raw : raw != null ? String(raw) : null;
         if (did && did.length > 0) {
-          online.add(did);
+          online.add(String(did));
           const activeRaw = row.active_at ?? payload.active_at ?? row.online_at ?? payload.online_at;
           const activeAt = activeRaw ? new Date(String(activeRaw)).getTime() : NaN;
           if (!Number.isNaN(activeAt)) {
@@ -120,18 +120,30 @@ const setTrackedDigger = (diggerId: string | null) => {
 };
 
 export const useDiggerPresence = (diggerId?: string) => {
-  const [onlineDiggers, setOnlineDiggers] = useState<Set<string>>(new Set(sharedOnlineDiggers));
+  const [onlineDiggers, setOnlineDiggers] = useState<Set<string>>(() => new Set(sharedOnlineDiggers));
 
   useEffect(() => {
-    diggerListeners.add(setOnlineDiggers);
+    const listener = (snapshot: Set<string>) => setOnlineDiggers(snapshot);
+    diggerListeners.add(listener);
+    // Push current shared state to this listener immediately (in case channel already synced)
+    listener(new Set(sharedOnlineDiggers));
+    // Re-parse from channel and publish so we pick up latest presence (handles late sync)
+    parseDiggerState();
     void ensureSharedDiggerChannel();
+    // Delayed re-syncs to catch presence that arrives shortly after mount (e.g. GigDetail bid cards)
+    const t1 = setTimeout(parseDiggerState, 150);
+    const t2 = setTimeout(parseDiggerState, 600);
+    const t3 = setTimeout(parseDiggerState, 2000);
     return () => {
-      diggerListeners.delete(setOnlineDiggers);
+      diggerListeners.delete(listener);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, []);
 
   return {
-    isOnline: diggerId ? onlineDiggers.has(diggerId) : false,
+    isOnline: diggerId ? onlineDiggers.has(String(diggerId)) : false,
     onlineDiggers,
   };
 };

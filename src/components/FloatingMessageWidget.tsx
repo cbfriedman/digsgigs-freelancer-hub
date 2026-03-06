@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRecentConversations, type RecentConversation } from "@/hooks/useRecentConversations";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { useUserPresence, getUserPresenceStatus, type PresenceStatus } from "@/hooks/useUserPresence";
+import { useDiggerPresence, getDiggerPresenceStatus, type DiggerPresenceStatus } from "@/hooks/useDiggerPresence";
 import { usePresenceAwayMs } from "@/hooks/usePresenceSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ export function FloatingMessageWidget() {
   const { user } = useAuth();
   const { conversations, loading: convLoading } = useRecentConversations(user ?? null);
   const { onlineUserIds } = useUserPresence();
+  useDiggerPresence();
   const awayAfterMs = usePresenceAwayMs();
   const unreadCount = useUnreadMessagesCount();
 
@@ -249,8 +251,22 @@ export function FloatingMessageWidget() {
   };
 
   const getPartnerPresenceStatus = useCallback(
-    (conv: RecentConversation | undefined) => {
-      return getUserPresenceStatus(conv?.partnerUserId ? String(conv.partnerUserId) : null, awayAfterMs);
+    (conv: RecentConversation | undefined): PresenceStatus => {
+      if (!conv) return "offline";
+      const userStatus = getUserPresenceStatus(
+        conv.partnerUserId ? String(conv.partnerUserId) : null,
+        awayAfterMs
+      );
+      if (conv.diggerId) {
+        const diggerStatus: DiggerPresenceStatus = getDiggerPresenceStatus(
+          String(conv.diggerId),
+          awayAfterMs
+        );
+        if (userStatus === "online" || diggerStatus === "online") return "online";
+        if (userStatus === "away" || diggerStatus === "away") return "away";
+        return "offline";
+      }
+      return userStatus;
     },
     [onlineUserIds, awayAfterMs]
   );

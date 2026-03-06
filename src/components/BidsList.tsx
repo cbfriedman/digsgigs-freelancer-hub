@@ -784,7 +784,7 @@ export const BidsList = ({
           referenceCount={bid.reference_count}
           isOwner={false}
           isFixedPrice={isFixedPrice}
-          isOnline={onlineDiggers.has(bid.digger_profiles.id)}
+          isOnline={onlineDiggers.has(String(bid.digger_profiles?.id ?? ""))}
           hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
           isAwardedWaitingResponse={!!(effectiveAwarded && bid.status !== "accepted")}
           showDiggerActions={!!(onEditProposal || onMessageClient)}
@@ -875,7 +875,7 @@ export const BidsList = ({
               referenceCount={bid.reference_count}
               isOwner={true}
               isFixedPrice={isFixedPrice}
-              isOnline={onlineDiggers.has(bid.digger_profiles.id)}
+              isOnline={onlineDiggers.has(String(bid.digger_profiles?.id ?? ""))}
               hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
               isPinned={pinnedBidIds.has(bid.id)}
               onPinToggle={() => togglePin(bid.id)}

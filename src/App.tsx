@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useRouteError, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
-import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
-import { useTrackUserPresence } from "./hooks/useUserPresence";
+import { useDiggerPresence, useTrackDiggerPresence } from "./hooks/useDiggerPresence";
+import { useUserPresence, useTrackUserPresence } from "./hooks/useUserPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
@@ -118,8 +118,10 @@ import EmbedWidget from "./pages/EmbedWidget";
 
 const queryClient = new QueryClient();
 
-// Component to track digger presence
+// Subscribe to presence channels on app load so all pages see consistent online/offline state.
 const PresenceTracker = () => {
+  useDiggerPresence();
+  useUserPresence();
   useTrackDiggerPresence();
   useTrackUserPresence();
   return null;

@@ -728,15 +728,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             {getUserInitials()}
                           </AvatarFallback>
                         </Avatar>
-                        {/* Show current role so it's clear (Digger, Gigger, Admin, or Telemarketer) */}
-                        {user && userRoles.length > 0 && activeRole && roleConfig[activeRole] && (
-                          <span className={cn(
-                            "hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border",
-                            roleConfig[activeRole].color
-                          )}>
-                            {roleConfig[activeRole].emoji} {roleConfig[activeRole].label}
-                          </span>
-                        )}
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -765,7 +756,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer">
                         <Settings className="h-4 w-4 mr-2" />
-                        Account
+                        Settings
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate('/transactions')} className="cursor-pointer">
                         <Receipt className="h-4 w-4 mr-2" />
@@ -1150,12 +1141,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                            {/* Show current role (Digger, Gigger, Admin, or Telemarketer) */}
-                            {userRoles.length > 0 && activeRole && roleConfig[activeRole] && (
-                              <p className="text-xs font-medium mt-1.5 text-foreground/80">
-                                Viewing as: {roleConfig[activeRole].emoji} {roleConfig[activeRole].label}
-                              </p>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -1376,6 +1361,24 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         >
                           <User className="h-4 w-4" />
                           <span className="font-medium">View profile</span>
+                        </button>
+                      )}
+
+                      {user && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/account")
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => {
+                            navigate("/account");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <Settings className="h-4 w-4" />
+                          <span className="font-medium">Settings</span>
                         </button>
                       )}
 

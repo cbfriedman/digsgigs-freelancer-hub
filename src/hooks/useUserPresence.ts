@@ -46,7 +46,7 @@ const parsePresenceState = () => {
         const raw = row.user_id ?? payload.user_id ?? presenceKey;
         const uid = typeof raw === "string" ? raw : raw != null ? String(raw) : null;
         if (uid && uid.length > 0) {
-          online.add(uid);
+          online.add(String(uid));
           const activeRaw = row.active_at ?? payload.active_at ?? row.online_at ?? payload.online_at;
           const activeAt = activeRaw ? new Date(String(activeRaw)).getTime() : NaN;
           if (!Number.isNaN(activeAt)) {
@@ -126,13 +126,22 @@ const setTrackedUser = (userId: string | null) => {
 
 /** Returns the set of user IDs currently online (tracked on user-presence channel). */
 export function useUserPresence() {
-  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set(sharedOnlineUserIds));
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(() => new Set(sharedOnlineUserIds));
 
   useEffect(() => {
-    listeners.add(setOnlineUserIds);
+    const listener = (snapshot: Set<string>) => setOnlineUserIds(snapshot);
+    listeners.add(listener);
+    listener(new Set(sharedOnlineUserIds));
+    parsePresenceState();
     void ensureSharedUserChannel();
+    const t1 = setTimeout(parsePresenceState, 150);
+    const t2 = setTimeout(parsePresenceState, 600);
+    const t3 = setTimeout(parsePresenceState, 2000);
     return () => {
-      listeners.delete(setOnlineUserIds);
+      listeners.delete(listener);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, []);
 
