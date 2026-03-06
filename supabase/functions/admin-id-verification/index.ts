@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "https://esm.sh/resend@3.0.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
 const APP_NAME = "Digs and Gigs";
@@ -42,32 +41,41 @@ async function sendApprovalEmail(toEmail: string, displayName: string): Promise<
     console.warn("[admin-id-verification] RESEND_API_KEY is not set. Set it in Supabase Dashboard → Edge Functions → Secrets.");
     return { sent: false, error: "RESEND_API_KEY not configured" };
   }
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0;">ID verification approved</h1>
+      </div>
+      <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+        <p>Hi ${escapeHtml(displayName)},</p>
+        <p>Good news – your ID verification has been <strong>approved</strong> by our team.</p>
+        <p>Your profile now shows you as verified, and your name and address on file have been updated to match your submitted ID.</p>
+        <p>You can view your account and verification status anytime in <strong>Account settings</strong>.</p>
+        <p>If you have any questions, reply to this email or contact support.</p>
+        <hr style="border: 1px solid #eee; margin: 30px 0;" />
+        <p style="color: #666; font-size: 12px;">© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+      </div>
+    </div>
+  `;
   try {
-    const resend = new Resend(key);
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [toEmail],
-      subject: `${APP_NAME} – Your ID verification has been approved`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0;">ID verification approved</h1>
-          </div>
-          <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
-            <p>Hi ${escapeHtml(displayName)},</p>
-            <p>Good news – your ID verification has been <strong>approved</strong> by our team.</p>
-            <p>Your profile now shows you as verified, and your name and address on file have been updated to match your submitted ID.</p>
-            <p>You can view your account and verification status anytime in <strong>Account settings</strong>.</p>
-            <p>If you have any questions, reply to this email or contact support.</p>
-            <hr style="border: 1px solid #eee; margin: 30px 0;" />
-            <p style="color: #666; font-size: 12px;">© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
-          </div>
-        </div>
-      `,
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [toEmail],
+        subject: `${APP_NAME} – Your ID verification has been approved`,
+        html,
+      }),
     });
-    if (error) {
-      console.error("[admin-id-verification] Resend error:", error.message || error);
-      return { sent: false, error: error.message || String(error) };
+    const data = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
+    if (!res.ok) {
+      const msg = data?.message ?? res.statusText;
+      console.error("[admin-id-verification] Resend error:", msg);
+      return { sent: false, error: msg };
     }
     console.log("[admin-id-verification] Approval email sent to", toEmail, "id:", data?.id);
     return { sent: true };

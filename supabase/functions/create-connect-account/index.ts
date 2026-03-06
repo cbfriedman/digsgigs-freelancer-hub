@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getStripeConfig } from "../_shared/stripe.ts";
+import { toStripeCountryCode } from "../_shared/countryCode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,16 +30,22 @@ serve(async (req) => {
     const { secretKey, mode } = await getStripeConfig(supabaseClient);
     if (!secretKey) throw new Error("Stripe not configured. Set STRIPE_SECRET_KEY_TEST/LIVE in Edge Function secrets.");
 
-    // Get digger profile
-    const { data: diggerProfile, error: profileError } = await supabaseClient
-      .from("digger_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    // Get digger profile and user's profile (for country)
+    const [{ data: diggerProfile, error: profileError }, { data: userProfile }] = await Promise.all([
+      supabaseClient.from("digger_profiles").select("*").eq("user_id", user.id).single(),
+      supabaseClient.from("profiles").select("country").eq("id", user.id).maybeSingle(),
+    ]);
 
     if (profileError || !diggerProfile) {
       throw new Error("Digger profile not found");
     }
+
+    // User's country from profile (profiles.country or digger_profiles.country fallback) for Stripe Connect onboarding
+    const profileCountry =
+      (userProfile as { country?: string | null } | null)?.country ??
+      (diggerProfile as { country?: string | null }).country ??
+      null;
+    const stripeCountry = toStripeCountryCode(profileCountry);
 
     const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
 
@@ -49,18 +56,19 @@ serve(async (req) => {
       : diggerProfile.stripe_connect_account_id;
 
     if (!accountId) {
-      const account = await stripe.accounts.create({
+      const accountPayload: Parameters<Stripe["accounts"]["create"]>[0] = {
         type: "express",
         email: user.email,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
-        // Use registered email as display name so admins can identify accounts in Stripe Dashboard → Connected accounts
-        business_profile: {
-          name: user.email,
-        },
-      });
+        business_profile: { name: user.email },
+      };
+      if (stripeCountry) {
+        accountPayload.country = stripeCountry;
+      }
+      const account = await stripe.accounts.create(accountPayload);
 
       accountId = account.id;
 

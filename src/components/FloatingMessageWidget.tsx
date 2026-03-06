@@ -2170,7 +2170,7 @@ export function FloatingMessageWidget() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                Chats
+                Messages
               </button>
               <button
                 type="button"

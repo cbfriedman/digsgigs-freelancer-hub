@@ -633,7 +633,7 @@ export default function Account() {
     <PageLayout maxWidth="wide">
       <SEOHead
         title="Account settings"
-        description="Manage your Digs & Gigs account, security, payments, and preferences."
+        description="Manage your Digs & Gigs account, security, payments, and preferences. For Diggers and Giggers."
       />
       <div className="mx-auto w-full px-3 pt-0 pb-4 sm:px-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8 md:ml-48 md:mr-auto">
         {/* Left sidebar nav */}
@@ -649,7 +649,7 @@ export default function Account() {
                 onClick={() => scrollToSection(id)}
                 className={`text-left px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors md:py-1.5 hover:bg-muted ${
                   activeSection === id
-                    ? "bg-muted text-foreground font-medium md:border-l-2 md:border-l-muted-foreground/50 md:pl-3 md:ml-0 hover:text-foreground"
+                    ? "bg-muted text-foreground font-medium md:border-l-2 md:border-l-border md:pl-3 md:ml-0 hover:text-foreground"
                     : "text-muted-foreground hover:text-foreground md:border-l-2 md:border-l-transparent md:pl-3"
                 }`}
               >
@@ -661,17 +661,27 @@ export default function Account() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 max-w-2xl space-y-5 sm:space-y-6 pt-12 md:pt-0">
+          <header className="mb-2 md:mb-1">
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">Account settings</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isDigger === null
+                ? "Manage your security, payments, and preferences."
+                : isDigger
+                  ? "Manage your profile, get-paid setup, payment methods, and security. Your data is kept secure."
+                  : "Manage your payment methods, notifications, and security. Your data is kept secure."}
+            </p>
+          </header>
           <EmailVerificationBanner />
 
           {/* Identity & Security */}
-          <Card id="identity-security" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
+          <Card id="identity-security" className="scroll-mt-24 transition-colors hover:bg-muted/30">
           <CardHeader className="pb-3 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium sm:text-base">
               <ShieldCheck className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
               Identity & Security
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Sign-in and verification. Your data stays secure.
+              Email, phone, ID verification, and two-factor auth. We keep your data secure and never share it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
@@ -1250,14 +1260,14 @@ export default function Account() {
         </Card>
 
         {/* Name & address (ID verification) */}
-        <Card id="name-address" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
+        <Card id="name-address" className="scroll-mt-24 transition-colors hover:bg-muted/30">
           <CardHeader className="pb-3 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium sm:text-base">
               <User className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
               Name & address
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Legal name and location. Changes require admin approval.
+              Legal name and address on file. Request changes here; our team reviews and applies them for ID verification.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
@@ -1482,11 +1492,13 @@ export default function Account() {
         )}
 
         {/* Payments */}
-        <Card id="payments" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
+        <Card id="payments" className="scroll-mt-24 transition-colors hover:bg-muted/30">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="text-sm font-medium sm:text-base">Payments</CardTitle>
             <CardDescription className="text-xs sm:text-sm hidden sm:block">
-              {""}
+              {activeRole === "gigger"
+                ? "Cards and bank accounts for paying Diggers, awards, and milestones. Stored securely with Stripe."
+                : "Backup payment method for fees only. To receive earnings, set up Get paid above."}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
@@ -1641,10 +1653,12 @@ export default function Account() {
         </Card>
 
         {/* Preferences */}
-        <Card id="preferences" className="border-border/60 scroll-mt-24 transition-colors hover:bg-muted/50">
+        <Card id="preferences" className="scroll-mt-24 transition-colors hover:bg-muted/30">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="text-sm font-medium sm:text-base">Preferences</CardTitle>
-            <CardDescription className="text-xs sm:text-sm hidden sm:block">Email, notifications, limits.</CardDescription>
+            <CardDescription className="text-xs sm:text-sm hidden sm:block">
+              Email reports, notifications, and {isDigger ? "lead limits for Diggers." : "how you stay updated."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
             <div className="space-y-2">
@@ -1684,14 +1698,14 @@ export default function Account() {
         </Card>
 
         {/* Danger zone */}
-        <Card id="danger-zone" className="border-destructive/40 scroll-mt-24 transition-colors hover:bg-muted/50">
+        <Card id="danger-zone" className="border-2 border-destructive/30 scroll-mt-24 transition-colors hover:bg-muted/20">
           <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-destructive sm:text-base">
               <ShieldAlert className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Danger zone
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Request account deletion. Admin approval required.
+              Permanently delete your account. You must type DELETE to confirm; our team will then process the request.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">

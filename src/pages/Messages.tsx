@@ -443,6 +443,20 @@ export default function Messages() {
     return Boolean(c.digger_id && c.last_message_sender_id !== currentUser?.id && isProposalRequest);
   };
 
+  const getConversationPartner = (conv: Conversation | undefined) => {
+    if (!conv) return "Unknown";
+    if (conv.admin_id) {
+      if (currentUser?.id === conv.admin_id) {
+        return conv.consumer_profile?.full_name?.trim() || "User";
+      }
+      return "Support";
+    }
+    if (currentUser?.id === conv.consumer_id) {
+      return (conv.digger_full_name || conv.digger_profiles?.handle || "Unknown Digger").trim() || "Unknown Digger";
+    }
+    return conv.consumer_profile?.full_name?.trim() || "Gigger";
+  };
+
   const filteredConversations = (listSearch.trim()
     ? conversations.filter(
         (c) =>
@@ -1659,20 +1673,6 @@ export default function Messages() {
     setIsDragOverChat(false);
   }, [selectedConversation]);
 
-  const getConversationPartner = (conv: Conversation | undefined) => {
-    if (!conv) return "Unknown";
-    if (conv.admin_id) {
-      if (currentUser?.id === conv.admin_id) {
-        return conv.consumer_profile?.full_name?.trim() || "User";
-      }
-      return "Support";
-    }
-    if (currentUser?.id === conv.consumer_id) {
-      return (conv.digger_full_name || conv.digger_profiles?.handle || "Unknown Digger").trim() || "Unknown Digger";
-    }
-    return conv.consumer_profile?.full_name?.trim() || "Gigger";
-  };
-
   const getConversationSubtitle = (conv: Conversation | undefined) => {
     if (!conv) return "General inquiry";
     if (conv.admin_id) return "Support chat";
@@ -1929,10 +1929,10 @@ export default function Messages() {
           <>
             {showConversationList && (
               <div className="w-full border-r border-border/30 flex flex-col min-h-0 bg-background shrink-0">
-            {/* Header - Chats style */}
+            {/* Header - Messages style */}
             <div className="shrink-0 p-4 pb-3 border-b border-border/40 bg-background">
               <div className="flex items-center justify-between gap-2 mb-4">
-                <h1 className="text-xl font-bold text-foreground tracking-tight">Chats</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight">Messages</h1>
                 <div className="flex items-center gap-1">
                   {isAdmin && (
                     <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
@@ -2030,7 +2030,7 @@ export default function Messages() {
                   size="sm"
                   className={`rounded-full h-8 px-3 text-sm font-medium ${
                     listFilter === "all"
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "bg-muted text-foreground hover:bg-muted/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   onClick={() => setListFilter("all")}
@@ -2042,7 +2042,7 @@ export default function Messages() {
                   size="sm"
                   className={`rounded-full h-8 px-3 text-sm font-medium ${
                     listFilter === "favorites"
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "bg-muted text-foreground hover:bg-muted/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   onClick={() => setListFilter("favorites")}
@@ -2054,7 +2054,7 @@ export default function Messages() {
                   size="sm"
                   className={`rounded-full h-8 px-3 text-sm font-medium ${
                     listFilter === "unread"
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "bg-muted text-foreground hover:bg-muted/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   onClick={() => setListFilter("unread")}
@@ -2066,7 +2066,7 @@ export default function Messages() {
                   size="sm"
                   className={`rounded-full h-8 px-3 text-sm font-medium ${
                     listFilter === "requests"
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "bg-muted text-foreground hover:bg-muted/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   onClick={() => setListFilter("requests")}
@@ -2486,7 +2486,7 @@ export default function Messages() {
               <div className="h-full min-h-0 flex flex-col border-r border-border/30 bg-background overflow-hidden">
                 <div className="shrink-0 p-4 pb-3 border-b border-border/40 bg-background">
                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <h1 className="text-xl font-bold text-foreground tracking-tight">Chats</h1>
+                    <h1 className="text-xl font-bold text-foreground tracking-tight">Messages</h1>
                     <div className="flex items-center gap-1">
                       {isAdmin && (
                         <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
@@ -2529,10 +2529,10 @@ export default function Messages() {
                     <Input placeholder="Search conversations" value={listSearch} onChange={(e) => setListSearch(e.target.value)} className="pl-9 h-10 rounded-xl bg-muted/40 border-border/50 focus-visible:ring-2 focus-visible:ring-primary/20" />
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
-                    <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
-                    <Button variant={listFilter === "unread" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "unread" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("unread")}>Unread</Button>
-                    <Button variant={listFilter === "requests" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "requests" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("requests")}>Message Requests</Button>
+                    <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-muted text-foreground hover:bg-muted/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
+                    <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-muted text-foreground hover:bg-muted/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
+                    <Button variant={listFilter === "unread" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "unread" ? "bg-muted text-foreground hover:bg-muted/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("unread")}>Unread</Button>
+                    <Button variant={listFilter === "requests" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "requests" ? "bg-muted text-foreground hover:bg-muted/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("requests")}>Message Requests</Button>
                     <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${moreFiltersOpen ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
