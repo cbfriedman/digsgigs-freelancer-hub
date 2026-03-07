@@ -21,6 +21,7 @@ import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { useRedditPixel } from "@/hooks/useRedditPixel";
+import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { PasswordRequirements, GoogleSignInButton, AuthLogo } from "@/components/auth";
 import { getHandleForFirstProfile } from "@/lib/generateHandle";
 import { PageLayout } from "@/components/layout";
@@ -141,6 +142,7 @@ const Register = () => {
   });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordSending, setForgotPasswordSending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -1875,20 +1877,20 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);
+    setForgotPasswordSending(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/register?mode=reset-password`,
+        redirectTo: getAuthRedirectUrl("/register?mode=reset-password"),
       });
 
       if (error) throw error;
 
-      toast.success("Password reset email sent! Check your inbox.");
+      toast.success("Password reset email sent! Check inbox/spam folders.");
     } catch (error: any) {
       console.error("Password reset error:", error);
       toast.error(error.message || "Failed to send reset email");
     } finally {
-      setLoading(false);
+      setForgotPasswordSending(false);
     }
   };
 
@@ -2287,9 +2289,9 @@ const Register = () => {
                     type="button"
                     onClick={handleForgotPassword}
                     className="text-primary hover:underline"
-                    disabled={loading}
+                    disabled={loading || forgotPasswordSending}
                   >
-                    Forgot your password?
+                    {forgotPasswordSending ? "Sending reset email..." : "Forgot your password?"}
                   </button>
                 </div>
 

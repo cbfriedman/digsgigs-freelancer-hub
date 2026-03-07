@@ -42,6 +42,7 @@ import { useProfessions } from "@/hooks/useProfessions";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
 import { resolveLocationFromText, useCountriesSearch } from "@/hooks/useLocations";
+import { useStripeConfig } from "@/hooks/useStripeConfig";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { Progress } from "@/components/ui/progress";
 import type { Digger, Reference, ReferenceRequest } from "./DiggerDetail/types";
@@ -84,6 +85,7 @@ const DiggerDetail = () => {
   const [searchParams] = useSearchParams();
   const viewAsClient = searchParams.get("as") === "client";
   const { userRoles } = useAuth();
+  const { stripeMode } = useStripeConfig();
   const [digger, setDigger] = useState<Digger | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [certifications, setCertifications] = useState<DiggerCertification[]>([]);
@@ -1473,9 +1475,9 @@ const DiggerDetail = () => {
   // User-level verification (same as Gigger profile when user has both roles)
   const p = digger.profiles as { id_verified?: boolean | null; phone_verified?: boolean | null; email_verified?: boolean | null; payment_verified?: boolean | null } | undefined;
   const d = digger as { stripe_connect_account_id?: string | null; stripe_connect_charges_enabled?: boolean | null; stripe_connect_account_id_live?: string | null; stripe_connect_charges_enabled_live?: boolean | null };
-  const payoutVerified =
-    !!(d.stripe_connect_account_id && d.stripe_connect_charges_enabled) ||
-    !!(d.stripe_connect_account_id_live && d.stripe_connect_charges_enabled_live);
+  const payoutVerified = stripeMode === "live"
+    ? !!(d.stripe_connect_account_id_live && d.stripe_connect_charges_enabled_live)
+    : !!(d.stripe_connect_account_id && d.stripe_connect_charges_enabled);
   const verificationItems = [
     { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
     { label: "Phone", isActive: !!p?.phone_verified, icon: Phone },

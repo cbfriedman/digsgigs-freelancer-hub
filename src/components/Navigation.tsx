@@ -454,7 +454,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           placeholder="Search gigs..."
                           value={headerGigSearch}
                           onChange={(e) => setHeaderGigSearch(e.target.value)}
-                          className="pl-8 h-9 w-full bg-muted/50 border-border/60 text-sm"
+                          className="pl-8 h-9 w-full bg-muted/50 border-gray-400 dark:border-gray-500 text-sm"
                           aria-label="Search gigs"
                         />
                       </form>
@@ -1168,7 +1168,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               placeholder="Search gigs..."
                               value={headerGigSearch}
                               onChange={(e) => setHeaderGigSearch(e.target.value)}
-                              className="pl-8 h-9 w-full"
+                              className="pl-8 h-9 w-full border-gray-400 dark:border-gray-500"
                               aria-label="Search gigs"
                             />
                           </div>

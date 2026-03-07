@@ -20,6 +20,7 @@ import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { cn } from "@/lib/utils";
+import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
 import { IdVerificationDialog } from "@/components/IdVerificationDialog";
@@ -70,12 +71,13 @@ type PaymentMethod = {
 export default function Account() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userRoles, activeRole, loading: authLoading, signOut } = useAuth();
+  const { user, activeRole, loading: authLoading, signOut } = useAuth();
   const [isDigger, setIsDigger] = useState<boolean | null>(null);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordUpdating, setPasswordUpdating] = useState(false);
+  const [forgotPasswordSending, setForgotPasswordSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteInProgress, setDeleteInProgress] = useState(false);
@@ -785,17 +787,6 @@ export default function Account() {
                 </Button>
               </div>
             </div>
-            {userRoles.length > 0 && (
-              <div className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5">
-                <div className="flex flex-wrap gap-1.5">
-                  {userRoles.map((role) => (
-                    <Badge key={role} variant="outline" className="capitalize text-xs">
-                      {role}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
             <div
               role={identityStatusLoading || idVerified ? undefined : "button"}
               tabIndex={identityStatusLoading || idVerified ? -1 : 0}
@@ -1240,20 +1231,31 @@ export default function Account() {
                 variant="ghost"
                 size="sm"
                 className="gap-2 text-muted-foreground border border-border"
+                disabled={forgotPasswordSending}
                 onClick={async () => {
                   if (!user?.email) return;
+                  setForgotPasswordSending(true);
                   try {
                     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-                      redirectTo: `${window.location.origin}/register?mode=reset-password`,
+                      redirectTo: getAuthRedirectUrl("/register?mode=reset-password"),
                     });
                     if (error) throw error;
-                    toast.success("Password reset email sent. Check your inbox.");
+                    toast.success("Password reset email sent. Check inbox/spam folders.");
                   } catch (e: unknown) {
                     toast.error(e instanceof Error ? e.message : "Failed to send reset email");
+                  } finally {
+                    setForgotPasswordSending(false);
                   }
                 }}
               >
-                Forgot password?
+                {forgotPasswordSending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Forgot password?"
+                )}
               </Button>
             </div>
             <div className="border-t border-border/50 pt-3">
