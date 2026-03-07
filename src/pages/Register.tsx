@@ -1563,26 +1563,12 @@ const Register = () => {
           // The dashboard will handle refreshing roles via the ?registered=true parameter
           console.log('Redirecting to dashboard (roles verified:', rolesVerified, ')');
           
-          // If digger profile was created, redirect to My Profiles to show it
-          // Check if profile was created by looking for digger role and profile data
-          if (selectedRoles.has('digger') && effectiveRoleFormData.digger) {
-            // Wait a bit longer to ensure profile is fully committed and RLS policies are ready
-            // Also wait for any pending database operations
-            setTimeout(() => {
-              console.log('Redirecting to My Profiles to show created profile');
-              window.location.href = '/my-profiles?registered=true';
-            }, 1000);
-          } else {
-            window.location.href = '/role-dashboard?registered=true';
-          }
+          // After registration and first profile setup, always land on role dashboard.
+          window.location.href = '/role-dashboard?registered=true';
         } catch (error) {
           console.error('Error during redirect preparation:', error);
           // Fallback: redirect anyway - dashboard will handle role refresh
-          if (selectedRoles.has('digger') && effectiveRoleFormData.digger) {
-            window.location.href = '/my-profiles?registered=true';
-          } else {
-            window.location.href = '/role-dashboard?registered=true';
-          }
+          window.location.href = '/role-dashboard?registered=true';
         }
       }, 1500); // Reduced delay slightly - dashboard will handle role refresh
     } catch (error: any) {
