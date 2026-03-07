@@ -25,7 +25,6 @@ import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { CartDrawer } from "@/components/CartDrawer";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
 import { getLocalTimeForLocation } from "@/pages/DiggerDetail/utils";
-import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
@@ -110,7 +109,7 @@ const GigDetail = () => {
   const [isDigger, setIsDigger] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [diggerId, setDiggerId] = useState<string | null>(null);
-  /** Diggers can bid only after they have profile photo and hourly rate set ("at rest" minimum). */
+  /** Diggers can bid once they have a digger profile. */
   const [diggerCanBid, setDiggerCanBid] = useState(false);
   const [existingBid, setExistingBid] = useState<any>(null);
   const [canSeeBudget, setCanSeeBudget] = useState(false);
@@ -265,18 +264,7 @@ const GigDetail = () => {
       if (cancelled || !row) return;
       setIsDigger(true);
       setDiggerId(row.id);
-      const { data: diggerDetail } = await supabase
-        .from("digger_profiles" as any)
-        .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
-        .eq("id", row.id)
-        .single();
-      if (cancelled) return;
-      const raw = diggerDetail as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
-      const profilesNorm = raw?.profiles != null ? (Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles) : null;
-      const completion = computeDiggerProfileDetailCompletion(raw ? { ...raw, profiles: profilesNorm } : null);
-      const profilePhotoDone = completion.items.find((i) => i.id === "profile-photo")?.completed ?? false;
-      const hourlyRateDone = completion.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
-      if (!cancelled) setDiggerCanBid(profilePhotoDone && hourlyRateDone);
+      if (!cancelled) setDiggerCanBid(true);
       const { data: bid } = await supabase.from("bids" as any).select("*").eq("gig_id", id).eq("digger_id", row.id).maybeSingle();
       if (!cancelled) setExistingBid(bid ?? null);
       if (!cancelled) setCanSeeBudget(true);
@@ -534,7 +522,7 @@ const GigDetail = () => {
       return;
     }
 
-    // Wave 3: Digger-specific — get or create digger profile, then fetch bid/lead/completion in parallel
+    // Wave 3: Digger-specific — get or create digger profile, then fetch bid/lead data in parallel
     let diggerProfileRow: { id: string } | null = null;
     const { data: existingProfile } = await supabase
       .from("digger_profiles" as any)
@@ -572,23 +560,12 @@ const GigDetail = () => {
     setDiggerId(diggerProfileRow.id);
     setCanSeeBudget(true);
 
-    const [diggerDetailRes, bidRes, leadRes] = await Promise.all([
-      supabase
-        .from("digger_profiles" as any)
-        .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
-        .eq("id", diggerProfileRow.id)
-        .single(),
+    const [bidRes, leadRes] = await Promise.all([
       supabase.from("bids" as any).select("*").eq("gig_id", id).eq("digger_id", diggerProfileRow!.id).maybeSingle(),
       supabase.from("lead_purchases").select("id").eq("gig_id", id).eq("digger_id", diggerProfileRow!.id).eq("status", "completed").maybeSingle(),
     ]);
 
-    const diggerDetail = diggerDetailRes.data as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
-    const profilesNorm =
-      diggerDetail?.profiles != null ? (Array.isArray(diggerDetail.profiles) ? diggerDetail.profiles[0] : diggerDetail.profiles) : null;
-    const completion = computeDiggerProfileDetailCompletion(diggerDetail ? { ...diggerDetail, profiles: profilesNorm } : null);
-    const profilePhotoDone = completion?.items.find((i) => i.id === "profile-photo")?.completed ?? false;
-    const hourlyRateDone = completion?.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
-    setDiggerCanBid(profilePhotoDone && hourlyRateDone);
+    setDiggerCanBid(true);
     setExistingBid((bidRes.data as any) ?? null);
     setHasLeadPurchase(!!leadRes.data);
 
@@ -1183,7 +1160,7 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum); never if digger has withdrawn */}
+            {/* Submit or edit proposal — enabled for any digger profile; never if digger has withdrawn */}
             {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
               <div id="bid">
                 <BidSubmissionTemplate
@@ -1379,18 +1356,6 @@ const GigDetail = () => {
                   </p>
                   <Button className="w-full min-h-[44px]" onClick={() => navigate('/role-dashboard')}>
                     Go to Dashboard
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-            {showDiggerContent && diggerId && !diggerCanBid && !existingBid && gig.status === 'open' && (
-              <Card id="bid" className="border border-border rounded-lg shadow-none">
-                <CardContent className="p-4 sm:p-6 pt-6 space-y-4">
-                  <p className="text-center text-muted-foreground text-sm sm:text-base">
-                    To place a bid, add a <strong>profile photo</strong> and <strong>hourly rate</strong> to your Digger profile.
-                  </p>
-                  <Button className="w-full min-h-[44px]" onClick={() => navigate('/role-dashboard')}>
-                    Complete profile
                   </Button>
                 </CardContent>
               </Card>
