@@ -72,10 +72,13 @@ serve(async (req) => {
     const account = await stripe.accounts.retrieve(accountId);
     const detailsSubmitted = !!account.details_submitted;
     const chargesEnabled = !!account.charges_enabled;
+    const payoutsEnabled = !!account.payouts_enabled;
+    // Some countries are transfer-only for Connect. Treat payouts_enabled as payout-ready as well.
+    const canReceivePayments = chargesEnabled || payoutsEnabled;
 
     const updatePayload = isLive
-      ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: chargesEnabled }
-      : { stripe_connect_onboarded: detailsSubmitted, stripe_connect_charges_enabled: chargesEnabled };
+      ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: canReceivePayments }
+      : { stripe_connect_onboarded: detailsSubmitted, stripe_connect_charges_enabled: canReceivePayments };
     const { error: updateError } = await supabaseClient
       .from("digger_profiles")
       .update(updatePayload)
@@ -94,6 +97,8 @@ serve(async (req) => {
         synced: true,
         details_submitted: detailsSubmitted,
         charges_enabled: chargesEnabled,
+        payouts_enabled: payoutsEnabled,
+        can_receive_payments: canReceivePayments,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

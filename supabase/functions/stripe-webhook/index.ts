@@ -49,20 +49,27 @@ serve(async (req) => {
     // In Stripe Dashboard → Developers → Webhooks, add event "account.updated" (and enable "Listen to events on Connected accounts" if using a separate Connect endpoint).
     if (event.type === 'account.updated') {
       const account = event.data.object as Stripe.Account;
-      logStep('Processing account.updated (Connect)', { accountId: account.id, charges_enabled: account.charges_enabled, details_submitted: account.details_submitted });
+      logStep('Processing account.updated (Connect)', {
+        accountId: account.id,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+      });
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
       const onboarded = !!account.details_submitted;
       const chargesEnabled = !!account.charges_enabled;
+      const payoutsEnabled = !!account.payouts_enabled;
+      const canReceivePayments = chargesEnabled || payoutsEnabled;
       const { error: updateTest } = await supabaseClient
         .from('digger_profiles')
-        .update({ stripe_connect_onboarded: onboarded, stripe_connect_charges_enabled: chargesEnabled })
+        .update({ stripe_connect_onboarded: onboarded, stripe_connect_charges_enabled: canReceivePayments })
         .eq('stripe_connect_account_id', account.id);
       const { error: updateLive } = await supabaseClient
         .from('digger_profiles')
-        .update({ stripe_connect_onboarded_live: onboarded, stripe_connect_charges_enabled_live: chargesEnabled })
+        .update({ stripe_connect_onboarded_live: onboarded, stripe_connect_charges_enabled_live: canReceivePayments })
         .eq('stripe_connect_account_id_live', account.id);
       if (updateTest && updateLive) {
         logStep('ERROR: Failed to update digger_profiles for Connect account', { error: updateTest?.message ?? updateLive?.message, accountId: account.id });

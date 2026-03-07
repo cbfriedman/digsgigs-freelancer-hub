@@ -120,14 +120,16 @@ serve(async (req) => {
           const account = await stripe.accounts.retrieve(diggerProfile.stripe_connect_account_id);
           const detailsSubmitted = !!account.details_submitted;
           const chargesEnabled = !!account.charges_enabled;
+          const payoutsEnabled = !!account.payouts_enabled;
+          const canReceivePayments = chargesEnabled || payoutsEnabled;
           await supabaseAdmin
             .from("digger_profiles")
             .update({
               stripe_connect_onboarded: detailsSubmitted,
-              stripe_connect_charges_enabled: chargesEnabled,
+              stripe_connect_charges_enabled: canReceivePayments,
             })
             .eq("id", diggerProfile.id);
-          diggerProfile = { ...diggerProfile, stripe_connect_charges_enabled: chargesEnabled };
+          diggerProfile = { ...diggerProfile, stripe_connect_charges_enabled: canReceivePayments };
         }
       } catch {
         // Stripe API error: keep DB as-is and return pending

@@ -93,8 +93,26 @@ serve(async (req) => {
         .single();
 
       const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
-      const chargesEnabled = isLive ? (diggerProfile as any)?.stripe_connect_charges_enabled_live : diggerProfile?.stripe_connect_charges_enabled;
-      if (!connectAccountId || !chargesEnabled) {
+      let canReceivePayments = !!(isLive ? (diggerProfile as any)?.stripe_connect_charges_enabled_live : diggerProfile?.stripe_connect_charges_enabled);
+      if (connectAccountId && !canReceivePayments) {
+        try {
+          const account = await stripe.accounts.retrieve(connectAccountId);
+          const detailsSubmitted = !!account.details_submitted;
+          const chargesEnabled = !!account.charges_enabled;
+          const payoutsEnabled = !!account.payouts_enabled;
+          canReceivePayments = chargesEnabled || payoutsEnabled;
+          const updatePayload = isLive
+            ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: canReceivePayments }
+            : { stripe_connect_onboarded: detailsSubmitted, stripe_connect_charges_enabled: canReceivePayments };
+          await supabaseAdmin
+            .from("digger_profiles")
+            .update(updatePayload)
+            .eq("id", contract.digger_id);
+        } catch {
+          // Keep DB state as-is when Stripe API call fails.
+        }
+      }
+      if (!connectAccountId || !canReceivePayments) {
         throw new Error(
           isLive
             ? "The professional hasn't set up payouts for live payments yet. Ask them to complete \"Get paid\" while the platform is in live mode."

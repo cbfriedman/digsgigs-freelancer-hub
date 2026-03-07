@@ -78,20 +78,31 @@ serve(async (req) => {
             : createErr instanceof Error
               ? createErr.message
               : "";
+        const lowerMsg = typeof createMessage === "string" ? createMessage.toLowerCase() : "";
         const hasCountry = typeof accountPayload.country === "string" && accountPayload.country.length > 0;
         const isCountryLikelyIssue =
           hasCountry &&
           typeof createMessage === "string" &&
           (
-            createMessage.toLowerCase().includes("country") ||
-            createMessage.toLowerCase().includes("location") ||
-            createMessage.toLowerCase().includes("unsupported")
+            lowerMsg.includes("country") ||
+            lowerMsg.includes("location") ||
+            lowerMsg.includes("unsupported")
           );
+        const isCardPaymentsCapabilityIssue =
+          lowerMsg.includes("cannot request the `card_payments` capability") ||
+          (lowerMsg.includes("cannot request") && lowerMsg.includes("card_payments"));
 
         // Some social signups carry country metadata that can conflict with platform Connect setup.
         // Retry once without forcing country so Stripe can use platform-default onboarding constraints.
         if (isCountryLikelyIssue) {
           delete accountPayload.country;
+          account = await stripe.accounts.create(accountPayload);
+        } else if (isCardPaymentsCapabilityIssue) {
+          // Countries like AR may not support requesting card_payments for connected accounts.
+          // Retry with payouts/transfers capability only.
+          accountPayload.capabilities = {
+            transfers: { requested: true },
+          };
           account = await stripe.accounts.create(accountPayload);
         } else {
           throw createErr;

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getStripeConfig } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,13 +134,36 @@ serve(async (req) => {
     }
 
     // Digger must have Stripe Connect set up
-    const { data: diggerProfile } = await supabaseAdmin
+    let { data: diggerProfile } = await supabaseAdmin
       .from("digger_profiles")
       .select("id, stripe_connect_account_id, stripe_connect_charges_enabled")
       .eq("id", diggerProfileId)
       .single();
     if (!diggerProfile?.stripe_connect_account_id) {
       throw new Error("The Digger hasn’t set up payouts yet. Ask them to complete “Get paid” / payment setup in their account (My Bids or Settings) so you can create the contract.");
+    }
+    if (!diggerProfile.stripe_connect_charges_enabled) {
+      try {
+        const { secretKey: stripeKey } = await getStripeConfig(supabaseAdmin);
+        if (stripeKey) {
+          const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+          const account = await stripe.accounts.retrieve(diggerProfile.stripe_connect_account_id);
+          const detailsSubmitted = !!account.details_submitted;
+          const chargesEnabled = !!account.charges_enabled;
+          const payoutsEnabled = !!account.payouts_enabled;
+          const canReceivePayments = chargesEnabled || payoutsEnabled;
+          await supabaseAdmin
+            .from("digger_profiles")
+            .update({
+              stripe_connect_onboarded: detailsSubmitted,
+              stripe_connect_charges_enabled: canReceivePayments,
+            })
+            .eq("id", diggerProfile.id);
+          diggerProfile = { ...diggerProfile, stripe_connect_charges_enabled: canReceivePayments };
+        }
+      } catch {
+        // Keep DB state as-is when Stripe API call fails.
+      }
     }
     if (!diggerProfile.stripe_connect_charges_enabled) {
       throw new Error("The Digger’s payout account is still being verified. Ask them to finish the payout setup in their account; it usually takes a few minutes.");
