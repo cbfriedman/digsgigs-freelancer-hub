@@ -395,31 +395,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </nav>
             </div>
 
-            {/* Center: Search gigs (Digger mode only, desktop) */}
-            {isDiggerMode && (
-              <div className="hidden md:flex flex-1 min-w-0 max-w-md mx-2 lg:mx-4">
-                <form
-                  className="relative w-full"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const q = headerGigSearch.trim();
-                    if (q) navigate(`/browse-gigs?q=${encodeURIComponent(q)}`);
-                    else navigate("/browse-gigs");
-                  }}
-                >
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    type="search"
-                    placeholder="Search gigs..."
-                    value={headerGigSearch}
-                    onChange={(e) => setHeaderGigSearch(e.target.value)}
-                    className="pl-8 h-9 w-full bg-muted/50 border-border/60 text-sm"
-                    aria-label="Search gigs"
-                  />
-                </form>
-              </div>
-            )}
-
             {/* Right: Dark mode, Sign In/Sign up or Messages, Notifications, Folder, Avatar, Cart */}
             <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-auto">
               {/* When not logged in: Dark Mode in bar (no avatar dropdown) */}
@@ -460,6 +435,30 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     >
                       Post a gig
                     </Button>
+                  )}
+                  {/* Digger mode search: right side, before Messages */}
+                  {user && isDiggerMode && (
+                    <div className="hidden lg:flex min-w-0 w-56 xl:w-72">
+                      <form
+                        className="relative w-full"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const q = headerGigSearch.trim();
+                          if (q) navigate(`/browse-gigs?q=${encodeURIComponent(q)}`);
+                          else navigate("/browse-gigs");
+                        }}
+                      >
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          type="search"
+                          placeholder="Search gigs..."
+                          value={headerGigSearch}
+                          onChange={(e) => setHeaderGigSearch(e.target.value)}
+                          className="pl-8 h-9 w-full bg-muted/50 border-border/60 text-sm"
+                          aria-label="Search gigs"
+                        />
+                      </form>
+                    </div>
                   )}
                   {/* Messages — only when signed in; hover shows recent messages dropdown */}
                   <HoverCard openDelay={300} closeDelay={150}>

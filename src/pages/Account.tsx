@@ -112,6 +112,7 @@ export default function Account() {
   });
   const [idVerified, setIdVerified] = useState<boolean>(false);
   const [idVerificationPendingReview, setIdVerificationPendingReview] = useState<boolean>(false);
+  const [identityStatusLoading, setIdentityStatusLoading] = useState<boolean>(true);
   const [idVerificationOpen, setIdVerificationOpen] = useState(false);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
@@ -298,114 +299,129 @@ export default function Account() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
+    setIdentityStatusLoading(true);
     (async () => {
-      const [profileRes, diggerRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("first_name, last_name, full_name, address, city, state, zip_postal, country, id_verified, phone, phone_verified")
-          .eq("id", user.id)
-          .single(),
-        supabase
-          .from("digger_profiles")
-          .select("location, city, state, country")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      const profile = profileRes.data as {
-        first_name?: string | null;
-        last_name?: string | null;
-        full_name?: string | null;
-        address?: string | null;
-        city?: string | null;
-        state?: string | null;
-        zip_postal?: string | null;
-        country?: string | null;
-        id_verified?: boolean | null;
-        phone?: string | null;
-        phone_verified?: boolean | null;
-      } | null;
-      if (profile?.id_verified != null) setIdVerified(!!profile.id_verified);
-      setProfilePhone(profile?.phone ?? null);
-      setProfilePhoneVerified(!!profile?.phone_verified);
-      const digger = diggerRes.data as { location?: string | null; city?: string | null; state?: string | null; country?: string | null } | null;
-
-      if (!profile) {
-        setProfileIdentity(null);
-        setIdVerified(false);
-      } else {
-        setIdVerified(!!profile.id_verified);
-        const fullName = (profile.full_name ?? "").trim();
-        const parts = fullName ? fullName.split(/\s+/) : [];
-        const derivedFirst = parts[0] ?? null;
-        const derivedLast = parts.length > 1 ? parts.slice(1).join(" ") : null;
-        // Use profiles first; fallback to digger for city/state/country only (not street address)
-        const city = profile.city ?? digger?.city ?? null;
-        const state = profile.state ?? digger?.state ?? null;
-        const country = profile.country ?? digger?.country ?? null;
-        // Keep profile and Account in sync: one user has one address/location.
-        // If digger had location but profiles didn't, backfill profiles.
-        const needsProfileBackfill =
-          (digger?.city && !profile.city) ||
-          (digger?.state && !profile.state) ||
-          (digger?.country && !profile.country);
-        if (needsProfileBackfill && (city || state || country)) {
-          (supabase as any)
+      try {
+        const [profileRes, diggerRes] = await Promise.all([
+          supabase
             .from("profiles")
-            .update({
-              ...(city != null && { city }),
-              ...(state != null && { state }),
-              ...(country != null && { country }),
-            })
+            .select("first_name, last_name, full_name, address, city, state, zip_postal, country, id_verified, phone, phone_verified")
             .eq("id", user.id)
-            .then(() => { /* synced */ });
-        }
-        // If profiles has location but digger doesn't (or differs), backfill digger_profiles so profile page shows same as Account
-        const diggerNeedsBackfill = digger && (
-          (city != null && digger.city !== city) ||
-          (state != null && digger.state !== state) ||
-          (country != null && digger.country !== country)
-        );
-        if (diggerNeedsBackfill && (city || state || country)) {
-          const locationText = [city, state, country].filter(Boolean).join(", ") || "Not specified";
+            .single(),
           supabase
             .from("digger_profiles")
-            .update({
-              ...(city != null && { city }),
-              ...(state != null && { state }),
-              ...(country != null && { country }),
-              location: locationText,
-            } as Record<string, unknown>)
+            .select("location, city, state, country")
             .eq("user_id", user.id)
-            .then(() => { /* synced */ });
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        const profile = profileRes.data as {
+          first_name?: string | null;
+          last_name?: string | null;
+          full_name?: string | null;
+          address?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip_postal?: string | null;
+          country?: string | null;
+          id_verified?: boolean | null;
+          phone?: string | null;
+          phone_verified?: boolean | null;
+        } | null;
+        if (!cancelled) {
+          if (profile?.id_verified != null) setIdVerified(!!profile.id_verified);
+          setProfilePhone(profile?.phone ?? null);
+          setProfilePhoneVerified(!!profile?.phone_verified);
         }
-        setProfileIdentity({
-          first_name: profile.first_name ?? derivedFirst,
-          last_name: profile.last_name ?? derivedLast,
-          address: profile.address ?? null,
-          city,
-          state,
-          zip_postal: profile.zip_postal ?? null,
-          country,
-        });
-      }
-      const { data: pending } = await (supabase as any)
-        .from("profile_identity_update_requests")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("status", "pending")
-        .maybeSingle();
-      setPendingIdentityRequest(!!pending);
+        const digger = diggerRes.data as { location?: string | null; city?: string | null; state?: string | null; country?: string | null } | null;
 
-      const { data: pendingIdSubmission } = await (supabase as any)
-        .from("id_verification_submissions")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("status", "pending_review")
-        .maybeSingle();
-      setIdVerificationPendingReview(!!pendingIdSubmission);
+        if (!profile) {
+          if (!cancelled) {
+            setProfileIdentity(null);
+            setIdVerified(false);
+          }
+        } else {
+          if (!cancelled) setIdVerified(!!profile.id_verified);
+          const fullName = (profile.full_name ?? "").trim();
+          const parts = fullName ? fullName.split(/\s+/) : [];
+          const derivedFirst = parts[0] ?? null;
+          const derivedLast = parts.length > 1 ? parts.slice(1).join(" ") : null;
+          // Use profiles first; fallback to digger for city/state/country only (not street address)
+          const city = profile.city ?? digger?.city ?? null;
+          const state = profile.state ?? digger?.state ?? null;
+          const country = profile.country ?? digger?.country ?? null;
+          // Keep profile and Account in sync: one user has one address/location.
+          // If digger had location but profiles didn't, backfill profiles.
+          const needsProfileBackfill =
+            (digger?.city && !profile.city) ||
+            (digger?.state && !profile.state) ||
+            (digger?.country && !profile.country);
+          if (needsProfileBackfill && (city || state || country)) {
+            (supabase as any)
+              .from("profiles")
+              .update({
+                ...(city != null && { city }),
+                ...(state != null && { state }),
+                ...(country != null && { country }),
+              })
+              .eq("id", user.id)
+              .then(() => { /* synced */ });
+          }
+          // If profiles has location but digger doesn't (or differs), backfill digger_profiles so profile page shows same as Account
+          const diggerNeedsBackfill = digger && (
+            (city != null && digger.city !== city) ||
+            (state != null && digger.state !== state) ||
+            (country != null && digger.country !== country)
+          );
+          if (diggerNeedsBackfill && (city || state || country)) {
+            const locationText = [city, state, country].filter(Boolean).join(", ") || "Not specified";
+            supabase
+              .from("digger_profiles")
+              .update({
+                ...(city != null && { city }),
+                ...(state != null && { state }),
+                ...(country != null && { country }),
+                location: locationText,
+              } as Record<string, unknown>)
+              .eq("user_id", user.id)
+              .then(() => { /* synced */ });
+          }
+          if (!cancelled) {
+            setProfileIdentity({
+              first_name: profile.first_name ?? derivedFirst,
+              last_name: profile.last_name ?? derivedLast,
+              address: profile.address ?? null,
+              city,
+              state,
+              zip_postal: profile.zip_postal ?? null,
+              country,
+            });
+          }
+        }
+        const { data: pending } = await (supabase as any)
+          .from("profile_identity_update_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "pending")
+          .maybeSingle();
+        if (!cancelled) setPendingIdentityRequest(!!pending);
+
+        const { data: pendingIdSubmission } = await (supabase as any)
+          .from("id_verification_submissions")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "pending_review")
+          .maybeSingle();
+        if (!cancelled) setIdVerificationPendingReview(!!pendingIdSubmission);
+      } finally {
+        if (!cancelled) setIdentityStatusLoading(false);
+      }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user, profileRefreshKey]);
 
   const fetchMfaFactors = async (): Promise<{ id: string; friendly_name?: string; factor_type: string }[]> => {
@@ -711,26 +727,59 @@ export default function Account() {
             <div
               role="button"
               tabIndex={0}
-              className="rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              onClick={() => { setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); } }}
+              className={cn(
+                "rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
+                identityStatusLoading ? "cursor-wait" : "cursor-pointer hover:bg-muted/40"
+              )}
+              onClick={() => {
+                if (identityStatusLoading) return;
+                setPhoneDialogOpen(true);
+                setPhoneValue(profilePhone ?? "");
+                setPhoneOtpSent(false);
+                setPhoneOtpCode("");
+              }}
+              onKeyDown={(e) => {
+                if (identityStatusLoading) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPhoneDialogOpen(true);
+                  setPhoneValue(profilePhone ?? "");
+                  setPhoneOtpSent(false);
+                  setPhoneOtpCode("");
+                }
+              }}
             >
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-sm font-medium text-foreground break-all">
-                  {profilePhone && profilePhone.trim() ? profilePhone : "Not set"}
+                  {identityStatusLoading ? "Loading current status..." : (profilePhone && profilePhone.trim() ? profilePhone : "Not set")}
                 </span>
-                {profilePhone && (
+                {identityStatusLoading ? (
+                  <Badge variant="secondary" className="text-xs gap-1"><Loader2 className="h-3 w-3 animate-spin" />Loading</Badge>
+                ) : profilePhone && (
                   profilePhoneVerified ? (
                     <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Verified</Badge>
                   ) : (
                     <Badge variant="secondary" className="text-xs">Unverified</Badge>
                   )
                 )}
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
+                {!identityStatusLoading && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />}
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); setPhoneDialogOpen(true); setPhoneValue(profilePhone ?? ""); setPhoneOtpSent(false); setPhoneOtpCode(""); }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={identityStatusLoading}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (identityStatusLoading) return;
+                    setPhoneDialogOpen(true);
+                    setPhoneValue(profilePhone ?? "");
+                    setPhoneOtpSent(false);
+                    setPhoneOtpCode("");
+                  }}
+                >
                   <Phone className="h-3.5 w-3.5" />
                   {profilePhone ? "Edit / Verify" : "Add phone"}
                 </Button>
@@ -748,42 +797,44 @@ export default function Account() {
               </div>
             )}
             <div
-              role={idVerified ? undefined : "button"}
-              tabIndex={idVerified ? -1 : 0}
-              aria-disabled={idVerified ? true : undefined}
+              role={identityStatusLoading || idVerified ? undefined : "button"}
+              tabIndex={identityStatusLoading || idVerified ? -1 : 0}
+              aria-disabled={identityStatusLoading || idVerified ? true : undefined}
               className={cn(
                 "relative rounded-lg border-2 border-primary/25 bg-primary/5 dark:bg-primary/10 p-4 sm:p-4 shadow-sm ring-1 ring-primary/10 transition-colors focus:outline-none",
-                idVerified
+                identityStatusLoading || idVerified
                   ? "cursor-default"
                   : "cursor-pointer hover:bg-primary/10 focus:ring-2 focus:ring-primary/30"
               )}
-              onClick={idVerified ? undefined : () => setIdVerificationOpen(true)}
-              onKeyDown={idVerified ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIdVerificationOpen(true); } }}
+              onClick={identityStatusLoading || idVerified ? undefined : () => setIdVerificationOpen(true)}
+              onKeyDown={identityStatusLoading || idVerified ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIdVerificationOpen(true); } }}
             >
               <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-primary/50" aria-hidden />
               <div className="flex flex-wrap items-center gap-2 gap-y-1 pl-1">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-sm font-semibold text-foreground">ID verification</span>
-                {idVerified ? (
+                {identityStatusLoading ? (
+                  <Badge variant="secondary" className="text-xs gap-1"><Loader2 className="h-3 w-3 animate-spin" />Loading</Badge>
+                ) : idVerified ? (
                   <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0 text-xs">Verified</Badge>
                 ) : idVerificationPendingReview ? (
                   <Badge className="bg-amber-600/10 text-amber-700 dark:text-amber-400 border-0 text-xs">Under review</Badge>
                 ) : (
                   <Badge variant="secondary" className="text-xs">Unverified</Badge>
                 )}
-                {!idVerified && <ChevronRight className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />}
+                {!identityStatusLoading && !idVerified && <ChevronRight className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />}
               </div>
-              {idVerified && (
+              {!identityStatusLoading && idVerified && (
                 <p className="mt-2 text-xs text-muted-foreground pl-1">
                   Your identity has been verified.
                 </p>
               )}
-              {idVerificationPendingReview && (
+              {!identityStatusLoading && idVerificationPendingReview && (
                 <p className="mt-2 text-xs text-muted-foreground pl-1">
                   Your submission is being reviewed. We&apos;ll update your status soon.
                 </p>
               )}
-              {!idVerified && !idVerificationPendingReview && (
+              {!identityStatusLoading && !idVerified && !idVerificationPendingReview && (
                 <>
                   <p className="mt-2 text-xs text-muted-foreground pl-1">
                     Verify your identity with a government-issued ID to access full features.

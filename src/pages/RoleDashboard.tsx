@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wrench, Briefcase, Plus, ArrowRight, User, Link2, Copy } from "lucide-react";
+import { Wrench, Briefcase, Plus, ArrowRight, User, Link2, Copy, UserPlus, FileText, Search, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
@@ -22,6 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FirstProfileDialog } from "@/components/FirstProfileDialog";
 
 interface RoleStats {
@@ -29,6 +31,9 @@ interface RoleStats {
     leadsCount: number;
     profilesCount: number;
     activeLeadsCount: number;
+    bidsCount: number;
+    awardedGigsCount: number;
+    activeContractsCount: number;
     primaryProfileId?: string | null;
     primaryProfileHandle?: string | null;
   };
@@ -36,9 +41,23 @@ interface RoleStats {
     gigsCount: number;
     activeBidsCount: number;
     awardedGigsCount: number;
+    activeContractsCount: number;
     hasGiggerProfile: boolean;
   };
 }
+
+type PreviewSection =
+  | "digger-leads"
+  | "digger-bids"
+  | "digger-awarded-gigs"
+  | "digger-contracts"
+  | "digger-browse"
+  | "digger-profile"
+  | "gigger-gigs"
+  | "gigger-awarded-gigs"
+  | "gigger-contracts"
+  | "gigger-post"
+  | "gigger-profile";
 
 export default function RoleDashboard() {
   const { user, userRoles, activeRole, switchRole, loading: authLoading, refreshRoles } = useAuth();
@@ -46,6 +65,7 @@ export default function RoleDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
+  const [statsLoading, setStatsLoading] = useState(true);
   const [diggerProfileForCompletion, setDiggerProfileForCompletion] = useState<Record<string, unknown> | null>(null);
   const [diggerPortfolioCount, setDiggerPortfolioCount] = useState(0);
   const [diggerExperienceCount, setDiggerExperienceCount] = useState(0);
@@ -55,18 +75,30 @@ export default function RoleDashboard() {
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
   const [referralsList, setReferralsList] = useState<{ id: string; status: string; referred_gig_id: string | null; referred_email: string | null; created_at: string }[]>([]);
+  const [selectedPreview, setSelectedPreview] = useState<PreviewSection | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewLeads, setPreviewLeads] = useState<any[]>([]);
+  const [previewBids, setPreviewBids] = useState<any[]>([]);
+  const [previewContracts, setPreviewContracts] = useState<any[]>([]);
+  const [previewGigs, setPreviewGigs] = useState<any[]>([]);
+  const [previewAwardedGigs, setPreviewAwardedGigs] = useState<any[]>([]);
+  const [previewBrowseGigs, setPreviewBrowseGigs] = useState<any[]>([]);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
   // Memoize fetchStats to prevent recreation on every render
   const fetchStats = useCallback(async (forceRefresh = false) => {
-    if (!user || userRoles.length === 0) return;
+    if (!user || userRoles.length === 0) {
+      setStatsLoading(false);
+      return;
+    }
     
     if (hasFetchedStatsRef.current && !forceRefresh) return;
     
     hasFetchedStatsRef.current = true;
     
     try {
+      setStatsLoading(true);
       // Fetch Digger stats (single-profile model)
       if (userRoles.includes('digger')) {
         let profilesCount = 0;
@@ -120,29 +152,26 @@ export default function RoleDashboard() {
 
         let leadsCount = 0;
         let activeLeadsCount = 0;
-        
+        let bidsCount = 0;
+        let awardedGigsCount = 0;
+        let activeContractsCount = 0;
+
         if (primaryDiggerProfileId) {
           try {
-            const { count: leadsCountResult, error: leadsError } = await supabase
-              .from('lead_purchases')
-              .select('id', { count: 'exact', head: true })
-              .eq('digger_id', primaryDiggerProfileId);
-
-            if (!leadsError) {
-              leadsCount = leadsCountResult || 0;
-            }
-
-            const { count: activeLeadsCountResult, error: activeLeadsError } = await supabase
-              .from('lead_purchases')
-              .select('id', { count: 'exact', head: true })
-              .eq('digger_id', primaryDiggerProfileId)
-              .eq('status', 'active');
-
-            if (!activeLeadsError) {
-              activeLeadsCount = activeLeadsCountResult || 0;
-            }
+            const [leadsRes, activeLeadsRes, bidsRes, awardedRes, contractsRes] = await Promise.all([
+              supabase.from('lead_purchases').select('id', { count: 'exact', head: true }).eq('digger_id', primaryDiggerProfileId),
+              supabase.from('lead_purchases').select('id', { count: 'exact', head: true }).eq('digger_id', primaryDiggerProfileId).eq('status', 'active'),
+              supabase.from('bids').select('id', { count: 'exact', head: true }).eq('digger_id', primaryDiggerProfileId),
+              supabase.from('gigs').select('id', { count: 'exact', head: true }).eq('awarded_digger_id', primaryDiggerProfileId).eq('status', 'awarded'),
+              supabase.from('escrow_contracts').select('id', { count: 'exact', head: true }).eq('digger_id', primaryDiggerProfileId).not('status', 'eq', 'completed'),
+            ]);
+            if (!leadsRes.error) leadsCount = leadsRes.count ?? 0;
+            if (!activeLeadsRes.error) activeLeadsCount = activeLeadsRes.count ?? 0;
+            if (!bidsRes.error) bidsCount = bidsRes.count ?? 0;
+            if (!awardedRes.error) awardedGigsCount = awardedRes.count ?? 0;
+            if (!contractsRes.error) activeContractsCount = contractsRes.count ?? 0;
           } catch (err) {
-            console.warn('Error fetching lead counts:', err);
+            console.warn('Error fetching digger counts:', err);
           }
         }
 
@@ -152,6 +181,9 @@ export default function RoleDashboard() {
             profilesCount,
             leadsCount,
             activeLeadsCount,
+            bidsCount,
+            awardedGigsCount,
+            activeContractsCount,
             primaryProfileId: primaryDiggerProfileId,
             primaryProfileHandle: primaryDiggerProfileHandle,
           }
@@ -160,10 +192,12 @@ export default function RoleDashboard() {
 
       // Fetch Gigger stats (gigs count + whether profile is complete for create-first-profile)
       if (userRoles.includes('gigger')) {
-        const [gigsRes, gpRes, profileRes] = await Promise.all([
+        const [gigsRes, gpRes, profileRes, awardedRes, contractsRes] = await Promise.all([
           supabase.from('gigs').select('id', { count: 'exact', head: true }).eq('consumer_id', user.id),
           (supabase as any).from('gigger_profiles').select('user_id').eq('user_id', user.id).limit(1).maybeSingle(),
           (supabase.from('profiles') as any).select('profile_title').eq('id', user.id).single(),
+          supabase.from('gigs').select('id', { count: 'exact', head: true }).eq('consumer_id', user.id).eq('status', 'awarded').not('awarded_digger_id', 'is', null),
+          supabase.from('escrow_contracts').select('id', { count: 'exact', head: true }).eq('consumer_id', user.id).not('status', 'eq', 'completed'),
         ]);
         const giggerRow = (gpRes.data as { user_id?: string } | null);
         const profileTitle = (profileRes.data as { profile_title?: string } | null)?.profile_title?.trim();
@@ -174,7 +208,8 @@ export default function RoleDashboard() {
           gigger: {
             gigsCount: gigsRes.count || 0,
             activeBidsCount: 0,
-            awardedGigsCount: 0,
+            awardedGigsCount: awardedRes.count ?? 0,
+            activeContractsCount: contractsRes.count ?? 0,
             hasGiggerProfile,
           }
         }));
@@ -182,6 +217,8 @@ export default function RoleDashboard() {
     } catch (err) {
       console.error('Error fetching stats:', err);
       hasFetchedStatsRef.current = false;
+    } finally {
+      setStatsLoading(false);
     }
   }, [user?.id, userRoles]);
 
@@ -287,8 +324,125 @@ export default function RoleDashboard() {
       }
     } else {
       hasFetchedStatsRef.current = false;
+      setStatsLoading(false);
     }
   }, [authLoading, user?.id, userRoles.length, fetchStats]);
+
+  // Load preview data when a section is selected
+  useEffect(() => {
+    if (!user || !selectedPreview) {
+      setPreviewLeads([]);
+      setPreviewBids([]);
+      setPreviewContracts([]);
+      setPreviewGigs([]);
+      setPreviewAwardedGigs([]);
+      setPreviewBrowseGigs([]);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    // Clear prior section data immediately to avoid stale content flashes.
+    setPreviewLeads([]);
+    setPreviewBids([]);
+    setPreviewContracts([]);
+    setPreviewGigs([]);
+    setPreviewAwardedGigs([]);
+    setPreviewBrowseGigs([]);
+    (async () => {
+      try {
+        if (selectedPreview === "digger-leads" && stats.digger?.primaryProfileId) {
+          const { data } = await supabase
+            .from("lead_purchases")
+            .select("id, status, purchased_at, gigs(id, title, status)")
+            .eq("digger_id", stats.digger.primaryProfileId)
+            .order("purchased_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewLeads(data ?? []);
+        } else if (selectedPreview === "digger-bids" && stats.digger?.primaryProfileId) {
+          const { data } = await supabase
+            .from("bids")
+            .select("id, gig_id, amount, status, created_at, gigs!gig_id(id, title, status)")
+            .eq("digger_id", stats.digger.primaryProfileId)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) {
+            const normalized = (data ?? []).map((b: any) => ({
+              ...b,
+              gigs: b.gigs ?? (b.gig_id ? { id: b.gig_id, title: "Project", status: "open" } : null),
+            }));
+            setPreviewBids(normalized);
+          }
+        } else if (selectedPreview === "digger-contracts" && stats.digger?.primaryProfileId) {
+          const { data } = await supabase
+            .from("escrow_contracts")
+            .select("id, status, total_amount, created_at, gigs(id, title)")
+            .eq("digger_id", stats.digger.primaryProfileId)
+            .not("status", "eq", "completed")
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewContracts(data ?? []);
+        } else if (selectedPreview === "digger-awarded-gigs" && stats.digger?.primaryProfileId) {
+          const { data } = await supabase
+            .from("gigs")
+            .select("id, title, status, budget_min, budget_max, created_at")
+            .eq("awarded_digger_id", stats.digger.primaryProfileId)
+            .eq("status", "awarded")
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewAwardedGigs(data ?? []);
+        } else if (selectedPreview === "digger-browse") {
+          const { data } = await supabase
+            .from("gigs")
+            .select("id, title, status, budget_min, budget_max, created_at")
+            .eq("status", "open")
+            .order("created_at", { ascending: false })
+            .limit(30);
+          if (!cancelled) setPreviewBrowseGigs(data ?? []);
+        } else if (selectedPreview === "gigger-gigs") {
+          const { data } = await supabase
+            .from("gigs")
+            .select("id, title, status, budget_min, budget_max, created_at")
+            .eq("consumer_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewGigs(data ?? []);
+        } else if (selectedPreview === "gigger-contracts") {
+          const { data } = await supabase
+            .from("escrow_contracts")
+            .select("id, status, total_amount, created_at, gigs(id, title)")
+            .eq("consumer_id", user.id)
+            .not("status", "eq", "completed")
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewContracts(data ?? []);
+        } else if (selectedPreview === "gigger-awarded-gigs") {
+          const { data } = await supabase
+            .from("gigs")
+            .select("id, title, status, budget_min, budget_max, created_at")
+            .eq("consumer_id", user.id)
+            .eq("status", "awarded")
+            .not("awarded_digger_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (!cancelled) setPreviewAwardedGigs(data ?? []);
+        } else {
+          if (!cancelled) {
+            setPreviewLeads([]);
+            setPreviewBids([]);
+            setPreviewContracts([]);
+            setPreviewGigs([]);
+            setPreviewAwardedGigs([]);
+            setPreviewBrowseGigs([]);
+          }
+        }
+      } catch (err) {
+        console.warn("Preview load error:", err);
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, selectedPreview, stats.digger?.primaryProfileId]);
 
   const handleSwitchRole = async (role: 'digger' | 'gigger') => {
     await switchRole(role);
@@ -296,6 +450,13 @@ export default function RoleDashboard() {
       title: "Role switched",
       description: `You are now in ${role === 'digger' ? 'Digger' : 'Gigger'} mode`,
     });
+  };
+
+  const openPreviewForRole = async (role: "digger" | "gigger", section: PreviewSection) => {
+    if (activeRole !== role) {
+      await handleSwitchRole(role);
+    }
+    setSelectedPreview(section);
   };
 
   const handleRegisterDigger = async () => {
@@ -465,10 +626,11 @@ export default function RoleDashboard() {
   
   const hasRoles = userRoles.length > 0;
   const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
-  const hasDiggerProfile = diggerProfilesCount > 0;
-  const hasGiggerProfile = stats.gigger?.hasGiggerProfile ?? false;
+  const hasDiggerProfile = statsLoading ? true : diggerProfilesCount > 0;
+  const hasGiggerProfile = statsLoading ? true : (stats.gigger?.hasGiggerProfile ?? false);
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
   const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
+  const formatCount = (value: number | undefined) => (statsLoading ? "…" : String(value ?? 0));
 
   // Get or create referral link for diggers
   useEffect(() => {
@@ -509,6 +671,14 @@ export default function RoleDashboard() {
       return {
         title: "Welcome to Digs & Gigs",
         description: "Choose how you want to use the platform: join as a Digger to find work or as a Gigger to hire.",
+        ctaLabel: null as string | null,
+        onClick: undefined,
+      };
+    }
+    if (statsLoading) {
+      return {
+        title: "Loading your latest dashboard status…",
+        description: "Fetching your current leads, gigs, contracts, and profile status.",
         ctaLabel: null as string | null,
         onClick: undefined,
       };
@@ -572,7 +742,7 @@ export default function RoleDashboard() {
 
   return (
     <PageLayout maxWidth="wide">
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6 sm:space-y-8 min-w-0 overflow-x-hidden">
         <EmailVerificationBanner />
         
         <header className="animate-fade-in-up">
@@ -594,9 +764,57 @@ export default function RoleDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+        {statsLoading && hasRoles ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 min-w-0">
+            <Card className="border shadow-none animate-fade-in-up min-w-0 overflow-hidden">
+              <CardHeader className="px-4 py-3 sm:p-5 pb-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                  <Skeleton className="h-8 w-14" />
+                </div>
+                <Skeleton className="h-4 w-44 mt-2" />
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-2 flex-1" />
+                  <Skeleton className="h-4 w-8" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full col-span-2" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border shadow-none animate-fade-in-up min-w-0 overflow-hidden">
+              <CardHeader className="px-4 py-3 sm:p-5 pb-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                  <Skeleton className="h-8 w-14" />
+                </div>
+                <Skeleton className="h-4 w-52 mt-2" />
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
+                <div className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full col-span-2" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 min-w-0">
           {/* Digger */}
-          <Card className="border shadow-none animate-fade-in-up">
+          <Card className="border shadow-none animate-fade-in-up min-w-0 overflow-hidden">
             <CardHeader className="px-4 py-3 sm:p-5 pb-2">
               <div className="flex items-center justify-between gap-2 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
@@ -613,8 +831,8 @@ export default function RoleDashboard() {
                 )}
               </div>
               {userRoles.includes('digger') && (
-                <CardDescription className="text-xs mt-0.5">
-                  Leads {stats.digger?.leadsCount ?? 0} · Active {stats.digger?.activeLeadsCount ?? 0}
+                <CardDescription className="text-xs mt-0.5 break-words min-w-0">
+                  Leads {formatCount(stats.digger?.leadsCount)} · Active {formatCount(stats.digger?.activeLeadsCount)}
                 </CardDescription>
               )}
             </CardHeader>
@@ -629,16 +847,16 @@ export default function RoleDashboard() {
                     });
                     const { score } = profileCompletion;
                     return (
-                      <div className="flex items-center gap-2 text-xs min-w-0">
-                        <Progress value={score} className="h-1.5 flex-1 min-w-0" />
+                      <div className="flex flex-wrap items-center gap-2 text-xs min-w-0">
+                        <Progress value={score} className="h-1.5 flex-1 min-w-0 basis-20" />
                         <span className="text-muted-foreground shrink-0 tabular-nums">{score}%</span>
                         <Button
                           size="sm"
                           variant={score >= 100 ? "ghost" : "default"}
                           className={
                             score >= 100
-                              ? "h-8 sm:h-7 text-xs shrink-0 -mr-1 min-h-9 sm:min-h-0"
-                              : "h-8 sm:h-7 text-xs shrink-0 -mr-1 min-h-9 sm:min-h-0 bg-orange-500 hover:bg-orange-600 text-white border-0"
+                              ? "h-8 sm:h-7 text-xs shrink-0 min-h-9 sm:min-h-0"
+                              : "h-8 sm:h-7 text-xs shrink-0 min-h-9 sm:min-h-0 bg-orange-500 hover:bg-orange-600 text-white border-0"
                           }
                           onClick={() => {
                             handleSwitchRole('digger');
@@ -649,55 +867,75 @@ export default function RoleDashboard() {
                             navigate(path ? `${path}?manage=1` : '/my-profiles');
                           }}
                         >
-                          {score >= 100 ? "View profile" : "Complete"}
+                          {score >= 100 ? "View profile" : "Complete profile"}
                         </Button>
                       </div>
                     );
                   })()}
-                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 min-w-0">
                     <Button
                       size="sm"
-                      variant="default"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => { handleSwitchRole('digger'); navigate('/my-leads'); }}
+                      variant="outline"
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("digger", "digger-leads"); }}
                     >
-                      My Leads
-                      <ArrowRight className="h-3.5 w-3.5 ml-1 shrink-0" />
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">My Leads</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.leadsCount)})</span>
+                      </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => { handleSwitchRole('digger'); navigate('/my-bids'); }}
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("digger", "digger-bids"); }}
                     >
-                      My Bids
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">My Bids</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.bidsCount)})</span>
+                      </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => {
-                        handleSwitchRole('digger');
-                        if (!hasDiggerProfile) setFirstProfileDialogRole("digger");
-                        else {
-                          const path = getCanonicalDiggerProfilePath({
-                            handle: stats.digger?.primaryProfileHandle ?? null,
-                            diggerId: stats.digger?.primaryProfileId ?? null,
-                          });
-                          navigate(path ?? '/my-profiles');
-                        }
-                      }}
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("digger", "digger-awarded-gigs"); }}
                     >
-                      {hasDiggerProfile ? "Profile" : "Set up profile"}
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">Awarded gigs</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.awardedGigsCount)})</span>
+                      </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => { handleSwitchRole('digger'); navigate('/browse-gigs'); }}
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("digger", "digger-contracts"); }}
                     >
-                      Browse
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">Active contracts</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.activeContractsCount)})</span>
+                      </span>
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
+                      onClick={async () => { await openPreviewForRole("digger", "digger-browse"); }}
+                    >
+                      Browse gigs
+                    </Button>
+                    {!hasDiggerProfile && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
+                        onClick={async () => { await openPreviewForRole("digger", "digger-profile"); }}
+                      >
+                        <User className="h-3.5 w-3.5 mr-1 shrink-0" />
+                        <span className="truncate">Set up profile</span>
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : (
@@ -714,7 +952,7 @@ export default function RoleDashboard() {
           </Card>
 
           {/* Gigger */}
-          <Card className="border shadow-none animate-fade-in-up">
+          <Card className="border shadow-none animate-fade-in-up min-w-0 overflow-hidden">
             <CardHeader className="px-4 py-3 sm:p-5 pb-2">
               <div className="flex items-center justify-between gap-2 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
@@ -731,46 +969,70 @@ export default function RoleDashboard() {
                 )}
               </div>
               {userRoles.includes('gigger') && (
-                <CardDescription className="text-xs mt-0.5">
-                  Gigs {stats.gigger?.gigsCount ?? 0} · Awarded {stats.gigger?.awardedGigsCount ?? 0}
+                <CardDescription className="text-xs mt-0.5 break-words min-w-0">
+                  Gigs {formatCount(stats.gigger?.gigsCount)} · Awarded {formatCount(stats.gigger?.awardedGigsCount)} · Active contracts {formatCount(stats.gigger?.activeContractsCount)}
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
               {userRoles.includes('gigger') ? (
                 <>
-                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 min-w-0">
                     <Button
                       size="sm"
-                      variant="default"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => { handleSwitchRole('gigger'); navigate('/my-gigs'); }}
+                      variant="outline"
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("gigger", "gigger-gigs"); }}
                     >
-                      My Gigs
-                      <ArrowRight className="h-3.5 w-3.5 ml-1 shrink-0" />
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">My Gigs</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.gigsCount)})</span>
+                      </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 sm:min-h-0 sm:flex-1 sm:min-w-0"
-                      onClick={() => { handleSwitchRole('gigger'); navigate('/post-gig'); }}
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("gigger", "gigger-post"); }}
                     >
-                      <Plus className="h-3.5 w-3.5 mr-1 shrink-0" />
-                      Post gig
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">Post gig</span>
+                      </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 sm:min-h-0 col-span-2 sm:col-span-1 sm:flex-1 sm:min-w-0"
-                      onClick={() => {
-                        handleSwitchRole('gigger');
-                        if (!hasGiggerProfile) setFirstProfileDialogRole("gigger");
-                        else if (user?.id) navigate(getCanonicalGiggerProfilePath(user.id));
-                      }}
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("gigger", "gigger-awarded-gigs"); }}
                     >
-                      <User className="h-3.5 w-3.5 mr-1 shrink-0" />
-                      {hasGiggerProfile ? 'Profile' : 'Set up profile'}
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">Awarded gigs</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.awardedGigsCount)})</span>
+                      </span>
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      onClick={async () => { await openPreviewForRole("gigger", "gigger-contracts"); }}
+                    >
+                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                        <span className="truncate">Active contracts</span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.activeContractsCount)})</span>
+                      </span>
+                    </Button>
+                    {!hasGiggerProfile && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
+                        onClick={async () => { await openPreviewForRole("gigger", "gigger-profile"); }}
+                      >
+                        <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                          <span className="truncate">Set up profile</span>
+                        </span>
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : (
@@ -786,10 +1048,11 @@ export default function RoleDashboard() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Referral link for Diggers - show only when Digger mode is active */}
         {activeRole === "digger" && userRoles.includes("digger") && hasDiggerProfile && referralLink && (
-          <Card className="border shadow-none animate-fade-in-up">
+          <Card className="border shadow-none animate-fade-in-up min-w-0 overflow-hidden">
             <CardHeader className="px-4 py-3 sm:p-5 pb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Link2 className="h-5 w-5 text-muted-foreground shrink-0" />
@@ -853,7 +1116,291 @@ export default function RoleDashboard() {
           </Card>
         )}
 
-      </div>
+        </div>
+
+      {/* Right-side preview sheet (Lead Cart style) */}
+      <Sheet open={!!selectedPreview} onOpenChange={(open) => !open && setSelectedPreview(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+          <SheetHeader className="px-4 pt-4 pr-12 pb-2 text-left border-b">
+            <SheetTitle className="flex items-center gap-2">
+              {selectedPreview === "digger-leads" && <UserPlus className="h-5 w-5" />}
+              {selectedPreview === "digger-bids" && <FileText className="h-5 w-5" />}
+              {(selectedPreview === "digger-contracts" || selectedPreview === "gigger-contracts") && <FileText className="h-5 w-5" />}
+              {selectedPreview === "digger-browse" && <Search className="h-5 w-5" />}
+              {selectedPreview === "gigger-gigs" && <Briefcase className="h-5 w-5" />}
+              {(selectedPreview === "digger-awarded-gigs" || selectedPreview === "gigger-awarded-gigs") && <ShoppingBag className="h-5 w-5" />}
+              {(selectedPreview === "gigger-post" || selectedPreview === "gigger-profile" || selectedPreview === "digger-profile") && <User className="h-5 w-5" />}
+              {selectedPreview === "digger-leads" && "My Leads"}
+              {selectedPreview === "digger-bids" && "My Bids"}
+              {(selectedPreview === "digger-awarded-gigs" || selectedPreview === "gigger-awarded-gigs") && "Awarded gigs"}
+              {(selectedPreview === "digger-contracts" || selectedPreview === "gigger-contracts") && "Active contracts"}
+              {selectedPreview === "digger-browse" && "Browse gigs"}
+              {selectedPreview === "gigger-gigs" && "My Gigs"}
+              {selectedPreview === "digger-profile" && "Set up profile"}
+              {selectedPreview === "gigger-post" && "Post a gig"}
+              {selectedPreview === "gigger-profile" && "Set up profile"}
+            </SheetTitle>
+            <SheetDescription>
+              {selectedPreview === "digger-leads" && "Review your leads and contact info."}
+              {selectedPreview === "digger-bids" && "Your bids on gigs. View status and manage."}
+              {(selectedPreview === "digger-awarded-gigs" || selectedPreview === "gigger-awarded-gigs") && "Gigs that have already been awarded."}
+              {(selectedPreview === "digger-contracts" || selectedPreview === "gigger-contracts") && "Your active payment contracts and milestones."}
+              {selectedPreview === "digger-browse" && "Open gigs you can bid on."}
+              {selectedPreview === "gigger-gigs" && "Your posted gigs and their status."}
+              {(selectedPreview === "gigger-post" || selectedPreview === "gigger-profile" || selectedPreview === "digger-profile") && "Complete this step to get started."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {(selectedPreview === "gigger-post" || selectedPreview === "gigger-profile" || selectedPreview === "digger-profile") && (
+              <p className="text-sm text-muted-foreground mb-3">
+                {selectedPreview === "gigger-post" && "Create a new project and receive bids from Diggers."}
+                {selectedPreview === "gigger-profile" && "Add a profile title and location so professionals can find you."}
+                {selectedPreview === "digger-profile" && "Complete your Digger profile so clients can find and hire you."}
+              </p>
+            )}
+            {previewLoading && (
+              <div className="space-y-3 py-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-9 w-full mt-2" />
+              </div>
+            )}
+            {!previewLoading && selectedPreview === "digger-leads" && (
+              <>
+                {previewLeads.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <UserPlus className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No leads yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Browse gigs and unlock leads to contact clients.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewLeads.map((lead: any) => (
+                      <li
+                        key={lead.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          const gigId = lead?.gigs?.id;
+                          if (!gigId) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${gigId}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{lead.gigs?.title ?? "Gig"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {lead.purchased_at ? new Date(lead.purchased_at).toLocaleDateString() : ""} · {String(lead.status ?? "").replace(/_/g, " ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button size="sm" className="w-full mt-4" onClick={() => { handleSwitchRole("digger"); setSelectedPreview(null); navigate("/my-leads"); }}>
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && selectedPreview === "digger-bids" && (
+              <>
+                {previewBids.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No bids yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Browse gigs and submit bids to get hired.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewBids.map((bid: any) => (
+                      <li
+                        key={bid.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          const gigId = bid?.gigs?.id;
+                          if (!gigId) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${gigId}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{bid.gigs?.title ?? "Gig"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ${Number(bid.amount ?? 0).toLocaleString()} · {String(bid.status ?? "").replace(/_/g, " ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button size="sm" className="w-full mt-4" onClick={() => { handleSwitchRole("digger"); setSelectedPreview(null); navigate("/my-bids"); }}>
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && (selectedPreview === "digger-contracts" || selectedPreview === "gigger-contracts") && (
+              <>
+                {previewContracts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No active contracts</p>
+                    <p className="text-sm text-muted-foreground mt-1">Contracts appear here when you start a paid project.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewContracts.map((c: any) => (
+                      <li
+                        key={c.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          const gigId = c?.gigs?.id;
+                          if (!gigId) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${gigId}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{c.gigs?.title ?? "Contract"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ${Number(c.total_amount ?? 0).toLocaleString()} · {String(c.status ?? "").replace(/_/g, " ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button size="sm" className="w-full mt-4" onClick={() => { handleSwitchRole(selectedPreview === "digger-contracts" ? "digger" : "gigger"); setSelectedPreview(null); navigate("/escrow-dashboard"); }}>
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && selectedPreview === "digger-browse" && (
+              <>
+                {previewBrowseGigs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Search className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No open gigs right now</p>
+                    <p className="text-sm text-muted-foreground mt-1">Check back later for new projects.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewBrowseGigs.map((g: any) => (
+                      <li
+                        key={g.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          if (!g?.id) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${g.id}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{g.title ?? "Gig"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {g.budget_min != null || g.budget_max != null
+                            ? `$${Number(g.budget_min ?? 0).toLocaleString()}–${Number(g.budget_max ?? 0).toLocaleString()}`
+                            : "Open"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button size="sm" className="w-full mt-4" onClick={() => { handleSwitchRole("digger"); setSelectedPreview(null); navigate("/browse-gigs"); }}>
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && selectedPreview === "gigger-gigs" && (
+              <>
+                {previewGigs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No gigs yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Post your first gig to receive bids from Diggers.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewGigs.map((g: any) => (
+                      <li
+                        key={g.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          if (!g?.id) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${g.id}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{g.title ?? "Gig"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {String(g.status ?? "").replace(/_/g, " ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button size="sm" className="w-full mt-4" onClick={() => { handleSwitchRole("gigger"); setSelectedPreview(null); navigate("/my-gigs"); }}>
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && (selectedPreview === "digger-awarded-gigs" || selectedPreview === "gigger-awarded-gigs") && (
+              <>
+                {previewAwardedGigs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="font-medium text-foreground">No awarded gigs yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Awarded gigs will appear here once a freelancer is selected.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {previewAwardedGigs.map((g: any) => (
+                      <li
+                        key={g.id}
+                        className="flex flex-col gap-0.5 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/30 rounded-sm px-1"
+                        onClick={() => {
+                          if (!g?.id) return;
+                          setSelectedPreview(null);
+                          navigate(`/gig/${g.id}`);
+                        }}
+                      >
+                        <span className="font-medium truncate">{g.title ?? "Gig"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {String(g.status ?? "").replace(/_/g, " ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button
+                  size="sm"
+                  className="w-full mt-4"
+                  onClick={() => {
+                    if (selectedPreview === "digger-awarded-gigs") {
+                      handleSwitchRole("digger");
+                      setSelectedPreview(null);
+                      navigate("/my-bids");
+                    } else {
+                      handleSwitchRole("gigger");
+                      setSelectedPreview(null);
+                      navigate("/my-gigs");
+                    }
+                  }}
+                >
+                  View all
+                </Button>
+              </>
+            )}
+            {!previewLoading && (selectedPreview === "gigger-post" || selectedPreview === "gigger-profile" || selectedPreview === "digger-profile") && (
+              <Button
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => {
+                  if (selectedPreview === "gigger-post") { setSelectedPreview(null); navigate("/post-gig"); }
+                  else if (selectedPreview === "gigger-profile") { setFirstProfileDialogRole("gigger"); setSelectedPreview(null); }
+                  else { setFirstProfileDialogRole("digger"); setSelectedPreview(null); }
+                }}
+              >
+                {selectedPreview === "gigger-post" ? "Post a gig" : "Set up profile"}
+              </Button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {firstProfileDialogRole && (
         <FirstProfileDialog
