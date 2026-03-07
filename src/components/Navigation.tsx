@@ -191,7 +191,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-muted";
+  const navLinkClass = cn(
+    "font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-md hover:bg-muted",
+    scrolled ? "text-xs px-2 py-1.5" : "text-sm px-3 py-2"
+  );
   const navLinkActiveClass = "text-foreground bg-muted";
 
   const NavDropdown = ({
@@ -263,7 +266,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 w-full min-w-0 max-w-full box-border">
-          <div className="flex h-16 items-center justify-between gap-4 min-w-0">
+          <div
+            className={cn(
+              "flex items-center justify-between gap-4 min-w-0 transition-all duration-300",
+              scrolled ? "h-12" : "h-16"
+            )}
+          >
             {/* Left: Logo + menu group (Home, Hire, Find work, Pricing) — right next to logo */}
             <div className="flex items-center min-w-0 gap-2 lg:gap-3">
               <div 
@@ -273,11 +281,19 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <img 
                   src={logo} 
                   alt="Digs & Gigs" 
-                  className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                  className={cn(
+                    "w-auto object-contain transition-all duration-300 group-hover:scale-105",
+                    scrolled ? "h-8" : "h-10"
+                  )}
                 />
               </div>
               {/* Nav links — immediately after logo (desktop only) */}
-              <nav className="hidden md:flex h-full items-center gap-0.5 lg:gap-1">
+              <nav
+                className={cn(
+                  "hidden md:flex h-full items-center transition-all duration-300",
+                  scrolled ? "gap-0" : "gap-0.5 lg:gap-1"
+                )}
+              >
               <button
                 onClick={() => navigate("/")}
                 className={cn(navLinkClass, isActive("/") && navLinkActiveClass)}
@@ -396,7 +412,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             </div>
 
             {/* Right: Dark mode, Sign In/Sign up or Messages, Notifications, Folder, Avatar, Cart */}
-            <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-auto">
+            <div
+              className={cn(
+                "hidden md:flex items-center flex-shrink-0 ml-auto transition-all duration-300",
+                scrolled ? "gap-1 scale-[0.95] origin-right" : "gap-2 scale-100"
+              )}
+            >
               {/* When not logged in: Dark Mode in bar (no avatar dropdown) */}
               {!user && (
                 <>
@@ -761,6 +782,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <Receipt className="h-4 w-4 mr-2" />
                         Transaction
                       </DropdownMenuItem>
+                      {isDiggerMode && (
+                        <DropdownMenuItem onClick={() => navigate('/my-bids')} className="cursor-pointer">
+                          <Briefcase className="h-4 w-4 mr-2" />
+                          My bids
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       {/* Dark Mode - prevent close on toggle */}
                       <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent focus:outline-none">
@@ -851,7 +878,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             </div>
 
             {/* Mobile Navigation */}
-            <div className="flex md:hidden items-center gap-1">
+            <div
+              className={cn(
+                "flex md:hidden items-center transition-all duration-300",
+                scrolled ? "gap-0.5 scale-[0.95] origin-right" : "gap-1 scale-100"
+              )}
+            >
               {/* Post a gig - Mobile (Gigger mode only) */}
               {user && isGiggerMode && userRoles.includes("gigger") && (
                 <Button
