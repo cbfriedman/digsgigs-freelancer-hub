@@ -109,7 +109,7 @@ export const useStripeConnect = () => {
       const raw = error?.message || "Failed to create Stripe Connect account";
       const isConnectNotEnabled =
         typeof raw === "string" &&
-        (raw.includes("signed up for Connect") || raw.includes("stripe.com/docs/connect"));
+        raw.includes("signed up for Connect");
       const description = isConnectNotEnabled
         ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard (Connect → Get started). Please try again later or contact support."
         : raw;

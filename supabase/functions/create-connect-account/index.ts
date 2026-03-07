@@ -68,7 +68,35 @@ serve(async (req) => {
       if (stripeCountry) {
         accountPayload.country = stripeCountry;
       }
-      const account = await stripe.accounts.create(accountPayload);
+      let account: Stripe.Account;
+      try {
+        account = await stripe.accounts.create(accountPayload);
+      } catch (createErr) {
+        const createMessage =
+          createErr && typeof createErr === "object" && "message" in createErr && typeof (createErr as { message: unknown }).message === "string"
+            ? (createErr as { message: string }).message
+            : createErr instanceof Error
+              ? createErr.message
+              : "";
+        const hasCountry = typeof accountPayload.country === "string" && accountPayload.country.length > 0;
+        const isCountryLikelyIssue =
+          hasCountry &&
+          typeof createMessage === "string" &&
+          (
+            createMessage.toLowerCase().includes("country") ||
+            createMessage.toLowerCase().includes("location") ||
+            createMessage.toLowerCase().includes("unsupported")
+          );
+
+        // Some social signups carry country metadata that can conflict with platform Connect setup.
+        // Retry once without forcing country so Stripe can use platform-default onboarding constraints.
+        if (isCountryLikelyIssue) {
+          delete accountPayload.country;
+          account = await stripe.accounts.create(accountPayload);
+        } else {
+          throw createErr;
+        }
+      }
 
       accountId = account.id;
 
@@ -124,7 +152,7 @@ serve(async (req) => {
     // Stripe returns this when the platform account has not enabled Connect in the Dashboard (same mode: test or live).
     const isConnectNotEnabled =
       typeof rawMessage === "string" &&
-      (rawMessage.includes("signed up for Connect") || rawMessage.includes("stripe.com/docs/connect"));
+      rawMessage.includes("signed up for Connect");
     const userMessage = isConnectNotEnabled
       ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard for the current mode: open Connect → Get started (use Test mode in Stripe if the app is in test mode, or Live if in live mode). Then try again or contact support."
       : rawMessage;
