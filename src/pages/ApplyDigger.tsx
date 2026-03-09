@@ -77,8 +77,7 @@ const ApplyDigger = () => {
               Freelancing — without the platform tax
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              As a Digger (freelancer), get leads when Giggers (clients) post gigs. Keep 100% of what you earn.
-              No commissions. No bidding wars. Pay per lead or when awarded.
+              As a Digger (freelancer), you get leads by email when Giggers (clients) post gigs—you don’t search for projects or wait to be contacted. Unlock the leads you want, bid, and get paid when you win. Keep 100% of what you earn. No commissions. Pay per lead or when awarded.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 

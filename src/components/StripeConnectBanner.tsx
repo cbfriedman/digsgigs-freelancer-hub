@@ -19,14 +19,28 @@ export const StripeConnectBanner = () => {
     }
   }, [searchParams, checkConnectStatus]);
 
+  // When loading: only show pending verification (warning) card, never green, so pending users never see a green flash
   if (loading) {
     return (
-      <Card className="mb-6">
-        <CardContent className="py-6 flex items-center justify-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Checking payout account…</span>
-        </CardContent>
-      </Card>
+      <Alert variant="warning" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Payout account pending verification</AlertTitle>
+        <AlertDescription className="mt-2 space-y-2 text-amber-800/90 dark:text-amber-200/90">
+          <p className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            <span>Checking current status…</span>
+          </p>
+          <p><span className="font-medium text-amber-700 dark:text-amber-400">Stripe verification: Pending</span></p>
+          <p>Complete identity and payout details in Stripe (use Reconnect to open the form). Once Stripe finishes verifying, you can receive payments. Click <strong>Confirm payout account</strong> to refresh and check if verification is complete.</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Button variant="outline" size="sm" disabled>Reconnect payout account</Button>
+            <Button size="sm" disabled>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Confirm payout account
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
     );
   }
 

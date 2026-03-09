@@ -5,24 +5,24 @@ const steps = [
   {
     icon: Users,
     step: "01",
-    title: "Client Submits Project",
-    description: "Clients describe their project, budget, and timeline. No approval gate.",
+    title: "Client Posts a Project",
+    description: "Clients (Giggers) describe their project, budget, and timeline. Posting is free. No approval gate.",
     iconBgClass: "bg-primary/10",
     iconTextClass: "text-primary",
   },
   {
     icon: Mail,
-    step: "02", 
-    title: "You Get an Email",
-    description: "Every Digger receives the lead instantly via email with project details and pricing.",
+    step: "02",
+    title: "You Get the Lead by Email",
+    description: "You don’t search for work—we email you matching leads. Every Digger gets the lead instantly with project details and pricing.",
     iconBgClass: "bg-accent/10",
     iconTextClass: "text-accent",
   },
   {
     icon: Zap,
     step: "03",
-    title: "Unlock or Bid",
-    description: "Pay a small fee to unlock contact info instantly, or submit a proposal and only pay when you win the job.",
+    title: "Unlock & Bid — Then Get Paid",
+    description: "Pay a small fee to unlock the client’s contact so you can bid. When you win the job, you get paid; we never take a cut of your earnings.",
     iconBgClass: "bg-primary/10",
     iconTextClass: "text-primary",
   }
@@ -35,11 +35,14 @@ export const HowItWorksSection = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Simple Process
+            For Freelancers (Diggers)
           </span>
           <h2 className="mb-4">How It Works</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Simple, fair, and instant lead delivery
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
+            You don’t look up projects or wait for someone to contact you. We email you leads; you choose which to unlock and bid on. You get paid when you win.
+          </p>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            Clients (Giggers): post a gig for free and receive bids from Diggers—no cost to post or to hire.
           </p>
         </div>
 

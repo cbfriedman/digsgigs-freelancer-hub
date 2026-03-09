@@ -77,11 +77,11 @@ interface NavigationProps {
 
 type UserAppRole = 'digger' | 'gigger' | 'telemarketer' | 'admin';
 
-const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: string }> = {
-  digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' },
-  gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
-  telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary' },
-  admin: { label: 'Admin', emoji: '👑', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' },
+const roleConfig: Record<UserAppRole, { label: string; labelWithRole: string; emoji: string; color: string }> = {
+  digger: { label: 'Digger', labelWithRole: 'Digger (freelancer)', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' },
+  gigger: { label: 'Gigger', labelWithRole: 'Gigger (client)', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
+  telemarketer: { label: 'Telemarketer', labelWithRole: 'Telemarketer', emoji: '📞', color: 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary' },
+  admin: { label: 'Admin', labelWithRole: 'Admin', emoji: '👑', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' },
 };
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
@@ -306,12 +306,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <NavDropdown
                 id="hire"
                 trigger={
-                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")} aria-label="For clients: post gigs, hire freelancers (Diggers)">
                     Hire Diggers
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </button>
                 }
               >
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">For clients</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => navigate("/post-gig?quick=1")} className="cursor-pointer">
                   Post a gig
                 </DropdownMenuItem>
@@ -339,12 +340,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <NavDropdown
                 id="find"
                 trigger={
-                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")} aria-label="For freelancers (Diggers): find gigs, get leads">
                     Find gigs
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </button>
                 }
               >
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">For freelancers (Diggers)</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => navigate("/browse-gigs")} className="cursor-pointer">
                   Browse gigs
                 </DropdownMenuItem>
@@ -359,7 +361,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate("/register?mode=signup&type=digger")} className="cursor-pointer">
-                  Become a digger
+                  Become a Digger
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/digger-guide")} className="cursor-pointer">
                   Digger guide
@@ -381,7 +383,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   About us
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/how-it-works")} className="cursor-pointer">
-                  How it works
+                  How it works (clients & freelancers)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/faq")} className="cursor-pointer">
                   FAQ
@@ -798,10 +800,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       {userRoles.length > 0 && (
                         <>
                           <DropdownMenuLabel className="text-xs text-muted-foreground">
-                            Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.label}
+                            Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.labelWithRole ?? roleConfig[activeRole]?.label}
                           </DropdownMenuLabel>
                           {userRoles.map((role) => {
                             const isActive = activeRole === role;
+                            const cfg = roleConfig[role];
+                            const roleLabel = cfg?.labelWithRole ?? cfg?.label;
                             return (
                               <DropdownMenuItem
                                 key={role}
@@ -821,8 +825,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               >
                                 <div className="flex items-center justify-between w-full">
                                   <div className="flex items-center gap-2">
-                                    <span>{roleConfig[role].emoji}</span>
-                                    <span>{isActive ? `Current: ${roleConfig[role].label}` : `Switch to ${roleConfig[role].label}`}</span>
+                                    <span>{cfg?.emoji}</span>
+                                    <span>{isActive ? `Current: ${roleLabel}` : `Switch to ${roleLabel}`}</span>
                                   </div>
                                   {isActive && (
                                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
@@ -1222,10 +1226,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <span className="font-medium">Home</span>
                       </button>
 
-                      {/* Gigger-related: Hire Diggers (hidden in Digger mode) */}
+                      {/* Gigger-related: For clients (hidden in Digger mode) */}
                       {activeRole !== "digger" && (
                       <>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Hire Diggers</p>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">For clients (Hire Diggers)</p>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
@@ -1267,10 +1271,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </>
                       )}
 
-                      {/* Digger-related: Find gigs (hidden in Gigger mode) */}
+                      {/* Digger-related: For freelancers (hidden in Gigger mode) */}
                       {activeRole !== "gigger" && (
                       <>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Find gigs</p>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">For freelancers (Find gigs)</p>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
@@ -1309,7 +1313,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                         onClick={() => { navigate("/register?mode=signup&type=digger"); setMobileMenuOpen(false); }}
                       >
-                        <span className="font-medium">Become a digger</span>
+                        <span className="font-medium">Become a Digger</span>
                       </button>
                       <button
                         className={cn(
@@ -1341,7 +1345,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                         onClick={() => { navigate("/how-it-works"); setMobileMenuOpen(false); }}
                       >
-                        <span className="font-medium">How it works</span>
+                        <span className="font-medium">How it works (clients & freelancers)</span>
                       </button>
                       <button
                         className={cn(
@@ -1496,11 +1500,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <>
                           <div className="pt-4 pb-2">
                             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.label}
+                              Viewing as: {roleConfig[activeRole]?.emoji} {roleConfig[activeRole]?.labelWithRole ?? roleConfig[activeRole]?.label}
                             </p>
                           </div>
                           {userRoles.map((role) => {
                             const isActive = activeRole === role;
+                            const cfg = roleConfig[role];
+                            const roleLabel = cfg?.labelWithRole ?? cfg?.label;
                             return (
                               <button
                                 key={role}
@@ -1523,8 +1529,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 }}
                               >
                                 <div className="flex items-center gap-3">
-                                  <span>{roleConfig[role].emoji}</span>
-                                  <span className="font-medium">{isActive ? `Current: ${roleConfig[role].label}` : `Switch to ${roleConfig[role].label}`}</span>
+                                  <span>{cfg?.emoji}</span>
+                                  <span className="font-medium">{isActive ? `Current: ${roleLabel}` : `Switch to ${roleLabel}`}</span>
                                 </div>
                                 {isActive && (
                                   <Badge variant="secondary" className="text-[10px] shrink-0">Active</Badge>

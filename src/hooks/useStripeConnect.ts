@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
@@ -12,15 +12,21 @@ export const useStripeConnect = () => {
   const [canReceivePayments, setCanReceivePayments] = useState(false);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const fetchIdRef = useRef(0);
 
   useEffect(() => {
     checkConnectStatus();
   }, [stripeMode]);
 
   const checkConnectStatus = async () => {
+    const thisFetchId = ++fetchIdRef.current;
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data: profile } = await supabase
         .from("digger_profiles")
@@ -28,16 +34,26 @@ export const useStripeConnect = () => {
         .eq("user_id", user.id)
         .single();
 
+      if (thisFetchId !== fetchIdRef.current) return;
+
       if (profile) {
         const p = profile as unknown as Record<string, unknown>;
         const isLive = stripeMode === "live";
         setIsOnboarded(!!(isLive ? (p.stripe_connect_onboarded_live || p.stripe_connect_account_id_live) : (p.stripe_connect_onboarded || p.stripe_connect_account_id)));
         setCanReceivePayments(!!(isLive ? p.stripe_connect_charges_enabled_live : p.stripe_connect_charges_enabled));
+      } else {
+        setIsOnboarded(false);
+        setCanReceivePayments(false);
       }
     } catch (error) {
+      if (thisFetchId !== fetchIdRef.current) return;
       console.error("Error checking Connect status:", error);
+      setIsOnboarded(false);
+      setCanReceivePayments(false);
     } finally {
-      setLoading(false);
+      if (thisFetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 

@@ -24,7 +24,7 @@ export const FinalCTASection = () => {
             Ready to Get Started?
           </h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
-            Join Digs & Gigs and start receiving leads today. 
+            Join as a <span className="font-medium text-foreground">Digger</span> to get project leads by email, unlock the ones you want, and get paid when you win. Or <span className="font-medium text-foreground">post a project</span> as a client. 
             <span className="text-primary font-medium"> Free to join.</span>
           </p>
           

@@ -38,24 +38,26 @@ export const HeroSection = () => {
             </span>
           </h1>
           
-          {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up stagger-1 leading-relaxed">
-            Connect with top software developers, designers, and digital experts. 
-            Post gigs or find leads instantly.
+          {/* Subheadline — clear who does what */}
+          <p className="text-xl md:text-2xl text-muted-foreground mb-4 max-w-3xl mx-auto animate-fade-in-up stagger-1 leading-relaxed">
+            Clients post projects. Freelancers get leads by email and bid. You choose your role.
+          </p>
+          <p className="text-base text-muted-foreground/90 mb-10 max-w-2xl mx-auto animate-fade-in-up stagger-1">
+            <span className="font-medium text-foreground/90">Gigger</span> = client (post gigs). <span className="font-medium text-foreground/90">Digger</span> = freelancer (get leads & bid). Connect with developers, designers, and digital experts.
           </p>
 
           {/* Value Props Grid */}
           <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto text-left animate-fade-in-up stagger-2">
-            {/* For Clients */}
+            {/* For Clients (Giggers) */}
             <div className="group bg-card rounded-xl p-6 border border-accent/20 shadow-card hover:shadow-card-hover hover-lift">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                   <span className="text-xl">📋</span>
                 </div>
-                <h3 className="font-display font-semibold text-lg text-accent">For Clients</h3>
+                <h3 className="font-display font-semibold text-lg text-accent">For Clients (Giggers)</h3>
               </div>
               <ul className="space-y-3">
-                {["Post gigs for free", "Receive bids from Diggers", "No platform fees on gigs"].map((item, i) => (
+                {["Post gigs for free", "Receive bids from Diggers (freelancers)", "No platform fees on gigs"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                     <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                     <span>{item}</span>
@@ -64,16 +66,16 @@ export const HeroSection = () => {
               </ul>
             </div>
             
-            {/* For Freelancers */}
+            {/* For Freelancers (Diggers) */}
             <div className="group bg-card rounded-xl p-6 border border-primary/20 shadow-card hover:shadow-card-hover hover-lift">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   <span className="text-xl">🔧</span>
                 </div>
-                <h3 className="font-display font-semibold text-lg text-primary">For Freelancers</h3>
+                <h3 className="font-display font-semibold text-lg text-primary">For Freelancers (Diggers)</h3>
               </div>
               <ul className="space-y-3">
-                {["Leads emailed instantly", "Pay only for leads you want", "Keep 100% of your earnings"].map((item, i) => (
+                {["Leads emailed to you—no searching", "Pay a small fee only to unlock leads you want", "You get paid when you win the gig; we keep 0%"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                     <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                     <span>{item}</span>
@@ -110,7 +112,7 @@ export const HeroSection = () => {
 
           {/* Subtext */}
           <p className="text-sm text-muted-foreground mt-6 animate-fade-in stagger-4">
-            Free to join • Pay only to unlock leads • No subscriptions
+            Free to join • Pay only to unlock leads (you get paid when you win) • No subscriptions
           </p>
         </div>
       </div>

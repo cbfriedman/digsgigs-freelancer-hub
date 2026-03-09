@@ -15,7 +15,11 @@ const FAQ = () => {
     general: [
       {
         question: "What is Digs & Gigs?",
-        answer: "Digs & Gigs is a lead marketplace. Giggers (clients) post gigs. Diggers (freelancers) get leads by email and can unlock the Gigger’s contact or bid and pay an 8% referral fee when awarded. No membership required."
+        answer: "Digs & Gigs is a lead marketplace. Clients (Giggers) post projects. Freelancers (Diggers) get leads by email—you don’t search for projects or wait for people to contact you. You choose which leads to unlock (small fee) or bid on (pay when awarded). You get paid when you win the gig; we don’t take a cut of your earnings. No membership required."
+      },
+      {
+        question: "Do I pay to help, or do I get paid? Am I allowed to help?",
+        answer: "You get paid. You pay a small fee only to unlock a lead (see the client’s contact so you can bid). When you win the job, the client pays you—we keep 0% of what you earn. Anyone 18+ can join as a Digger (freelancer); you’re allowed to help. Create a profile and start receiving leads by email."
       },
       {
         question: "Is Digs & Gigs a bidding platform?",
@@ -33,7 +37,7 @@ const FAQ = () => {
     forDiggers: [
       {
         question: "How do I become a Digger?",
-        answer: "Click \"Become a Digger\", create a profile, choose your categories, and start receiving project matches."
+        answer: "Click \"Become a Digger\", create a profile, choose your categories, and start receiving project leads by email. You don’t look up projects—we send them to you. You unlock the ones you want and get paid when you win."
       },
       {
         question: "How does matching work?",

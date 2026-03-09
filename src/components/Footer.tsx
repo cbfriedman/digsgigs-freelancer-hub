@@ -57,7 +57,7 @@ export const Footer = () => {
               <img src={logo} alt="Digs & Gigs" className="h-16 w-auto object-contain" />
             </button>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xs">
-              Post gigs. Find work. Pay per lead. No membership.
+              Clients post gigs. Freelancers get leads by email and bid. Pay per lead or when awarded. No membership.
             </p>
             <p className="text-xs text-muted-foreground mb-4">Secure · Verified · Reliable</p>
             <div className="flex items-center gap-2">

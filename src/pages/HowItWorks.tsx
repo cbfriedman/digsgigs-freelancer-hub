@@ -42,7 +42,7 @@ const HowItWorks = () => {
     {
       number: 3,
       title: "Diggers Unlock Leads They Want",
-      description: "Freelancers pay only for leads they're interested in. $10 standard leads, $25 high-value leads for Founding Diggers.",
+      description: "You pay a small fee to unlock the client’s contact (so you can bid)—not to “do the work.” When you win the job, you get paid; we keep 0%. $10 standard leads, $25 high-value for Founding Diggers.",
       icon: DollarSign,
       color: "primary",
       highlight: "Pay per lead"
@@ -119,8 +119,11 @@ const HowItWorks = () => {
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             Simple. Transparent. Built for Results.
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Giggers post gigs. Diggers get leads and bid. One clear process for clients and freelancers.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
+            Giggers (clients) post gigs. Diggers (freelancers) get leads by email and bid. You choose your role—no confusion.
+          </p>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-8">
+            Anyone 18+ can join. You don’t pay to “help”—you pay a small fee to unlock a lead, then you get paid when you win the gig. We take 0% of your earnings.
           </p>
           
           {/* Trust Signals */}
@@ -270,11 +273,26 @@ const HowItWorks = () => {
           </Card>
         </div>
 
+        {/* Who can join */}
+        <div className="mb-20 animate-fade-in-up" style={{ animationDelay: '550ms' }}>
+          <Card className="overflow-hidden border-primary/20 bg-muted/30">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-bold mb-3">Who can use Digs & Gigs?</h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                <strong>Anyone 18 or older</strong> can create an account. <strong>Diggers (freelancers)</strong> worldwide may join—create a profile and start receiving leads by email. <strong>Giggers (clients)</strong> may post any gig that doesn’t violate our terms. You’re allowed to help—we’re built for it.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You’re not paying to “help.” You pay a small fee to unlock a lead; you get paid when you win the gig. No subscriptions, no commissions.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* CTAs */}
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-            Join Diggers and Giggers connecting on Digs & Gigs.
+            Join as a Digger (get leads, bid, get paid) or post a project as a Gigger. Free to join.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 

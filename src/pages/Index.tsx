@@ -14,7 +14,7 @@ const Index = () => {
     <div data-page="home" className="min-h-screen bg-background w-full min-w-0 max-w-full overflow-x-hidden">
       <SEOHead
         title="Freelancer Leads & Client Gigs | Pay Per Lead or When Awarded | Digs & Gigs"
-        description="For freelancers (Diggers): get leads by email, pay per lead or when awarded. For clients (Giggers): post gigs, get bids, hire talent. No subscriptions."
+        description="Clients post projects; freelancers get leads by email and bid. You don’t pay to help—you pay to unlock a lead, then get paid when you win. Digger = freelancer, Gigger = client. No subscriptions."
         keywords="freelance leads, pay per lead, freelancer leads, client gigs, post gig, hire freelancer, Digger, Gigger, lead marketplace"
         structuredData={{
           "@context": "https://schema.org",

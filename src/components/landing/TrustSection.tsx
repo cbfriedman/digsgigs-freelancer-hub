@@ -44,7 +44,7 @@ export const TrustSection = () => {
             </span>
             <h2 className="mb-4">Why Diggers Love Us</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Built by freelancers, for freelancers
+              Built by freelancers, for freelancers. You get leads by email, pay only to unlock the ones you want, and keep 100% of what you earn.
             </p>
           </div>
 

@@ -16,9 +16,9 @@ export const PricingPreviewSection = () => {
             <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">
               Transparent Pricing
             </span>
-            <h2 className="mb-4">Two Ways to Engage</h2>
+            <h2 className="mb-4">Two Ways to Engage (for Diggers)</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Choose the pricing model that fits your workflow
+              Freelancers: pay per lead to unlock client contact, or pay when you’re awarded the gig. Clients post for free.
             </p>
           </div>
 
@@ -48,7 +48,7 @@ export const PricingPreviewSection = () => {
               </Badge>
               <h3 className="font-display text-2xl font-bold mb-2">Non-Exclusive Access</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Pay once to unlock client contact details. Other pros may also engage.
+                Pay once to unlock the client’s contact so you can bid. You get paid when you win the gig—we don’t take a cut. Other pros may also engage the same lead.
               </p>
               
               <div className="mb-2">

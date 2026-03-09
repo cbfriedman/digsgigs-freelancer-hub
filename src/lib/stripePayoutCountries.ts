@@ -13,13 +13,14 @@ const STRIPE_PAYOUT_SUPPORTED_CODES = new Set([
 /**
  * Returns true if the given country (name or 2-letter code) is supported for Stripe Connect payouts.
  * Use this to show "Connect via Stripe" vs "Get paid via PayPal / Payoneer / Wise".
+ * When country is unknown (null/empty), returns true so we show Stripe by default (e.g. US users who haven't set country).
  */
 export function isStripePayoutSupported(countryNameOrCode: string | null | undefined): boolean {
-  if (countryNameOrCode == null || typeof countryNameOrCode !== "string") return false;
+  if (countryNameOrCode == null || typeof countryNameOrCode !== "string") return true;
   const trimmed = countryNameOrCode.trim();
-  if (!trimmed) return false;
+  if (!trimmed) return true;
   const code = trimmed.length === 2 ? trimmed.toUpperCase() : getCodeForCountryName(trimmed).toUpperCase();
-  if (!code) return false;
+  if (!code) return true;
   return STRIPE_PAYOUT_SUPPORTED_CODES.has(code);
 }
 
