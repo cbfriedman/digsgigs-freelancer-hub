@@ -104,6 +104,39 @@ serve(async (req) => {
     const paymentIntentId = session.payment_intent as string;
     const completedAt = new Date().toISOString();
 
+    const { data: diggerProfile } = await supabaseClient
+      .from("digger_profiles")
+      .select("payout_provider, stripe_connect_account_id")
+      .eq("id", diggerId)
+      .single();
+
+    const useAlternativePayout = ["paypal", "payoneer", "wise"].includes((diggerProfile as { payout_provider?: string })?.payout_provider ?? "");
+
+    if (useAlternativePayout && (diggerProfile as { payout_provider?: string })?.payout_provider === "paypal") {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const payoutUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/paypal-payout`;
+      try {
+        const payoutRes = await fetch(payoutUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRole}` },
+          body: JSON.stringify({ milestonePaymentId, stripePaymentIntentId: paymentIntentId }),
+        });
+        const payoutData = (await payoutRes.json()) as { success?: boolean; error?: string; alreadyCompleted?: boolean };
+        if (!payoutRes.ok || (!payoutData.success && !payoutData.alreadyCompleted)) {
+          logStep("PayPal payout failed in confirm-milestone-session", { error: payoutData?.error });
+        } else {
+          logStep("PayPal payout completed (confirm-milestone-session)", { milestonePaymentId });
+        }
+      } catch (e) {
+        logStep("Failed to invoke paypal-payout", { error: e instanceof Error ? e.message : String(e) });
+      }
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     await supabaseClient
       .from("milestone_payments")
       .update({
@@ -180,19 +213,15 @@ serve(async (req) => {
       logStep("Transaction inserted", { total_amount: (amountCents + transactionFeeCents) / 100, completed_at: completedAt });
     }
 
-    if (depositAdvanceCents > 0) {
-      const { data: diggerProfile } = await supabaseClient
-        .from("digger_profiles")
-        .select("stripe_connect_account_id")
-        .eq("id", diggerId)
-        .single();
-      if (diggerProfile?.stripe_connect_account_id) {
+    if (depositAdvanceCents > 0 && !useAlternativePayout) {
+      const connectAccountId = (diggerProfile as { stripe_connect_account_id?: string })?.stripe_connect_account_id;
+      if (connectAccountId) {
         try {
           const transfer = await stripe.transfers.create(
             {
               amount: depositAdvanceCents,
               currency: "usd",
-              destination: diggerProfile.stripe_connect_account_id,
+              destination: connectAccountId,
               description: "7% deposit advance (first milestone)",
               metadata: {
                 milestone_payment_id: milestonePaymentId,

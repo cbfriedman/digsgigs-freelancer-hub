@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { StripeConnectBanner } from "@/components/StripeConnectBanner";
+import { GetPaidSection } from "@/components/GetPaidSection";
 import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { cn } from "@/lib/utils";
@@ -89,6 +89,9 @@ export default function Account() {
 
   const [emailPrefsSummary, setEmailPrefsSummary] = useState<{ enabled: boolean; frequency: string } | null>(null);
   const [leadLimitsSummary, setLeadLimitsSummary] = useState<{ enabled: boolean; limit: string; period: string } | null>(null);
+  const [payoutProvider, setPayoutProvider] = useState<string | null>(null);
+  const [payoutEmail, setPayoutEmail] = useState<string | null>(null);
+  const [payoutExternalId, setPayoutExternalId] = useState<string | null>(null);
   const { unreadCount: notificationUnreadCount } = useNotifications();
 
   const [profileIdentity, setProfileIdentity] = useState<{
@@ -259,7 +262,7 @@ export default function Account() {
       try {
         const { data } = await supabase
           .from("digger_profiles")
-          .select("lead_limit_enabled, lead_limit, lead_limit_period")
+          .select("lead_limit_enabled, lead_limit, lead_limit_period, payout_provider, payout_email, payout_external_id")
           .eq("user_id", user.id)
           .maybeSingle();
         if (data) {
@@ -268,8 +271,14 @@ export default function Account() {
             limit: String(data.lead_limit ?? "—"),
             period: (data.lead_limit_period as string) || "monthly",
           });
+          setPayoutProvider((data as { payout_provider?: string | null }).payout_provider ?? null);
+          setPayoutEmail((data as { payout_email?: string | null }).payout_email ?? null);
+          setPayoutExternalId((data as { payout_external_id?: string | null }).payout_external_id ?? null);
         } else {
           setLeadLimitsSummary({ enabled: false, limit: "—", period: "monthly" });
+          setPayoutProvider(null);
+          setPayoutEmail(null);
+          setPayoutExternalId(null);
         }
       } catch {
         setLeadLimitsSummary(null);
@@ -1540,7 +1549,26 @@ export default function Account() {
 
         {isDigger && (
           <section id="payout-account" className="scroll-mt-24 transition-colors hover:bg-muted/50 rounded-lg">
-            <StripeConnectBanner />
+            <GetPaidSection
+              country={profileIdentity?.country ?? null}
+              payoutProvider={payoutProvider}
+              payoutEmail={payoutEmail}
+              payoutExternalId={payoutExternalId}
+              onSaved={() => {
+                supabase
+                  .from("digger_profiles")
+                  .select("payout_provider, payout_email, payout_external_id")
+                  .eq("user_id", user!.id)
+                  .maybeSingle()
+                  .then(({ data }) => {
+                    if (data) {
+                      setPayoutProvider((data as { payout_provider?: string | null }).payout_provider ?? null);
+                      setPayoutEmail((data as { payout_email?: string | null }).payout_email ?? null);
+                      setPayoutExternalId((data as { payout_external_id?: string | null }).payout_external_id ?? null);
+                    }
+                  });
+              }}
+            />
           </section>
         )}
 

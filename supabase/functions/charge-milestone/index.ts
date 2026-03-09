@@ -88,12 +88,16 @@ serve(async (req) => {
 
       const { data: diggerProfile } = await supabaseAdmin
         .from("digger_profiles")
-        .select("stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live")
+        .select("stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live, payout_provider, payout_email")
         .eq("id", contract.digger_id)
         .single();
 
+      const useAlternativePayout = ["paypal", "payoneer", "wise"].includes((diggerProfile as any)?.payout_provider ?? "");
       const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
       let canReceivePayments = !!(isLive ? (diggerProfile as any)?.stripe_connect_charges_enabled_live : diggerProfile?.stripe_connect_charges_enabled);
+      if (useAlternativePayout && (diggerProfile as any)?.payout_provider === "paypal" && (diggerProfile as any)?.payout_email) {
+        canReceivePayments = true;
+      }
       if (connectAccountId && !canReceivePayments) {
         try {
           const account = await stripe.accounts.retrieve(connectAccountId);
@@ -112,7 +116,7 @@ serve(async (req) => {
           // Keep DB state as-is when Stripe API call fails.
         }
       }
-      if (!connectAccountId || !canReceivePayments) {
+      if (!canReceivePayments) {
         throw new Error(
           isLive
             ? "The professional hasn't set up payouts for live payments yet. Ask them to complete \"Get paid\" while the platform is in live mode."
@@ -204,21 +208,14 @@ serve(async (req) => {
           quantity: 1,
         });
       }
-      // 7% comes from platform (deposit); only milestone payout goes via destination charge.
+      // 7% comes from platform (deposit); only milestone payout goes via destination charge. For alternative (PayPal etc.) charge to platform only.
       const transferFromThisPaymentCents = diggerPayoutCents - depositAdvanceCents;
-      const session = await stripe.checkout.sessions.create({
+      const sessionParams: Record<string, unknown> = {
         customer: customerId ?? undefined,
         customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,
-        // Connect destination charges: only card and us_bank_account (PayPal/Cash App/Link not supported for Connect unless enabled)
         payment_method_types: ["card", "us_bank_account"],
         line_items: lineItems,
         mode: "payment",
-        payment_intent_data: {
-          transfer_data: {
-            destination: connectAccountId,
-            amount: transferFromThisPaymentCents,
-          },
-        },
         success_url: `${origin}/gig/${contract.gig_id}?milestone_paid=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/gig/${contract.gig_id}?milestone_cancelled=true`,
         metadata: {
@@ -229,7 +226,16 @@ serve(async (req) => {
           digger_id: contract.digger_id,
           gig_id: contract.gig_id,
         },
-      });
+      };
+      if (!useAlternativePayout && connectAccountId && transferFromThisPaymentCents > 0) {
+        (sessionParams as any).payment_intent_data = {
+          transfer_data: {
+            destination: connectAccountId,
+            amount: transferFromThisPaymentCents,
+          },
+        };
+      }
+      const session = await stripe.checkout.sessions.create(sessionParams as any);
 
       logStep("Checkout session created for milestone", { sessionId: session.id });
       return new Response(
@@ -247,10 +253,11 @@ serve(async (req) => {
     // Using transfer_data avoids "insufficient available funds" because the transfer happens at capture, not from platform balance.
     const { data: diggerProfileSaved } = await supabaseAdmin
       .from("digger_profiles")
-      .select("stripe_connect_account_id, stripe_connect_account_id_live")
+      .select("stripe_connect_account_id, stripe_connect_account_id_live, payout_provider, payout_email")
       .eq("id", contract.digger_id)
       .single();
     const connectAccountIdSaved = isLive ? (diggerProfileSaved as any)?.stripe_connect_account_id_live : diggerProfileSaved?.stripe_connect_account_id;
+    const useAlternativePayoutSaved = ["paypal", "payoneer", "wise"].includes((diggerProfileSaved as any)?.payout_provider ?? "");
 
     let diggerPayoutCents = Math.round(Number(milestone.digger_payout) * 100); // gross - 8%
     let depositAdvanceCents = 0;
@@ -305,12 +312,14 @@ serve(async (req) => {
       },
       return_url: `${req.headers.get("origin") || ""}/my-gigs?payment=success`,
     };
-    if (connectAccountIdSaved && transferFromThisPaymentCents > 0) {
+    if (!useAlternativePayoutSaved && connectAccountIdSaved && transferFromThisPaymentCents > 0) {
       paymentIntentParams.transfer_data = {
         destination: connectAccountIdSaved,
         amount: transferFromThisPaymentCents,
       };
       logStep("Using transfer_data (milestone payout only; 7% from platform)", { transferFromThisPaymentCents });
+    } else if (useAlternativePayoutSaved) {
+      logStep("Alternative payout (PayPal etc.); charging to platform only", {});
     }
 
     let paymentIntent: Stripe.PaymentIntent;
@@ -362,7 +371,95 @@ serve(async (req) => {
       );
     }
 
-    // Milestone part sent via transfer_data. Transfer 7% from platform (deposit) to digger.
+    // Alternative payout: charge is on platform. PayPal -> paypal-payout; Payoneer/Wise -> mark paid and create transaction (manual payout later).
+    if (useAlternativePayoutSaved && (diggerProfileSaved as any)?.payout_provider === "paypal") {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const payoutUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/paypal-payout`;
+      try {
+        const payoutRes = await fetch(payoutUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRole}`,
+          },
+          body: JSON.stringify({ milestonePaymentId, stripePaymentIntentId: paymentIntent.id }),
+        });
+        const payoutData = (await payoutRes.json()) as { success?: boolean; error?: string; alreadyCompleted?: boolean };
+        if (!payoutRes.ok || (!payoutData.success && !payoutData.alreadyCompleted)) {
+          const errMsg = payoutData?.error ?? `PayPal payout failed: ${payoutRes.status}`;
+          logStep("PayPal payout failed", { error: errMsg });
+          return new Response(
+            JSON.stringify({ error: errMsg }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 }
+          );
+        }
+        logStep("PayPal payout completed (saved PM flow)", { milestonePaymentId });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Payment successful. The Digger will receive the payment via PayPal.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      } catch (fetchErr) {
+        const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        logStep("Failed to invoke paypal-payout", { error: msg });
+        return new Response(
+          JSON.stringify({ error: `Payout delivery failed: ${msg}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 }
+        );
+      }
+    }
+
+    if (useAlternativePayoutSaved && ((diggerProfileSaved as any)?.payout_provider === "payoneer" || (diggerProfileSaved as any)?.payout_provider === "wise")) {
+      await supabaseAdmin
+        .from("milestone_payments")
+        .update({
+          status: "paid",
+          stripe_payment_intent_id: paymentIntent.id,
+          released_at: new Date().toISOString(),
+        })
+        .eq("id", milestonePaymentId);
+      let bidIdAlt = (await supabaseAdmin.from("gigs").select("awarded_bid_id").eq("id", contract.gig_id).single()).data?.awarded_bid_id;
+      if (!bidIdAlt) {
+        const bidRow = await supabaseAdmin
+          .from("bids")
+          .select("id")
+          .eq("gig_id", contract.gig_id)
+          .eq("digger_id", contract.digger_id)
+          .eq("status", "accepted")
+          .limit(1)
+          .maybeSingle();
+        bidIdAlt = bidRow.data?.id ?? null;
+      }
+      await supabaseAdmin.from("transactions").insert({
+        gig_id: contract.gig_id,
+        bid_id: bidIdAlt ?? null,
+        consumer_id: contract.consumer_id,
+        digger_id: contract.digger_id,
+        total_amount: totalChargeCents / 100,
+        commission_rate: TRANSACTION_FEE_PERCENT / 100,
+        commission_amount: transactionFeeCents / 100,
+        digger_payout: diggerPayoutCents / 100,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        stripe_payment_intent_id: paymentIntent.id,
+        escrow_contract_id: milestone.escrow_contract_id,
+        milestone_payment_id: milestonePaymentId,
+        is_escrow: false,
+      });
+      logStep("Payoneer/Wise: milestone marked paid (manual payout)", { milestonePaymentId });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Payment successful. The professional will receive their payout via Payoneer/Wise (processed by the platform).",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Stripe path: transfer 7% from platform (deposit) to digger if first milestone; update milestone and transaction.
     let stripeTransferId: string | null = null;
     if (connectAccountIdSaved && depositAdvanceCents > 0) {
       try {

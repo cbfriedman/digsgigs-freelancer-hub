@@ -97,16 +97,31 @@ serve(async (req) => {
 
     // Payment method optional: gigger can approve milestones via Checkout
 
-    // Digger must have Stripe Connect set up
+    // Digger must have Stripe Connect set up OR alternative payout (PayPal/Payoneer/Wise)
     let { data: diggerProfile } = await supabaseAdmin
       .from("digger_profiles")
-      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, payout_provider, payout_email, payout_external_id")
       .eq("id", gig.awarded_digger_id)
       .single();
 
-    if (!diggerProfile?.stripe_connect_account_id) {
+    const alternativePayoutSet =
+      ["paypal", "payoneer", "wise"].includes((diggerProfile as any)?.payout_provider ?? "") &&
+      !!((diggerProfile as any)?.payout_email?.trim() || (diggerProfile as any)?.payout_external_id?.trim());
+
+    if (!diggerProfile?.stripe_connect_account_id && !alternativePayoutSet) {
       return new Response(
         JSON.stringify({ eligible: false, reason: "digger_payouts_not_set_up", bidAmount: bid.amount, milestoneTotal }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (alternativePayoutSet) {
+      return new Response(
+        JSON.stringify({
+          eligible: true,
+          bidAmount: bid.amount,
+          milestoneTotal,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }

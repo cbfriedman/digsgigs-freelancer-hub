@@ -123,16 +123,79 @@ serve(async (req) => {
 
     const { data: diggerProfile } = await supabase
       .from("digger_profiles")
-      .select("stripe_connect_account_id, stripe_connect_account_id_live")
+      .select("stripe_connect_account_id, stripe_connect_account_id_live, payout_provider, payout_email")
       .eq("id", contract.digger_id)
       .single();
     const isLive = ctx.mode === "live";
     const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
-
-    // If the PaymentIntent was created with transfer_data (saved PM destination charge), Stripe already transferred that amount at capture. Only transfer the remainder (e.g. 7% deposit advance).
+    const useAlternativePayout = ["paypal", "payoneer", "wise"].includes((diggerProfile as any)?.payout_provider ?? "");
     const alreadyTransferredCents = (pi.transfer_data?.amount ?? 0) as number;
-    const remainderCents = diggerPayoutCents - alreadyTransferredCents;
+    const isPlatformOnlyCharge = alreadyTransferredCents === 0;
 
+    if (useAlternativePayout && isPlatformOnlyCharge) {
+      if ((diggerProfile as any)?.payout_provider === "paypal") {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+        const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const payoutUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/paypal-payout`;
+        try {
+          const payoutRes = await fetch(payoutUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRole}` },
+            body: JSON.stringify({ milestonePaymentId, stripePaymentIntentId: pi.id }),
+          });
+          const payoutData = (await payoutRes.json()) as { success?: boolean; error?: string; alreadyCompleted?: boolean };
+          if (!payoutRes.ok || (!payoutData.success && !payoutData.alreadyCompleted)) {
+            logStep("PayPal payout failed in webhook", { error: payoutData?.error, status: payoutRes.status });
+          } else {
+            logStep("PayPal payout completed (webhook)", { milestonePaymentId });
+          }
+        } catch (e) {
+          logStep("Failed to invoke paypal-payout", { error: e instanceof Error ? e.message : String(e) });
+        }
+      } else {
+        await supabase
+          .from("milestone_payments")
+          .update({
+            status: "paid",
+            stripe_payment_intent_id: pi.id,
+            released_at: new Date().toISOString(),
+          })
+          .eq("id", milestonePaymentId);
+        const contractData = contract as { digger_id: string; gig_id: string; consumer_id: string };
+        let bidId = (await supabase.from("gigs").select("awarded_bid_id").eq("id", contractData.gig_id).single()).data?.awarded_bid_id;
+        if (!bidId) {
+          const bidRow = await supabase.from("bids").select("id").eq("gig_id", contractData.gig_id).eq("digger_id", contractData.digger_id).eq("status", "accepted").limit(1).maybeSingle();
+          bidId = bidRow.data?.id ?? null;
+        }
+        const diggerPayoutDollars = diggerPayoutCents / 100;
+        const gross = Number(milestone.amount);
+        const transactionFeeAmount = Math.round(gross * 0.03 * 100) / 100;
+        const giggerPaid = (pi.amount_received ?? 0) / 100;
+        await supabase.from("transactions").insert({
+          gig_id: contractData.gig_id,
+          bid_id: bidId ?? null,
+          consumer_id: contractData.consumer_id,
+          digger_id: contractData.digger_id,
+          total_amount: giggerPaid,
+          commission_rate: 0.03,
+          commission_amount: transactionFeeAmount,
+          digger_payout: diggerPayoutDollars,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          stripe_payment_intent_id: pi.id,
+          escrow_contract_id: milestone.escrow_contract_id,
+          milestone_payment_id: milestonePaymentId,
+          is_escrow: false,
+        });
+        logStep("Payoneer/Wise: milestone marked paid (webhook)", { milestonePaymentId });
+      }
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    const remainderCents = diggerPayoutCents - alreadyTransferredCents;
     let stripeTransferId: string | null = null;
     if (connectAccountId && remainderCents > 0) {
       try {

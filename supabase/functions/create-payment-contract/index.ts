@@ -136,13 +136,18 @@ serve(async (req) => {
     // Digger must have Stripe Connect set up
     let { data: diggerProfile } = await supabaseAdmin
       .from("digger_profiles")
-      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, payout_provider, payout_email, payout_external_id")
       .eq("id", diggerProfileId)
       .single();
-    if (!diggerProfile?.stripe_connect_account_id) {
+
+    const alternativePayoutSet =
+      ["paypal", "payoneer", "wise"].includes((diggerProfile as any)?.payout_provider ?? "") &&
+      !!((diggerProfile as any)?.payout_email?.trim() || (diggerProfile as any)?.payout_external_id?.trim());
+
+    if (!diggerProfile?.stripe_connect_account_id && !alternativePayoutSet) {
       throw new Error("The Digger hasn’t set up payouts yet. Ask them to complete “Get paid” / payment setup in their account (My Bids or Settings) so you can create the contract.");
     }
-    if (!diggerProfile.stripe_connect_charges_enabled) {
+    if (!alternativePayoutSet && !diggerProfile.stripe_connect_charges_enabled) {
       try {
         const { secretKey: stripeKey } = await getStripeConfig(supabaseAdmin);
         if (stripeKey) {
@@ -165,7 +170,7 @@ serve(async (req) => {
         // Keep DB state as-is when Stripe API call fails.
       }
     }
-    if (!diggerProfile.stripe_connect_charges_enabled) {
+    if (!alternativePayoutSet && !diggerProfile.stripe_connect_charges_enabled) {
       throw new Error("The Digger’s payout account is still being verified. Ask them to finish the payout setup in their account; it usually takes a few minutes.");
     }
 
