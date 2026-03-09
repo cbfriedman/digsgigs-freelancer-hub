@@ -759,7 +759,7 @@ function BidRow({
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
+        "group overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
         onSelectBid && "cursor-pointer hover:shadow-md hover:border-primary/30 hover:bg-muted/20",
         isSelected && "ring-2 ring-primary border-primary/50 shadow-md"
       )}
@@ -770,7 +770,7 @@ function BidRow({
           <div className="flex-1 min-w-0 overflow-hidden">
             {/* Title + single status (no duplication) */}
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-3 min-w-0">
-              <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words min-w-0" title={bid.gigs.title}>
+              <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words min-w-0 transition-colors group-hover:text-purple-600 dark:group-hover:text-purple-400" title={bid.gigs.title}>
                 {bid.gigs.title}
               </h3>
               <div className="flex items-center gap-2 shrink-0">

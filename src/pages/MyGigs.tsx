@@ -774,7 +774,7 @@ const MyGigs = () => {
               <Card
                 key={gig.id}
                 className={cn(
-                  "overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
+                  "group overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
                   previewGig?.id === gig.id
                     ? "ring-2 ring-primary border-primary/50 shadow-md"
                     : "hover:shadow-md hover:border-primary/30 hover:bg-muted/20 cursor-pointer"
@@ -786,7 +786,7 @@ const MyGigs = () => {
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 mb-3 min-w-0">
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
-                          <h3 className="text-base sm:text-xl font-semibold line-clamp-2 break-words min-w-0" title={gig.title}>
+                          <h3 className="text-base sm:text-xl font-semibold line-clamp-2 break-words min-w-0 transition-colors group-hover:text-purple-600 dark:group-hover:text-purple-400" title={gig.title}>
                             {gig.title}
                           </h3>
                           <span className={cn(
