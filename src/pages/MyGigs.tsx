@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare, Star, MoreVertical, MapPin, Clock } from "lucide-react";
+import { DollarSign, Calendar, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare, Star, MoreVertical, MapPin, Clock, ArrowRight, Briefcase, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -34,6 +34,13 @@ import { RatingDialog } from "@/components/RatingDialog";
 import { cn } from "@/lib/utils";
 import { openFloatingChat } from "@/lib/openFloatingChat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 
 export type GigFilterOption = "all" | "open" | "awarded" | "in_progress" | "completed";
 
@@ -88,6 +95,101 @@ export type AwardedDiggerInfo = {
   timezone: string | null;
 };
 
+type EscrowPreviewSummary = {
+  contractStatus: string;
+  completedMilestones: number;
+  totalMilestones: number;
+  totalPaid: number;
+};
+
+function getContractStatusLabel(s: string): string {
+  const labels: Record<string, string> = { pending: "Pending", funded: "Funded", in_progress: "In progress", completed: "Completed" };
+  return labels[s] ?? s;
+}
+
+function GigPreviewContent({
+  gig,
+  formatGigPrice,
+  bidCount,
+  onViewFull,
+  escrowSummary,
+}: {
+  gig: Gig;
+  formatGigPrice: (g: Gig) => string;
+  bidCount: number;
+  onViewFull: () => void;
+  escrowSummary?: EscrowPreviewSummary | null;
+}) {
+  const statusLabel =
+    gig.status === "completed"
+      ? "Completed"
+      : gig.status === "in_progress"
+        ? "In progress"
+        : gig.status === "awarded"
+          ? "Awarded"
+          : gig.status === "cancelled"
+            ? "Closed"
+            : gig.status;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-medium mb-1 flex items-center gap-1.5">
+          <Briefcase className="h-4 w-4" />
+          Description
+        </h3>
+        {gig.description ? (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{gig.description}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No description.</p>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-3 text-sm">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <DollarSign className="h-4 w-4 shrink-0" />
+          <span>{formatGigPrice(gig)}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span>Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</span>
+        </div>
+        {gig.categories?.name && (
+          <span className="text-muted-foreground">{gig.categories.name}</span>
+        )}
+      </div>
+      {escrowSummary && (
+        <div className="border-t border-border pt-4 space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-1.5">
+            <CheckCircle2 className="h-4 w-4" />
+            Payment & milestones
+          </h3>
+          <p className="text-sm text-muted-foreground capitalize">Contract: {getContractStatusLabel(escrowSummary.contractStatus)}</p>
+          <p className="text-sm text-muted-foreground">
+            {escrowSummary.completedMilestones}/{escrowSummary.totalMilestones} milestones paid
+            {escrowSummary.totalPaid > 0 && (
+              <span className="ml-1"> · ${escrowSummary.totalPaid.toLocaleString()} released</span>
+            )}
+          </p>
+        </div>
+      )}
+      <div className="border-t border-border pt-4 space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Status</p>
+        <p className="text-sm capitalize">{statusLabel}</p>
+        {bidCount > 0 && (
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <FileText className="h-4 w-4 shrink-0" />
+            {bidCount} {bidCount === 1 ? "bid" : "bids"}
+          </p>
+        )}
+      </div>
+      <Button onClick={onViewFull} className="w-full gap-2 mt-4">
+        {bidCount > 0 ? "View bids" : "View gig"}
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 const MyGigs = () => {
   const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -95,6 +197,8 @@ const MyGigs = () => {
   const [awardedDiggerByGigId, setAwardedDiggerByGigId] = useState<Record<string, AwardedDiggerInfo>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [previewGig, setPreviewGig] = useState<Gig | null>(null);
+  const [previewEscrow, setPreviewEscrow] = useState<EscrowPreviewSummary | null>(null);
   const [gigIssues, setGigIssues] = useState<LeadIssue[]>([]);
   const [showIssuesDialog, setShowIssuesDialog] = useState(false);
   const [bumpingId, setBumpingId] = useState<string | null>(null);
@@ -114,6 +218,53 @@ const MyGigs = () => {
   useEffect(() => {
     loadGigs();
   }, []);
+
+  useEffect(() => {
+    if (!previewGig) {
+      setPreviewEscrow(null);
+      return;
+    }
+    if (!["awarded", "in_progress", "completed"].includes(previewGig.status)) {
+      setPreviewEscrow(null);
+      return;
+    }
+    const gigId = previewGig.id;
+    let cancelled = false;
+    (async () => {
+      const { data: contract, error: contractError } = await supabase
+        .from("escrow_contracts")
+        .select("id, status")
+        .eq("gig_id", gigId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (contractError || !contract) {
+        setPreviewEscrow(null);
+        return;
+      }
+      const { data: milestones, error: milestonesError } = await supabase
+        .from("milestone_payments")
+        .select("id, status, amount")
+        .eq("escrow_contract_id", (contract as { id: string }).id)
+        .order("milestone_number", { ascending: true });
+      if (cancelled) return;
+      if (milestonesError) {
+        setPreviewEscrow(null);
+        return;
+      }
+      const list = milestones ?? [];
+      const paidCount = list.filter((m: { status: string }) => m.status === "paid").length;
+      const totalPaid = list
+        .filter((m: { status: string }) => m.status === "paid")
+        .reduce((sum: number, m: { amount: number }) => sum + m.amount, 0);
+      setPreviewEscrow({
+        contractStatus: (contract as { status: string }).status,
+        completedMilestones: paidCount,
+        totalMilestones: list.length,
+        totalPaid: Math.round(totalPaid * 100) / 100,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [previewGig?.id, previewGig?.status]);
 
   const loadGigs = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -620,7 +771,16 @@ const MyGigs = () => {
               </p>
             ) : (
             (statusFilter === "all" ? gigs : gigs.filter((g) => g.status === statusFilter)).map((gig) => (
-              <Card key={gig.id} className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0 max-w-full">
+              <Card
+                key={gig.id}
+                className={cn(
+                  "overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
+                  previewGig?.id === gig.id
+                    ? "ring-2 ring-primary border-primary/50 shadow-md"
+                    : "hover:shadow-md hover:border-primary/30 hover:bg-muted/20 cursor-pointer"
+                )}
+                onClick={() => setPreviewGig(gig)}
+              >
                 <CardContent className="p-4 sm:p-6 overflow-hidden">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 min-w-0">
                     <div className="flex-1 min-w-0 overflow-hidden">
@@ -659,7 +819,7 @@ const MyGigs = () => {
                           </span>
                         )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 w-full justify-end sm:w-auto sm:ml-auto">
+                        <div className="flex items-center gap-2 shrink-0 w-full justify-end sm:w-auto sm:ml-auto" onClick={(e) => e.stopPropagation()}>
                           {(gig.status === "open" || gig.status === "cancelled") && (
                             <>
                               <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
@@ -779,7 +939,7 @@ const MyGigs = () => {
                   </div>
 
                   {/* Action row: hired digger info (left) + View bids & Chat (right) */}
-                  <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0">
+                  <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0" onClick={(e) => e.stopPropagation()}>
                     {(gig.status === "in_progress" || gig.status === "awarded" || gig.status === "completed") &&
                       awardedDiggerByGigId[gig.id] && (() => {
                         const info = awardedDiggerByGigId[gig.id];
@@ -875,6 +1035,38 @@ const MyGigs = () => {
           </div>
         </div>
       </div>
+
+      <Sheet open={!!previewGig} onOpenChange={(open) => !open && setPreviewGig(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-0 overflow-hidden">
+          <SheetHeader className="p-4 pb-2 border-b shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-muted p-2 shrink-0">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <SheetTitle className="text-left line-clamp-2">{previewGig?.title}</SheetTitle>
+                <SheetDescription className="text-left mt-0.5">
+                  Gig details. Open the full gig to manage bids and chat.
+                </SheetDescription>
+              </div>
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-4">
+            {previewGig && (
+              <GigPreviewContent
+                gig={previewGig}
+                formatGigPrice={formatGigPrice}
+                bidCount={bidStatsByGigId[previewGig.id]?.count ?? 0}
+                onViewFull={() => {
+                  navigate(`/gig/${previewGig.id}`);
+                  setPreviewGig(null);
+                }}
+                escrowSummary={previewEscrow}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <AlertDialog open={!!repostConfirmGig} onOpenChange={(open) => !open && setRepostConfirmGig(null)}>
         <AlertDialogContent>

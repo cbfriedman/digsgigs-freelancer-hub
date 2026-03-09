@@ -13,7 +13,14 @@ import { WithdrawBidDialog } from "@/components/WithdrawBidDialog";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
-import { XCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { XCircle, Loader2, CheckCircle2, MapPin, Briefcase, ArrowRight } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 
 interface Bid {
   id: string;
@@ -41,30 +48,136 @@ interface Bid {
   };
 }
 
-export type BidFilterOption = "all" | "pending" | "awarded" | "hired" | "lose" | "withdrawn";
+export type BidFilterOption = "all" | "pending" | "awarded" | "in_progress" | "completed" | "lose" | "withdrawn";
 
-function getBidCategory(bid: Bid): BidFilterOption | "rejected" | "completed" {
+function getBidCategory(bid: Bid): BidFilterOption | "rejected" {
   const gigStatus = bid.gigs?.status ?? "";
   const awardedBidId = (bid.gigs as { awarded_bid_id?: string | null })?.awarded_bid_id ?? null;
   const isThisBidAwarded = awardedBidId !== null && awardedBidId === bid.id;
   if (bid.status === "withdrawn" || bid.withdrawn_at) return "withdrawn";
-  if (isThisBidAwarded && (gigStatus === "in_progress" || gigStatus === "completed")) return "hired";
+  if (isThisBidAwarded && gigStatus === "completed") return "completed";
+  if (isThisBidAwarded && gigStatus === "in_progress") return "in_progress";
+  if (bid.status === "accepted" && isThisBidAwarded) return gigStatus === "completed" ? "completed" : "in_progress";
+  if (bid.status === "accepted") return "in_progress"; // accepted, work ongoing
   if (isThisBidAwarded && gigStatus === "awarded") return "awarded";
   if (bid.status === "rejected" || (awardedBidId !== null && awardedBidId !== bid.id)) return "lose";
   if (bid.status === "pending") return "pending";
-  if (bid.status === "completed") return "completed";
-  if (bid.status === "accepted") return "hired";
   return "pending";
 }
 
 const FILTER_OPTIONS: { value: BidFilterOption; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
+  { value: "pending", label: "Open" },
   { value: "awarded", label: "Awarded" },
-  { value: "hired", label: "Hired" },
+  { value: "in_progress", label: "In progress" },
+  { value: "completed", label: "Completed" },
   { value: "lose", label: "Lose" },
   { value: "withdrawn", label: "Withdrawn" },
 ];
+
+export type EscrowPreviewSummary = {
+  contractStatus: string;
+  completedMilestones: number;
+  totalMilestones: number;
+  totalPaid: number;
+};
+
+function getContractStatusLabel(s: string): string {
+  const labels: Record<string, string> = { pending: "Pending", funded: "Funded", in_progress: "In progress", completed: "Completed" };
+  return labels[s] ?? s;
+}
+
+function GigPreviewContent({
+  bid,
+  formatBudget,
+  getStatusLabel,
+  onViewFull,
+  escrowSummary,
+}: {
+  bid: Bid;
+  formatBudget: (a: number | null, b: number | null) => string | null;
+  getStatusLabel: (s: string) => string;
+  onViewFull: () => void;
+  escrowSummary?: EscrowPreviewSummary | null;
+}) {
+  const gig = bid.gigs;
+  const gigStatus = gig?.status ?? "";
+  const awardedBidId = (gig as { awarded_bid_id?: string | null })?.awarded_bid_id ?? null;
+  const isThisBidAwarded = awardedBidId !== null && awardedBidId === bid.id;
+  const statusLabel =
+    isThisBidAwarded && gigStatus === "completed"
+      ? "Completed"
+      : isThisBidAwarded && gigStatus === "in_progress"
+        ? "In progress"
+        : isThisBidAwarded && gigStatus === "awarded"
+          ? "Awarded"
+          : awardedBidId !== null && awardedBidId !== bid.id
+            ? "Lose"
+            : getStatusLabel(bid.status);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-medium mb-1 flex items-center gap-1.5">
+          <Briefcase className="h-4 w-4" />
+          Description
+        </h3>
+        {gig.description ? (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{gig.description}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No description.</p>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-3 text-sm">
+        {formatBudget(gig.budget_min, gig.budget_max) && (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <DollarSign className="h-4 w-4 shrink-0" />
+            <span>Gig budget: {formatBudget(gig.budget_min, gig.budget_max)}</span>
+          </div>
+        )}
+        {gig.location && (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span>{gig.location}</span>
+          </div>
+        )}
+      </div>
+      {escrowSummary && (
+        <div className="border-t border-border pt-4 space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-1.5">
+            <CheckCircle2 className="h-4 w-4" />
+            Payment & milestones
+          </h3>
+          <p className="text-sm text-muted-foreground capitalize">Contract: {getContractStatusLabel(escrowSummary.contractStatus)}</p>
+          <p className="text-sm text-muted-foreground">
+            {escrowSummary.completedMilestones}/{escrowSummary.totalMilestones} milestones paid
+            {escrowSummary.totalPaid > 0 && (
+              <span className="ml-1"> · ${escrowSummary.totalPaid.toLocaleString()} released</span>
+            )}
+          </p>
+        </div>
+      )}
+      <div className="border-t border-border pt-4 space-y-2">
+        <h3 className="text-sm font-medium">Your bid</h3>
+        <p className="text-sm font-medium">${bid.amount.toLocaleString()}</p>
+        <p className="text-xs text-muted-foreground capitalize">Status: {statusLabel}</p>
+        {bid.timeline && (
+          <p className="text-xs text-muted-foreground">Timeline: {bid.timeline}</p>
+        )}
+        {bid.proposal && (
+          <div className="mt-2">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Your proposal</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{bid.proposal}</p>
+          </div>
+        )}
+      </div>
+      <Button onClick={onViewFull} className="w-full gap-2 mt-4">
+        View full gig
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 const MyBids = () => {
   const navigate = useNavigate();
@@ -73,6 +186,8 @@ const MyBids = () => {
   const [loading, setLoading] = useState(true);
   const [diggerProfileId, setDiggerProfileId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<BidFilterOption>("all");
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  const [previewEscrow, setPreviewEscrow] = useState<EscrowPreviewSummary | null>(null);
 
   useEffect(() => {
     // Check for withdrawal success/cancel params and complete withdrawal flow if needed
@@ -190,7 +305,7 @@ const MyBids = () => {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      pending: "Pending",
+      pending: "Open",
       accepted: "Accepted",
       rejected: "Rejected",
       completed: "Completed",
@@ -223,6 +338,58 @@ const MyBids = () => {
     return `Up to $${max?.toLocaleString()}`;
   };
 
+  useEffect(() => {
+    if (!selectedBid) {
+      setPreviewEscrow(null);
+      return;
+    }
+    const gigStatus = selectedBid.gigs?.status ?? "";
+    if (!["awarded", "in_progress", "completed"].includes(gigStatus)) {
+      setPreviewEscrow(null);
+      return;
+    }
+    const gigId = selectedBid.gigs?.id ?? selectedBid.gig_id;
+    if (!gigId) {
+      setPreviewEscrow(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: contract, error: contractError } = await supabase
+        .from("escrow_contracts")
+        .select("id, status")
+        .eq("gig_id", gigId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (contractError || !contract) {
+        setPreviewEscrow(null);
+        return;
+      }
+      const { data: milestones, error: milestonesError } = await supabase
+        .from("milestone_payments")
+        .select("id, status, amount")
+        .eq("escrow_contract_id", (contract as { id: string }).id)
+        .order("milestone_number", { ascending: true });
+      if (cancelled) return;
+      if (milestonesError) {
+        setPreviewEscrow(null);
+        return;
+      }
+      const list = milestones ?? [];
+      const paidCount = list.filter((m: { status: string }) => m.status === "paid").length;
+      const totalPaid = list
+        .filter((m: { status: string }) => m.status === "paid")
+        .reduce((sum: number, m: { amount: number }) => sum + m.amount, 0);
+      setPreviewEscrow({
+        contractStatus: (contract as { status: string }).status,
+        completedMilestones: paidCount,
+        totalMilestones: list.length,
+        totalPaid: Math.round(totalPaid * 100) / 100,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [selectedBid?.id, selectedBid?.gigs?.id, selectedBid?.gigs?.status]);
+
   const activeStatuses = new Set(["pending", "accepted"]);
   const activeBids = bids.filter((b) => activeStatuses.has(b.status));
   const pastBids = bids.filter((b) => !activeStatuses.has(b.status));
@@ -231,7 +398,6 @@ const MyBids = () => {
     if (statusFilter === "all") return true;
     const cat = getBidCategory(bid);
     if (cat === "rejected") return statusFilter === "lose";
-    if (cat === "completed") return statusFilter === "hired";
     return cat === statusFilter;
   };
   const filteredActiveBids = activeBids.filter(matchesFilter);
@@ -349,6 +515,8 @@ const MyBids = () => {
                             formatDistanceToNow={formatDistanceToNow}
                             onView={() => navigate(`/gig/${bid.gigs.id}`)}
                             onDeclineSuccess={loadBids}
+                            onSelectBid={setSelectedBid}
+                            isSelected={selectedBid?.id === bid.id}
                             WithdrawComponent={
                               bid.status === "accepted" && !bid.withdrawn_at ? (
                                 <WithdrawBidDialog
@@ -381,6 +549,8 @@ const MyBids = () => {
                             formatDistanceToNow={formatDistanceToNow}
                             onView={() => navigate(`/gig/${bid.gigs.id}`)}
                             onDeclineSuccess={loadBids}
+                            onSelectBid={setSelectedBid}
+                            isSelected={selectedBid?.id === bid.id}
                             WithdrawComponent={undefined}
                           />
                         ))}
@@ -407,6 +577,8 @@ const MyBids = () => {
                             formatDistanceToNow={formatDistanceToNow}
                             onView={() => navigate(`/gig/${bid.gigs.id}`)}
                             onDeclineSuccess={loadBids}
+                            onSelectBid={setSelectedBid}
+                            isSelected={selectedBid?.id === bid.id}
                             WithdrawComponent={
                               bid.status === "accepted" && !bid.withdrawn_at ? (
                                 <WithdrawBidDialog
@@ -430,6 +602,39 @@ const MyBids = () => {
               )}
             </div>
           )}
+
+          {/* Right-side preview sheet (overlay with dimmed backdrop, like Role Dashboard) */}
+          <Sheet open={!!selectedBid} onOpenChange={(open) => !open && setSelectedBid(null)}>
+            <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-0 overflow-hidden">
+              <SheetHeader className="px-4 pt-4 pr-12 pb-2 text-left border-b border-border shrink-0">
+                <SheetTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 shrink-0" />
+                  {selectedBid ? selectedBid.gigs.title : "Gig preview"}
+                </SheetTitle>
+                <SheetDescription>
+                  {selectedBid
+                    ? "Detail for your bid. View full gig to message the client or manage your proposal."
+                    : ""}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                {selectedBid && (
+                  <GigPreviewContent
+                    bid={selectedBid}
+                    formatBudget={formatBudget}
+                    getStatusLabel={getStatusLabel}
+                    onViewFull={() => {
+                      if (selectedBid) {
+                        setSelectedBid(null);
+                        navigate(`/gig/${selectedBid.gigs.id}`);
+                      }
+                    }}
+                    escrowSummary={previewEscrow}
+                  />
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
             </div>
           </div>
         </div>
@@ -446,6 +651,8 @@ function BidRow({
   formatBudget,
   formatDistanceToNow,
   onView,
+  onSelectBid,
+  isSelected,
   WithdrawComponent,
   onDeclineSuccess,
 }: {
@@ -456,6 +663,8 @@ function BidRow({
   formatBudget: (a: number | null, b: number | null) => string | null;
   formatDistanceToNow: (date: Date, opts: { addSuffix: boolean }) => string;
   onView: () => void;
+  onSelectBid?: (bid: Bid) => void;
+  isSelected?: boolean;
   WithdrawComponent?: ReactNode;
   onDeclineSuccess?: () => void;
 }) {
@@ -466,46 +675,41 @@ function BidRow({
   const showOrangeChat =
     diggerProfileId &&
     (gigStatus === "in_progress" || gigStatus === "awarded" || gigStatus === "completed");
-  const gigStatusLabel =
-    gigStatus === "completed" ? "Completed" : gigStatus === "in_progress" ? "In progress" : gigStatus === "awarded" ? "Awarded" : gigStatus === "open" ? "Open" : gigStatus;
-  const gigStatusClass = cn(
-    "text-xs md:text-sm font-normal shrink-0",
-    gigStatus === "open" && "text-primary",
-    gigStatus === "in_progress" && "text-blue-600 dark:text-blue-400",
-    gigStatus === "completed" && "text-green-700 dark:text-green-600",
-    (gigStatus === "pending_confirmation" || gigStatus === "pending") && "text-gray-500 dark:text-gray-400",
-    gigStatus === "awarded" && "text-green-500 dark:text-green-400",
-    !["open", "in_progress", "completed", "awarded", "pending", "pending_confirmation"].includes(gigStatus) && "text-gray-500 dark:text-gray-400"
-  );
   const awardedBidId = (bid.gigs as { awarded_bid_id?: string | null }).awarded_bid_id ?? null;
   const isThisBidAwarded = awardedBidId !== null && awardedBidId === bid.id;
   const isAwarded = isThisBidAwarded && gigStatus === "awarded";
-  const isHired =
-    isThisBidAwarded && (gigStatus === "in_progress" || gigStatus === "completed");
+  const isInProgress = isThisBidAwarded && gigStatus === "in_progress";
+  const isCompleted = isThisBidAwarded && gigStatus === "completed";
   const isLose =
     bid.status === "rejected" ||
     (awardedBidId !== null && awardedBidId !== bid.id);
-  const rightBottomLabel = isHired
-    ? "Hired"
-    : isAwarded
-      ? "Awarded"
-      : isLose
-        ? "Lose"
-        : getStatusLabel(bid.status);
-  const rightBottomClass = isHired
+  const rightBottomLabel = isCompleted
+    ? "Completed"
+    : isInProgress
+      ? "In progress"
+      : isAwarded
+        ? "Awarded"
+        : isLose
+          ? "Lose"
+          : getStatusLabel(bid.status);
+  const rightBottomClass = isCompleted
     ? "text-green-600 dark:text-green-500 font-medium"
-    : isAwarded
-      ? "text-amber-600 dark:text-amber-400 font-medium"
-      : isLose
-        ? "text-red-600 dark:text-red-400 font-medium"
-        : getStatusClass(bid.status);
-  const rightBottomTooltip = isHired
-    ? "You were hired for this gig."
-    : isAwarded
-      ? "You were awarded this gig. Accept to get hired."
-      : isLose
-        ? "This gig was awarded to another digger."
-        : null;
+    : isInProgress
+      ? "text-blue-600 dark:text-blue-400 font-medium"
+      : isAwarded
+        ? "text-amber-600 dark:text-amber-400 font-medium"
+        : isLose
+          ? "text-red-600 dark:text-red-400 font-medium"
+          : getStatusClass(bid.status);
+  const rightBottomTooltip = isCompleted
+    ? "This gig is completed."
+    : isInProgress
+      ? "You were hired; work is in progress."
+      : isAwarded
+        ? "You were awarded this gig. Accept to get started."
+        : isLose
+          ? "This gig was awarded to another digger."
+          : null;
 
   const handleDeclineAward = async () => {
     if (!diggerProfileId || !onDeclineSuccess) return;
@@ -553,21 +757,23 @@ function BidRow({
   };
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-muted/20 w-full min-w-0 max-w-full">
+    <Card
+      className={cn(
+        "overflow-hidden transition-all duration-200 w-full min-w-0 max-w-full",
+        onSelectBid && "cursor-pointer hover:shadow-md hover:border-primary/30 hover:bg-muted/20",
+        isSelected && "ring-2 ring-primary border-primary/50 shadow-md"
+      )}
+      onClick={onSelectBid ? () => onSelectBid(bid) : undefined}
+    >
       <CardContent className="p-4 sm:p-6 overflow-hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 min-w-0">
           <div className="flex-1 min-w-0 overflow-hidden">
-            {/* Title + status: stack on mobile so title gets full width */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center mb-3 min-w-0">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2 min-w-0 flex-1">
-                <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words min-w-0" title={bid.gigs.title}>
-                  {bid.gigs.title}
-                </h3>
-                {gigStatus && (
-                  <span className={cn(gigStatusClass, "shrink-0 self-start sm:self-auto")}>{gigStatusLabel}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
+            {/* Title + single status (no duplication) */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-3 min-w-0">
+              <h3 className="text-base sm:text-xl font-semibold line-clamp-2 sm:line-clamp-1 break-words min-w-0" title={bid.gigs.title}>
+                {bid.gigs.title}
+              </h3>
+              <div className="flex items-center gap-2 shrink-0">
                 {rightBottomTooltip ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -612,8 +818,8 @@ function BidRow({
           </div>
         </div>
 
-        {/* Action row: eye (reviewed) + withdrawn msg + buttons */}
-        <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0">
+        {/* Action row: stopPropagation so clicking buttons doesn't open preview */}
+        <div className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2 order-first w-full sm:w-auto sm:order-none flex-shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -656,7 +862,7 @@ function BidRow({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 justify-end sm:ml-auto min-h-9 w-full sm:w-auto min-w-0 max-w-full">
-            <Button variant="outline" size="sm" onClick={onView} className="min-w-0 min-h-9 shrink-0">
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onView(); }} className="min-w-0 min-h-9 shrink-0">
               <FileText className="mr-2 h-4 w-4" />
               View gig
             </Button>
