@@ -5,6 +5,8 @@ import "./index.css";
 import { HelmetProvider } from "react-helmet-async";
 import { logIntegrationStatus } from "./utils/integrationCheck";
 import { Capacitor } from "@capacitor/core";
+import lightFaviconIco from "@/assets/light/favicon.ico";
+import darkFaviconIco from "@/assets/dark/favicon.ico";
 import lightFavicon32 from "@/assets/light/favicon-32x32.png";
 import darkFavicon32 from "@/assets/dark/favicon-32x32.png";
 import lightFavicon48 from "@/assets/light/favicon-48x48.png";
@@ -45,14 +47,14 @@ const setLink = (
 };
 
 const setFaviconAssets = (isDark: boolean) => {
+  const ico = isDark ? darkFaviconIco : lightFaviconIco;
   const icon32 = isDark ? darkFavicon32 : lightFavicon32;
   const icon48 = isDark ? darkFavicon48 : lightFavicon48;
   const icon64 = isDark ? darkFavicon64 : lightFavicon64;
   const appleIcon = isDark ? darkAppleTouchIcon : lightAppleTouchIcon;
   const manifest = isDark ? darkManifest : lightManifest;
 
-  // Use 64x64 PNG as default tab icon so the DG logo shows
-  setLink("icon", icon64, { type: "image/png" });
+  setLink("icon", ico, { type: "image/x-icon" });
   setLink("icon", icon32, { sizes: "32x32", type: "image/png" });
   setLink("icon", icon48, { sizes: "48x48", type: "image/png" });
   setLink("icon", icon64, { sizes: "64x64", type: "image/png" });
