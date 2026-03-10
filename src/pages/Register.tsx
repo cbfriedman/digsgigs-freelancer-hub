@@ -505,8 +505,8 @@ const Register = () => {
   // Don't show loading spinner in password reset mode - show the form immediately
   if (authLoading && !isPasswordResetMode) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen min-h-[100dvh] flex items-center justify-center p-4 bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-label="Loading" />
       </div>
     );
   }
@@ -1963,14 +1963,14 @@ const Register = () => {
         canonical="/register"
       />
       
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 box-border">
-        <div className="w-full min-w-0 max-w-full flex items-center justify-center">
-          <Card className="w-full max-w-md min-w-0 overflow-hidden">
-            <CardHeader className="text-center pb-4">
+      <div className="min-h-screen min-h-[100dvh] bg-background flex items-center justify-center p-4 sm:p-6 md:p-8 box-border overflow-y-auto">
+        <div className="w-full min-w-0 max-w-full flex items-center justify-center my-auto py-6 sm:py-8">
+          <Card className="w-full min-w-0 max-w-[calc(100vw-2rem)] sm:max-w-md overflow-hidden shadow-lg">
+            <CardHeader className="text-center pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
               {/* Logo */}
               <AuthLogo />
               
-              <CardTitle className="text-2xl font-bold">
+              <CardTitle className="text-xl sm:text-2xl font-bold break-words">
                 {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome back" : step === 1
                   ? selectedRoles.has('gigger')
                     ? "Sign up to hire talent"
@@ -1979,7 +1979,7 @@ const Register = () => {
                       : "Create a new account"
                   : step === 3 ? "Select Your Role" : currentRole === 'digger' ? "Complete Your Profile" : "Complete Your Profile"}
               </CardTitle>
-              <CardDescription className="text-base">
+              <CardDescription className="text-sm sm:text-base break-words">
                 {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1
                   ? selectedRoles.has('gigger')
                     ? "Post projects for free, review tailored proposals, and hire the best talent for your team."
@@ -1991,7 +1991,7 @@ const Register = () => {
             </CardHeader>
 
 
-          <CardContent>
+          <CardContent className="px-4 sm:px-6 pb-6 sm:pb-8">
             {/* Password Reset Form */}
             {isPasswordResetMode && (
               <form onSubmit={handlePasswordUpdate} className="space-y-4">
@@ -2398,7 +2398,7 @@ const Register = () => {
 
                 {/* Name Fields - First name and Last name */}
                 {!isFromGigPosting && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First name</Label>
                       <Input
