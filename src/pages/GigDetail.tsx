@@ -27,6 +27,7 @@ import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOp
 import { getLocalTimeForLocation } from "@/pages/DiggerDetail/utils";
 import { getLeadPriceDisplay, LEAD_PRICE_CAPTION } from "@/lib/leadPrice";
 import { cn } from "@/lib/utils";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { MESSAGES_SYNC_EVENT } from "@/lib/messagesSync";
 import { openFloatingChat, dispatchAwardAccepted, dispatchRefetchGigChatMessages } from "@/lib/openFloatingChat";
@@ -1364,7 +1365,7 @@ const GigDetail = () => {
               <Card id="bid" className="border border-border rounded-lg shadow-none">
                 <CardContent className="p-4 sm:p-6 pt-6">
                   <p className="text-center text-muted-foreground text-sm sm:text-base mb-4">Want to bid on this gig?</p>
-                  <Button className="w-full min-h-[44px]" onClick={() => navigate('/register')}>
+                  <Button className="w-full min-h-[44px]" onClick={() => navigateToSignUp({ type: "digger" })}>
                     Sign in as Digger
                   </Button>
                 </CardContent>

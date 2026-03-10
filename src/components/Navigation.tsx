@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
-import { navigateToLogin } from "@/lib/navigateToLogin";
+import { navigateToLogin, navigateToSignUp } from "@/lib/navigateToLogin";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { useRecentConversations } from "@/hooks/useRecentConversations";
@@ -365,7 +365,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/register?mode=signup&type=digger")} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => navigateToSignUp({ type: "digger" })} className="cursor-pointer">
                   Become a Digger
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/digger-guide")} className="cursor-pointer">
@@ -446,7 +446,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => navigate("/register")}
+                    onClick={() => navigateToSignUp()}
                     className="bg-accent text-accent-foreground font-semibold rounded-lg border-0"
                   >
                     Sign Up
@@ -1328,7 +1328,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
                           isActive("/register") && location.search.includes("type=digger") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
                         )}
-                        onClick={() => { navigate("/register?mode=signup&type=digger"); setMobileMenuOpen(false); }}
+                        onClick={() => navigateToSignUp({ type: "digger" })}
                       >
                         <span className="font-medium">Become a Digger</span>
                       </button>
@@ -1591,10 +1591,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           </Button>
                           <Button
                             className="w-full bg-accent text-accent-foreground font-semibold rounded-lg border-0"
-                            onClick={() => {
-                              setMobileMenuOpen(false);
-                              navigate("/register");
-                            }}
+                            onClick={() => navigateToSignUp()}
                           >
                             Sign Up
                           </Button>
@@ -1633,7 +1630,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               type="button"
               onClick={() => {
                 setShowGetStartedModal(false);
-                navigate("/register?type=gigger");
+                navigateToSignUp({ type: "gigger" });
               }}
               className="group flex h-full flex-col rounded-lg border border-border bg-background p-5 text-left shadow-sm hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
@@ -1658,7 +1655,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               type="button"
               onClick={() => {
                 setShowGetStartedModal(false);
-                navigate("/register?type=digger");
+                navigateToSignUp({ type: "digger" });
               }}
               className="group flex h-full flex-col rounded-lg border border-border bg-background p-5 text-left shadow-sm hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >

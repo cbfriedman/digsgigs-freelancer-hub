@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -501,7 +502,7 @@ export default function Pricing() {
                 variant="hero"
                 size="lg" 
                 className="text-lg px-8 py-6"
-                onClick={() => navigate("/register?mode=signup&type=digger")}
+                onClick={() => navigateToSignUp({ type: "digger" })}
               >
                 Become a Digger — It's Free
                 <ArrowRight className="ml-2 h-5 w-5" />

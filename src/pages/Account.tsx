@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { cn } from "@/lib/utils";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { PaymentMethodForm } from "@/components/PaymentMethodForm";
 import { IdVerificationDialog } from "@/components/IdVerificationDialog";
@@ -295,7 +296,7 @@ export default function Account() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate("/register");
+      navigateToSignUp();
       return;
     }
     (async () => {
@@ -494,7 +495,7 @@ export default function Account() {
     const open = new URLSearchParams(location.search).get("open");
     if (!open) return;
     if (open === "email") {
-      navigate("/register", { replace: true });
+      navigateToSignUp();
       return;
     }
     if (open === "phone") {
@@ -716,8 +717,8 @@ export default function Account() {
               role={!isEmailVerified ? "button" : undefined}
               tabIndex={!isEmailVerified ? 0 : undefined}
               className={`rounded-md border border-border/50 bg-muted/20 p-3 sm:p-3.5 ${!isEmailVerified ? "cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20" : ""}`}
-              onClick={() => { if (!isEmailVerified) navigate("/register"); }}
-              onKeyDown={(e) => { if (!isEmailVerified && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); navigate("/register"); } }}
+              onClick={() => { if (!isEmailVerified) navigateToSignUp(); }}
+              onKeyDown={(e) => { if (!isEmailVerified && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); navigateToSignUp(); } }}
             >
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

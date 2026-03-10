@@ -9,6 +9,24 @@ export function navigateToLogin(options?: { returnTo?: string }): void {
 }
 
 /**
+ * Full-page navigation to the sign-up page so Cloudflare challenge runs before the page loads.
+ * Use instead of navigate() for "Sign up" links.
+ */
+export function navigateToSignUp(options?: { type?: "digger" | "gigger"; mode?: string }): void {
+  const params = new URLSearchParams();
+  if (options?.type === "digger") {
+    params.set("mode", "signup");
+    params.set("type", "digger");
+  } else if (options?.type === "gigger") {
+    params.set("type", "gigger");
+  } else if (options?.mode) {
+    params.set("mode", options.mode);
+  }
+  const query = params.toString();
+  window.location.href = query ? `/register?${query}` : "/register";
+}
+
+/**
  * Full-page navigation to /auth (redirects to register) so Cloudflare challenge runs.
  */
 export function navigateToAuth(options?: { redirect?: string }): void {

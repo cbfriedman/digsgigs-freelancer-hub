@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
@@ -232,7 +233,7 @@ export default function LeadUnlock() {
 
     if (!diggerId) {
       toast.error("Please complete your Digger profile first");
-      navigate("/register?mode=signup&type=digger");
+      navigateToSignUp({ type: "digger" });
       return;
     }
 
@@ -264,7 +265,7 @@ export default function LeadUnlock() {
 
     if (!diggerId) {
       toast.error("Please complete your Digger profile first");
-      navigate("/register?mode=signup&type=digger");
+      navigateToSignUp({ type: "digger" });
       return;
     }
 
@@ -437,7 +438,7 @@ export default function LeadUnlock() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate("/register?mode=signup&type=digger")}
+                      onClick={() => navigateToSignUp({ type: "digger" })}
                     >
                       Create Your Profile
                     </Button>

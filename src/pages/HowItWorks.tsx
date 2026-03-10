@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -297,7 +298,7 @@ const HowItWorks = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => navigate("/register?mode=signup&type=digger")} 
+              onClick={() => navigateToSignUp({ type: "digger" })} 
               className="text-lg px-8 group"
             >
               Become a Digger

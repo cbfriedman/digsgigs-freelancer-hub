@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +47,7 @@ export default function FoundingDigger() {
               <Button 
                 size="lg" 
                 className="text-lg px-8 py-6"
-                onClick={() => navigate("/register?mode=signup&type=digger")}
+                onClick={() => navigateToSignUp({ type: "digger" })}
               >
                 Start Free for 60 Days
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -194,7 +195,7 @@ export default function FoundingDigger() {
                   <Button 
                     size="lg" 
                     className="text-lg px-8 py-6"
-                    onClick={() => navigate("/register?mode=signup&type=digger")}
+                    onClick={() => navigateToSignUp({ type: "digger" })}
                   >
                     Start Free for 60 Days
                     <ArrowRight className="ml-2 h-5 w-5" />

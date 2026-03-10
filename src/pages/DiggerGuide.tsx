@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -56,7 +57,7 @@ export default function DiggerGuide() {
                       <li>2-3 minutes to complete signup</li>
                     </ul>
                   </div>
-                  <Button onClick={() => navigate('/register')} className="w-full">
+                  <Button onClick={() => navigateToSignUp()} className="w-full">
                     Start Sign Up
                   </Button>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { navigateToLogin } from "@/lib/navigateToLogin";
+import { navigateToLogin, navigateToSignUp } from "@/lib/navigateToLogin";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/digsandgigs-logo.png";

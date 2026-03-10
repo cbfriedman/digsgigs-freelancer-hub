@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, CheckCircle2, Mail, Sparkles } from "lucide-react";
@@ -103,7 +104,7 @@ export const HeroSection = () => {
               className="text-lg px-8 py-6 bg-gradient-primary text-primary-foreground shadow-primary hover:shadow-primary-lg transition-all duration-300 hover:-translate-y-0.5"
               onClick={() => {
                 trackButtonClick('Become a Digger', 'hero');
-                navigate("/register?mode=signup&type=digger");
+                navigateToSignUp({ type: "digger" });
               }}
             >
               Become a Digger

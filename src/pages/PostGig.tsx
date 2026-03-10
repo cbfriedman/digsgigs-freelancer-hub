@@ -30,6 +30,7 @@ import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
 import { getLeadPriceDollars } from "@/lib/leadPrice";
 import { getReferralCodeFromStorage } from "@/lib/referralUtils";
+import { navigateToSignUp } from "@/lib/navigateToLogin";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
@@ -519,7 +520,7 @@ const PostGig = () => {
                         Switch to Gigger
                       </Button>
                     ) : (
-                      <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")}>
+                      <Button type="button" variant="outline" onClick={() => navigateToSignUp({ type: "gigger" })}>
                         Get a Gigger account
                       </Button>
                     )}
@@ -676,7 +677,7 @@ const PostGig = () => {
                       Switch to Gigger
                     </Button>
                   ) : (
-                    <Button type="button" variant="outline" onClick={() => navigate("/register?type=gigger")}>
+                    <Button type="button" variant="outline" onClick={() => navigateToSignUp({ type: "gigger" })}>
                       Get a Gigger account
                     </Button>
                   )}
