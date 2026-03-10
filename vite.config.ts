@@ -1,7 +1,22 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
+
+// Copy app favicon to public so GET /favicon.ico (e.g. Cloudflare challenge page) serves the real icon
+function copyFaviconToPublic() {
+  return {
+    name: "copy-favicon-to-public",
+    buildStart() {
+      const src = path.resolve(__dirname, "src/assets/light/favicon.ico");
+      const dest = path.resolve(__dirname, "public/favicon.ico");
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,6 +31,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
+    copyFaviconToPublic(),
     react(), 
     mode === "development" && componentTagger(),
     mode === "development" && {
