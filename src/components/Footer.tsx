@@ -54,7 +54,7 @@ export const Footer = () => {
               onClick={() => navigate("/")}
               className="inline-block mb-4 text-left hover:opacity-80"
             >
-              <img src={logo} alt="Digs & Gigs" className="h-16 w-auto object-contain" />
+              <img src={logo} alt="Digs & Gigs" className="h-20 w-auto object-contain" />
             </button>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xs">
               Clients post gigs. Freelancers get leads by email and bid. Pay per lead or when awarded. No membership.

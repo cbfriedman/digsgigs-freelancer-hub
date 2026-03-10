@@ -124,7 +124,7 @@ export const HomepageNavbar = () => {
           <img 
             src={logo} 
             alt="Digs & Gigs" 
-            className="h-10 w-auto object-contain"
+            className="h-12 w-auto object-contain"
           />
         </div>
         

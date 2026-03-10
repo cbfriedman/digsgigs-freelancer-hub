@@ -283,7 +283,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   alt="Digs & Gigs" 
                   className={cn(
                     "w-auto object-contain transition-all duration-300 group-hover:scale-105",
-                    scrolled ? "h-8" : "h-10"
+                    scrolled ? "h-9" : "h-12"
                   )}
                 />
               </div>
