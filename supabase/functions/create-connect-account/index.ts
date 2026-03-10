@@ -111,13 +111,14 @@ serve(async (req) => {
 
       accountId = account.id;
 
+      // Update ALL digger_profiles for this user so contracts referencing any of them (e.g. by bid/escrow) find the Connect account
       const updatePayload = isLive
         ? { stripe_connect_account_id_live: accountId }
         : { stripe_connect_account_id: accountId };
       await supabaseClient
         .from("digger_profiles")
         .update(updatePayload)
-        .eq("id", diggerProfile.id);
+        .eq("user_id", user.id);
     } else {
       // Keep display name in sync with registered email for existing accounts (Stripe Dashboard → Connected accounts)
       await stripe.accounts.update(accountId, {

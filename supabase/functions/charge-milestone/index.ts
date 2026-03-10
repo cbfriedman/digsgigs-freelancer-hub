@@ -465,48 +465,102 @@ serve(async (req) => {
     const amountCents = Math.round(Number(milestone.amount) * 100); // gross
     const transactionFeeCents = Math.round(amountCents * (TRANSACTION_FEE_PERCENT / 100)); // 3% from Gigger
 
+    // Load digger profile for saved-card path — use same resilient loading as Checkout (maybeSingle + fallback) so recovery can run
+    const fullSelectSaved = "id, user_id, stripe_connect_account_id, stripe_connect_account_id_live, stripe_connect_charges_enabled, stripe_connect_charges_enabled_live, payout_provider, payout_email";
+    const minimalSelectSaved = "id, user_id, stripe_connect_account_id, stripe_connect_charges_enabled";
+    let diggerProfileSaved: Record<string, unknown> | null = null;
+    let diggerProfileSavedError: { message: string } | null = null;
+    const resSaved = await supabaseAdmin
+      .from("digger_profiles")
+      .select(fullSelectSaved)
+      .eq("id", contract.digger_id)
+      .maybeSingle();
+    diggerProfileSaved = resSaved.data as Record<string, unknown> | null;
+    diggerProfileSavedError = resSaved.error;
+    if (diggerProfileSavedError && /column|does not exist|undefined/i.test(diggerProfileSavedError.message)) {
+      logStep("Saved-card: digger profile full select failed, retrying minimal", { error: diggerProfileSavedError.message });
+      const fallbackSaved = await supabaseAdmin
+        .from("digger_profiles")
+        .select(minimalSelectSaved)
+        .eq("id", contract.digger_id)
+        .maybeSingle();
+      diggerProfileSaved = fallbackSaved.data as Record<string, unknown> | null;
+      diggerProfileSavedError = fallbackSaved.error;
+      if (diggerProfileSaved) {
+        (diggerProfileSaved as any).stripe_connect_account_id_live = null;
+        (diggerProfileSaved as any).stripe_connect_charges_enabled_live = null;
+        (diggerProfileSaved as any).payout_provider = null;
+        (diggerProfileSaved as any).payout_email = null;
+      }
+    }
+    if (diggerProfileSavedError) {
+      logStep("Saved-card: digger profile query failed", { diggerId: contract.digger_id, error: diggerProfileSavedError.message });
+      return new Response(
+        JSON.stringify({ error: "Could not load professional's payout profile. Please try again or use Approve & pay (Checkout)." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+    if (!diggerProfileSaved) {
+      logStep("Saved-card: digger profile not found", { contractDiggerId: contract.digger_id });
+      return new Response(
+        JSON.stringify({ error: "Professional profile not found for this contract. Please use Approve & pay (Checkout) or contact support." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
     // Compute digger payout and 7% deposit advance before creating PI so we can use transfer_data (destination charge).
     // Using transfer_data avoids "insufficient available funds" because the transfer happens at capture, not from platform balance.
-    const { data: diggerProfileSaved } = await supabaseAdmin
-      .from("digger_profiles")
-      .select("id, user_id, stripe_connect_account_id, stripe_connect_account_id_live, stripe_connect_charges_enabled, stripe_connect_charges_enabled_live, payout_provider, payout_email")
-      .eq("id", contract.digger_id)
-      .single();
     let connectAccountIdSaved = isLive ? (diggerProfileSaved as any)?.stripe_connect_account_id_live : diggerProfileSaved?.stripe_connect_account_id;
     const useAlternativePayoutSaved = ["paypal", "payoneer", "wise"].includes((diggerProfileSaved as any)?.payout_provider ?? "");
+    // Mirror Checkout recovery so saved-card finds the same Connect account (user-level, sibling, email match).
     if (!connectAccountIdSaved && (diggerProfileSaved as any)?.user_id) {
-      const siblingQuery = supabaseAdmin
+      const { data: profilesWithAccount } = await supabaseAdmin
         .from("digger_profiles")
-        .select("id, stripe_connect_account_id, stripe_connect_account_id_live, stripe_connect_charges_enabled, stripe_connect_charges_enabled_live")
+        .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live")
         .eq("user_id", (diggerProfileSaved as any).user_id)
-        .neq("id", (diggerProfileSaved as any).id)
-        .limit(1);
-      const { data: siblingProfile } = await (isLive
-        ? siblingQuery.not("stripe_connect_account_id_live", "is", null)
-        : siblingQuery.not("stripe_connect_account_id", "is", null)
-      ).maybeSingle();
-      const siblingConnect = isLive
-        ? (siblingProfile as any)?.stripe_connect_account_id_live
-        : siblingProfile?.stripe_connect_account_id;
-      if (siblingConnect) {
-        connectAccountIdSaved = siblingConnect;
-        await supabaseAdmin
-          .from("digger_profiles")
-          .update(isLive
-            ? {
-                stripe_connect_account_id_live: siblingConnect,
-                stripe_connect_charges_enabled_live: !!(siblingProfile as any)?.stripe_connect_charges_enabled_live,
-              }
-            : {
-                stripe_connect_account_id: siblingConnect,
-                stripe_connect_charges_enabled: !!siblingProfile?.stripe_connect_charges_enabled,
-              })
-          .eq("id", contract.digger_id);
-        logStep("Recovered saved-card connect account from sibling profile", { diggerId: contract.digger_id, sourceProfileId: (siblingProfile as any)?.id });
+        .not(isLive ? "stripe_connect_account_id_live" : "stripe_connect_account_id", "is", null)
+        .limit(5);
+      const candidates = (profilesWithAccount ?? []) as { id: string; stripe_connect_account_id?: string; stripe_connect_charges_enabled?: boolean; stripe_connect_account_id_live?: string; stripe_connect_charges_enabled_live?: boolean }[];
+      const preferred = candidates.find((p) => (isLive ? p.stripe_connect_charges_enabled_live : p.stripe_connect_charges_enabled)) ?? candidates[0];
+      if (preferred) {
+        const foundId = isLive ? preferred.stripe_connect_account_id_live : preferred.stripe_connect_account_id;
+        if (foundId) {
+          connectAccountIdSaved = foundId;
+          const updatePayload = isLive
+            ? { stripe_connect_account_id_live: foundId, stripe_connect_charges_enabled_live: !!(preferred as any)?.stripe_connect_charges_enabled_live }
+            : { stripe_connect_account_id: foundId, stripe_connect_charges_enabled: !!preferred.stripe_connect_charges_enabled };
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("id", contract.digger_id);
+          // Backfill all profiles for this user so other contracts and future requests find the Connect account
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("user_id", (diggerProfileSaved as any).user_id);
+          logStep("Recovered saved-card connect account from same-user profile", { diggerId: contract.digger_id, sourceProfileId: preferred.id });
+        }
       }
     }
     if (!connectAccountIdSaved && (diggerProfileSaved as any)?.user_id) {
-      // Final fallback: recover Connect account by matching email in Stripe. Use auth email if profiles.email is null.
+      const { data: siblingRows } = await supabaseAdmin
+        .from("digger_profiles")
+        .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live")
+        .eq("user_id", (diggerProfileSaved as any).user_id)
+        .neq("id", (diggerProfileSaved as any).id)
+        .not(isLive ? "stripe_connect_account_id_live" : "stripe_connect_account_id", "is", null)
+        .limit(5);
+      const siblings = (siblingRows ?? []) as { id: string; stripe_connect_account_id?: string; stripe_connect_charges_enabled?: boolean; stripe_connect_account_id_live?: string; stripe_connect_charges_enabled_live?: boolean }[];
+      const siblingProfile = siblings.find((p) => (isLive ? p.stripe_connect_charges_enabled_live : p.stripe_connect_charges_enabled)) ?? siblings[0];
+      if (siblingProfile) {
+        const siblingConnect = isLive ? siblingProfile.stripe_connect_account_id_live : siblingProfile.stripe_connect_account_id;
+        if (siblingConnect) {
+          connectAccountIdSaved = siblingConnect;
+          const updatePayload = isLive
+            ? { stripe_connect_account_id_live: siblingConnect, stripe_connect_charges_enabled_live: !!siblingProfile.stripe_connect_charges_enabled_live }
+            : { stripe_connect_account_id: siblingConnect, stripe_connect_charges_enabled: !!siblingProfile.stripe_connect_charges_enabled };
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("id", contract.digger_id);
+          // Backfill all profiles for this user
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("user_id", (diggerProfileSaved as any).user_id);
+          logStep("Recovered saved-card connect account from sibling profile", { diggerId: contract.digger_id, sourceProfileId: siblingProfile.id });
+        }
+      }
+    }
+    if (!connectAccountIdSaved && (diggerProfileSaved as any)?.user_id) {
       const diggerUserIdSaved = (diggerProfileSaved as any).user_id;
       const { data: diggerUserProfile } = await supabaseAdmin
         .from("profiles")
@@ -520,40 +574,46 @@ serve(async (req) => {
       }
       if (diggerEmailSaved?.trim()) {
         const accounts = await stripe.accounts.list({ limit: 100 });
-        const matched = accounts.data.find((a) => a.email?.toLowerCase() === diggerEmailSaved!.toLowerCase());
+        const byEmail = accounts.data.filter((a) => a.email?.toLowerCase() === diggerEmailSaved!.toLowerCase());
+        const matched = byEmail.find((a) => a.details_submitted) ?? byEmail[0];
         if (matched?.id) {
           connectAccountIdSaved = matched.id;
           const detailsSubmitted = !!matched.details_submitted;
           const chargesEnabled = !!matched.charges_enabled;
           const payoutsEnabled = !!matched.payouts_enabled;
           const canReceiveSaved = chargesEnabled || payoutsEnabled || (!isLive && detailsSubmitted);
-          await supabaseAdmin
-            .from("digger_profiles")
-            .update(isLive
-              ? {
-                  stripe_connect_account_id_live: matched.id,
-                  stripe_connect_onboarded_live: detailsSubmitted,
-                  stripe_connect_charges_enabled_live: canReceiveSaved,
-                }
-              : {
-                  stripe_connect_account_id: matched.id,
-                  stripe_connect_onboarded: detailsSubmitted,
-                  stripe_connect_charges_enabled: canReceiveSaved,
-                })
-            .eq("id", contract.digger_id);
+          const updatePayload = isLive
+            ? {
+                stripe_connect_account_id_live: matched.id,
+                stripe_connect_onboarded_live: detailsSubmitted,
+                stripe_connect_charges_enabled_live: canReceiveSaved,
+              }
+            : {
+                stripe_connect_account_id: matched.id,
+                stripe_connect_onboarded: detailsSubmitted,
+                stripe_connect_charges_enabled: canReceiveSaved,
+              };
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("id", contract.digger_id);
+          // Backfill all profiles for this user so other contracts find the Connect account
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("user_id", diggerUserIdSaved);
           logStep("Recovered saved-card connect account from Stripe account email match", { diggerId: contract.digger_id });
         }
       }
     }
     if (!connectAccountIdSaved && !isLive && (diggerProfileSaved as any)?.user_id) {
       // Last-resort sandbox fallback: create a test Connect account automatically so saved-card isn't blocked.
-      const { data: diggerUserProfile } = await supabaseAdmin
-        .from("profiles")
-        .select("email")
-        .eq("id", (diggerProfileSaved as any).user_id)
-        .maybeSingle();
-      const diggerEmail = (diggerUserProfile as any)?.email as string | undefined;
-      if (diggerEmail) {
+      const diggerUserIdForCreate = (diggerProfileSaved as any).user_id;
+      const { data: authForCreate } = await supabaseAdmin.auth.admin.getUserById(diggerUserIdForCreate);
+      let diggerEmail = authForCreate?.user?.email ?? undefined;
+      if (!diggerEmail?.trim()) {
+        const { data: diggerUserProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("id", diggerUserIdForCreate)
+          .maybeSingle();
+        diggerEmail = (diggerUserProfile as any)?.email as string | undefined;
+      }
+      if (diggerEmail?.trim()) {
         const account = await stripe.accounts.create({
           type: "express",
           email: diggerEmail,
