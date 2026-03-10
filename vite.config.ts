@@ -4,15 +4,19 @@ import path from "path";
 import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 
-// Copy app favicon to public so GET /favicon.ico (e.g. Cloudflare challenge page) serves the real icon
+// Copy app favicon to public so GET /favicon.ico (e.g. Cloudflare challenge page) serves the real icon.
+// Use 64x64 PNG at /favicon.ico so Cloudflare verification page shows a larger icon (than 16x16 .ico).
 function copyFaviconToPublic() {
   return {
     name: "copy-favicon-to-public",
     buildStart() {
-      const src = path.resolve(__dirname, "src/assets/light/favicon.ico");
-      const dest = path.resolve(__dirname, "public/favicon.ico");
-      if (fs.existsSync(src)) {
-        fs.copyFileSync(src, dest);
+      const dir = path.resolve(__dirname, "public");
+      const icoSrc = path.resolve(__dirname, "src/assets/light/favicon.ico");
+      const png64Src = path.resolve(__dirname, "src/assets/light/favicon-64x64.png");
+      if (fs.existsSync(png64Src)) {
+        fs.copyFileSync(png64Src, path.join(dir, "favicon.ico"));
+      } else if (fs.existsSync(icoSrc)) {
+        fs.copyFileSync(icoSrc, path.join(dir, "favicon.ico"));
       }
     },
   };
