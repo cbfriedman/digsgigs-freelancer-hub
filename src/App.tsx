@@ -617,6 +617,22 @@ const router = createBrowserRouter(
         element: <EmbedWidget />,
       },
       {
+        path: "/from/producthunt",
+        element: <ProductHuntLanding />,
+      },
+      {
+        path: "/from/indiehackers",
+        element: <IndieHackersLanding />,
+      },
+      {
+        path: "/from/hackernews",
+        element: <HackerNewsLanding />,
+      },
+      {
+        path: "/from/devto",
+        element: <DevToLanding />,
+      },
+      {
         path: "*",
         element: <NotFound />,
       },
