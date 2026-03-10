@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
@@ -275,7 +276,7 @@ const Register = () => {
           setTimeout(() => {
             setIsPasswordResetMode(false);
             setIsSignInMode(true);
-            navigate('/register?mode=signin');
+            navigateToLogin();
           }, 2000);
         }
       }, 1000); // Wait 1 second for Supabase to process
@@ -1912,7 +1913,7 @@ const Register = () => {
         setTimeout(() => {
           setIsPasswordResetMode(false);
           setIsSignInMode(true);
-          navigate('/register?mode=signin');
+          navigateToLogin();
         }, 2000);
         return;
       }
@@ -1937,7 +1938,7 @@ const Register = () => {
         setIsSignInMode(true);
         setNewPassword("");
         setConfirmNewPassword("");
-        navigate('/register?mode=signin');
+        navigateToLogin();
       }, 1500);
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -2076,7 +2077,7 @@ const Register = () => {
                       setIsSignInMode(true);
                       setNewPassword("");
                       setConfirmNewPassword("");
-                      navigate('/register?mode=signin');
+                      navigateToLogin();
                     }}
                   >
                     Sign in instead

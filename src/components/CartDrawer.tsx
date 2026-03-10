@@ -11,6 +11,7 @@ import { getLeadPriceDisplay } from "@/lib/leadPrice";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { navigateToAuth } from "@/lib/navigateToLogin";
 
 interface CartDrawerProps {
   open: boolean;
@@ -51,7 +52,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
           description: "Please sign in to purchase leads",
           variant: "destructive",
         });
-        navigate("/auth");
+        navigateToAuth();
         return;
       }
 

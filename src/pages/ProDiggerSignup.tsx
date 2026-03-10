@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,7 @@ export default function ProDiggerSignup() {
       // Check if email confirmation is required
       if (authData.user && !authData.session) {
         toast.success("Please check your email to verify your account!");
-        navigate("/register?mode=signin");
+        navigateToLogin();
       } else {
         toast.success("Account created! Let's complete your profile.");
         navigate("/my-profiles");
@@ -328,7 +329,7 @@ export default function ProDiggerSignup() {
 
               <p className="text-xs text-center text-muted-foreground">
                 Already have an account?{" "}
-                <Link to="/register?mode=signin" className="underline hover:text-primary">
+                <Link to="/register?mode=signin" reloadDocument className="underline hover:text-primary">
                   Sign in
                 </Link>
               </p>

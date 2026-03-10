@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { navigateToAuth } from "@/lib/navigateToLogin";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,7 +101,7 @@ const AdminDashboard = () => {
     try {
       if (!user) {
         toast.error("Please sign in to access this page");
-        navigate("/auth");
+        navigateToAuth();
         return;
       }
 

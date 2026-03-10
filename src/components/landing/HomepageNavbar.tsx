@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/digsandgigs-logo.png";
@@ -184,7 +185,7 @@ export const HomepageNavbar = () => {
                 size="sm"
                 onClick={() => {
                   trackButtonClick('Sign In', 'header');
-                  navigate("/register?mode=signin");
+                  navigateToLogin();
                 }}
               >
                 Sign In
@@ -285,10 +286,7 @@ export const HomepageNavbar = () => {
                   <Button 
                     variant="ghost" 
                     className="justify-start h-12" 
-                    onClick={() => {
-                      navigate("/register?mode=signin");
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={() => navigateToLogin()}
                   >
                     Sign In
                   </Button>

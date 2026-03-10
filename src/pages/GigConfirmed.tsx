@@ -1,4 +1,5 @@
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { CheckCircle, User, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,7 +95,7 @@ const GigConfirmed = () => {
       if (authError) {
         if (authError.message.includes('already registered')) {
           toast.error("This email is already registered. Please sign in instead.");
-          navigate('/register?mode=signin');
+          navigateToLogin();
         } else {
           toast.error(authError.message || "Failed to create account");
         }

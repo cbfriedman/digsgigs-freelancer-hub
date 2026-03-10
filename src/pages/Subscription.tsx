@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
@@ -57,7 +58,7 @@ export default function Subscription() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth?redirect=/subscription');
+      navigateToLogin({ returnTo: "/subscription" });
       return;
     }
     loadDiggerProfile();

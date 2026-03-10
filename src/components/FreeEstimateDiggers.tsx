@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Loader2, Star, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { navigateToAuth } from "@/lib/navigateToLogin";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface FreeEstimateDigger {
@@ -86,7 +87,7 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
       
       if (!session) {
         toast.error("Please sign in to request an estimate");
-        navigate("/auth");
+        navigateToAuth();
         return;
       }
 

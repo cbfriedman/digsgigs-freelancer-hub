@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { useRecentConversations } from "@/hooks/useRecentConversations";
@@ -438,7 +439,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate("/register?mode=signin")}
+                    onClick={() => navigateToLogin()}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     Sign In
@@ -1584,10 +1585,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => {
-                              navigate("/register?mode=signin");
-                              setMobileMenuOpen(false);
-                            }}
+                            onClick={() => navigateToLogin()}
                           >
                             Sign In
                           </Button>

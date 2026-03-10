@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { navigateToLogin } from "@/lib/navigateToLogin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -75,7 +76,7 @@ const GigEdit = () => {
           // If not logged in, redirect to login with return URL
           if (!session) {
             toast.error("Please sign in to edit this project");
-            navigate(`/register?mode=signin&returnTo=/gig/${id}/edit`);
+            navigateToLogin({ returnTo: `/gig/${id}/edit` });
             return;
           }
           toast.error("You don't have permission to edit this project");
