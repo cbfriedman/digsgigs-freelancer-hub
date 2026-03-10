@@ -115,6 +115,10 @@ import ImportSubscribers from "./pages/admin/ImportSubscribers";
 import BecomeADigger from "./pages/BecomeADigger";
 import HireAPro from "./pages/HireAPro";
 import EmbedWidget from "./pages/EmbedWidget";
+import ProductHuntLanding from "./pages/landings/ProductHuntLanding";
+import IndieHackersLanding from "./pages/landings/IndieHackersLanding";
+import HackerNewsLanding from "./pages/landings/HackerNewsLanding";
+import DevToLanding from "./pages/landings/DevToLanding";
 
 const queryClient = new QueryClient();
 
@@ -611,6 +615,22 @@ const router = createBrowserRouter(
       {
         path: "/embed-widget",
         element: <EmbedWidget />,
+      },
+      {
+        path: "/from/producthunt",
+        element: <ProductHuntLanding />,
+      },
+      {
+        path: "/from/indiehackers",
+        element: <IndieHackersLanding />,
+      },
+      {
+        path: "/from/hackernews",
+        element: <HackerNewsLanding />,
+      },
+      {
+        path: "/from/devto",
+        element: <DevToLanding />,
       },
       {
         path: "*",
