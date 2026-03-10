@@ -72,7 +72,8 @@ export default function CommunityLanding({ config }: { config: CommunityLandingC
       if (error && error.code !== "23505") throw error;
 
       // Log conversion
-      await supabase.from("campaign_conversions").insert({
+      // Log conversion (non-critical)
+      supabase.from("campaign_conversions").insert({
         conversion_type: "digger_signup",
         email: email.toLowerCase().trim(),
         utm_source: config.source,
@@ -83,7 +84,7 @@ export default function CommunityLanding({ config }: { config: CommunityLandingC
         referrer: campaignData.referrer,
         device_type: campaignData.device_type,
         browser: campaignData.browser,
-      }).catch(() => {}); // non-critical
+      }).then(() => {});
 
       trackEvent("Lead", { content_name: "digger_signup", content_category: config.source });
       trackRedditEvent("Lead", { conversionType: "digger_signup" });
