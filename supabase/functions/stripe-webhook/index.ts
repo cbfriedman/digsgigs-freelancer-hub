@@ -62,7 +62,9 @@ serve(async (req) => {
       const onboarded = !!account.details_submitted;
       const chargesEnabled = !!account.charges_enabled;
       const payoutsEnabled = !!account.payouts_enabled;
-      const canReceivePayments = chargesEnabled || payoutsEnabled;
+      // In test/sandbox, Stripe can keep charges_enabled false briefly after onboarding; treat details_submitted as ready.
+      const isTestMode = ctx.mode === 'test';
+      const canReceivePayments = chargesEnabled || payoutsEnabled || (isTestMode && !!account.details_submitted);
       const { error: updateTest } = await supabaseClient
         .from('digger_profiles')
         .update({ stripe_connect_onboarded: onboarded, stripe_connect_charges_enabled: canReceivePayments })
@@ -111,6 +113,23 @@ serve(async (req) => {
 
           if (milestone && milestone.status !== 'paid' && !milestone.stripe_payment_intent_id) {
             const paymentIntentId = session.payment_intent as string;
+            // Verify where the payment went (destination charge)
+            try {
+              const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+              const dest = (pi as any).transfer_data?.destination;
+              const transferAmt = (pi as any).transfer_data?.amount;
+              const status = pi.status;
+              logStep('PaymentIntent verified', {
+                status,
+                transfer_destination: dest ? String(dest).slice(0, 12) + '...' : null,
+                transfer_amount_cents: transferAmt ?? null,
+              });
+              if (status !== 'succeeded') {
+                logStep('WARNING: PaymentIntent not succeeded - digger may not have received funds', { status, paymentIntentId: paymentIntentId.slice(0, 20) + '...' });
+              }
+            } catch (e) {
+              logStep('Could not verify PaymentIntent (non-blocking)', { error: e instanceof Error ? e.message : String(e) });
+            }
             // Destination charge: Stripe already sent funds to digger's Connect account via payment_intent_data.transfer_data
             await supabaseClient
               .from('milestone_payments')
@@ -208,6 +227,32 @@ serve(async (req) => {
                 } catch (e) {
                   logStep('7% transfer failed (platform balance); retry with retry-7pct-milestone', { error: e instanceof Error ? e.message : String(e) });
                 }
+              }
+            }
+
+            // Verify where funds went and warn if Digger must complete onboarding to receive payout
+            const connectAccountAutoCreated = metadata.connect_account_auto_created === 'true';
+            let connectAccountIdForCheck: string | null = null;
+            if (connectAccountAutoCreated) {
+              const { data: dp } = await supabaseClient.from('digger_profiles').select('stripe_connect_account_id').eq('id', diggerIdMeta).maybeSingle();
+              connectAccountIdForCheck = (dp as any)?.stripe_connect_account_id ?? null;
+            } else {
+              const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+              connectAccountIdForCheck = (pi.transfer_data?.destination as string) ?? null;
+            }
+            if (connectAccountIdForCheck) {
+              try {
+                const account = await stripe.accounts.retrieve(connectAccountIdForCheck);
+                const onboarded = !!account.details_submitted;
+                if (!onboarded || connectAccountAutoCreated) {
+                  logStep('DIGGER_PAYOUT_SETUP_REQUIRED: Funds were sent to the professional\'s Connect account. They must complete Get paid (Reconnect payout account) and add their bank details to receive the money in their bank. Until then, funds remain in their Stripe Connect balance.', {
+                    connectAccountId: connectAccountIdForCheck.slice(0, 12) + '...',
+                    details_submitted: onboarded,
+                    connect_account_auto_created: connectAccountAutoCreated,
+                  });
+                }
+              } catch (e) {
+                logStep('Could not verify Connect account (non-blocking)', { error: e instanceof Error ? e.message : String(e) });
               }
             }
 

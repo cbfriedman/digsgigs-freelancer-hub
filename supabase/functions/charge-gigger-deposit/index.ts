@@ -178,7 +178,7 @@ serve(async (req) => {
     const useCheckoutFlow = useCheckout === true || !pmToUse;
 
     if (!useCheckoutFlow && pmToUse) {
-      // Saved card: create PaymentIntent and confirm
+      // Saved card: create PaymentIntent and confirm. Deposit stays on platform; Digger receives 7% when first milestone is paid (see charge-milestone / webhook).
       const paymentIntent = await stripe.paymentIntents.create({
         amount: depositDetails.total,
         currency: "usd",

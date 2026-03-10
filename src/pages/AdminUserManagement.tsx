@@ -711,6 +711,34 @@ const AdminUserManagement = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {user.digger_id && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      const data = await invokeEdgeFunction(supabase, "admin-get-connect-balance", {
+                                        body: { digger_id: user.digger_id },
+                                      });
+                                      if (data?.error) {
+                                        toast.error(data.error === "No Connect account" ? "No payout account connected" : data.error);
+                                        return;
+                                      }
+                                      const avail = (data as { available_usd?: number })?.available_usd ?? 0;
+                                      const pend = (data as { pending_usd?: number })?.pending_usd ?? 0;
+                                      const mode = (data as { mode?: string })?.mode ?? "test";
+                                      toast.success(
+                                        `Payout balance (${mode}): Available $${avail.toFixed(2)}, Pending $${pend.toFixed(2)}`,
+                                        { duration: 6000 }
+                                      );
+                                    } catch (e) {
+                                      toast.error(e instanceof Error ? e.message : "Failed to load balance");
+                                    }
+                                  }}
+                                >
+                                  <Wallet className="h-4 w-4 mr-2" />
+                                  View payout balance
+                                </DropdownMenuItem>
+                              )}
+                              {user.digger_id && <DropdownMenuSeparator />}
                               {user.is_suspended ? (
                                 <DropdownMenuItem
                                   onClick={() => {

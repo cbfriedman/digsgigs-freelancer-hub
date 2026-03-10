@@ -73,8 +73,8 @@ serve(async (req) => {
     const detailsSubmitted = !!account.details_submitted;
     const chargesEnabled = !!account.charges_enabled;
     const payoutsEnabled = !!account.payouts_enabled;
-    // Some countries are transfer-only for Connect. Treat payouts_enabled as payout-ready as well.
-    const canReceivePayments = chargesEnabled || payoutsEnabled;
+    // Some countries are transfer-only for Connect. In test/sandbox, Stripe can keep charges_enabled false briefly after onboarding.
+    const canReceivePayments = chargesEnabled || payoutsEnabled || (!isLive && detailsSubmitted);
 
     const updatePayload = isLive
       ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: canReceivePayments }

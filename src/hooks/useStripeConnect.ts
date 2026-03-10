@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
@@ -14,11 +14,7 @@ export const useStripeConnect = () => {
   const [syncing, setSyncing] = useState(false);
   const fetchIdRef = useRef(0);
 
-  useEffect(() => {
-    checkConnectStatus();
-  }, [stripeMode]);
-
-  const checkConnectStatus = async () => {
+  const checkConnectStatus = useCallback(async () => {
     const thisFetchId = ++fetchIdRef.current;
     setLoading(true);
     try {
@@ -28,15 +24,19 @@ export const useStripeConnect = () => {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("digger_profiles")
         .select("stripe_connect_account_id, stripe_connect_onboarded, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_onboarded_live, stripe_connect_charges_enabled_live")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (thisFetchId !== fetchIdRef.current) return;
 
-      if (profile) {
+      if (profileError) {
+        console.error("Error fetching digger profile:", profileError);
+        setIsOnboarded(false);
+        setCanReceivePayments(false);
+      } else if (profile) {
         const p = profile as unknown as Record<string, unknown>;
         const isLive = stripeMode === "live";
         setIsOnboarded(!!(isLive ? (p.stripe_connect_onboarded_live || p.stripe_connect_account_id_live) : (p.stripe_connect_onboarded || p.stripe_connect_account_id)));
@@ -55,10 +55,14 @@ export const useStripeConnect = () => {
         setLoading(false);
       }
     }
-  };
+  }, [stripeMode]);
+
+  useEffect(() => {
+    checkConnectStatus();
+  }, [checkConnectStatus]);
 
   /** Sync Connect account status from Stripe to the platform (confirm payout account). */
-  const syncWithStripe = async () => {
+  const syncWithStripe = useCallback(async () => {
     setSyncing(true);
     try {
       const data = await invokeEdgeFunction<{ synced?: boolean; error?: string; message?: string }>(
@@ -92,7 +96,7 @@ export const useStripeConnect = () => {
     } finally {
       setSyncing(false);
     }
-  };
+  }, [toast, checkConnectStatus]);
 
   const createConnectAccount = async () => {
     setCreating(true);

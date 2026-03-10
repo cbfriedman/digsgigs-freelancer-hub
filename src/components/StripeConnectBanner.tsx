@@ -10,14 +10,16 @@ export const StripeConnectBanner = () => {
   const [searchParams] = useSearchParams();
   const { loading, isOnboarded, canReceivePayments, creating, syncing, createConnectAccount, checkConnectStatus, syncWithStripe } = useStripeConnect();
 
-  // After return from Stripe Connect, refetch status (webhook may have a short delay)
+  // After return from Stripe Connect, sync status from Stripe (webhook may have a short delay)
   useEffect(() => {
     if (searchParams.get("success") === "true") {
       checkConnectStatus();
+      // Sync from Stripe to ensure stripe_connect_charges_enabled is up to date (handles sandbox verification lag)
+      syncWithStripe().catch(() => {});
       const t = setTimeout(checkConnectStatus, 3000);
       return () => clearTimeout(t);
     }
-  }, [searchParams, checkConnectStatus]);
+  }, [searchParams, checkConnectStatus, syncWithStripe]);
 
   // When loading: only show pending verification (warning) card, never green, so pending users never see a green flash
   if (loading) {

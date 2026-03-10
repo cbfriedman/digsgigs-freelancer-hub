@@ -845,6 +845,11 @@ export function ContractMilestonesCard({
               <span className="block text-xs text-muted-foreground mt-1.5">
                 If the client doesn&apos;t approve or dispute within {autoReleaseDays} days, the payment is released to you automatically.
               </span>
+              {paidCount > 0 && (
+                <span className="block text-xs font-medium text-amber-700 dark:text-amber-400 mt-2">
+                  Paid milestones: funds are in your Stripe payout account. To get them to your bank: complete <strong>Get paid</strong> → <strong>Reconnect payout account</strong> and add bank details (in Sandbox use a test bank). Stripe sends payouts on a schedule (e.g. every 2 days), not instantly—in Sandbox no real money moves; you can see balance and payouts in your Stripe Express dashboard.
+                </span>
+              )}
             </>
           )}
         </CardDescription>

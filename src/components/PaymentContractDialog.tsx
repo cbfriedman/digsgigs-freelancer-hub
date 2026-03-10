@@ -75,8 +75,9 @@ export function PaymentContractDialog({
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [diggerEligibility, setDiggerEligibility] = useState<
-    null | "ok" | "digger_payouts_not_set_up" | "digger_payouts_pending_verification"
+    null | "ok" | "digger_payouts_not_set_up" | "digger_payouts_pending_verification" | "digger_payouts_wrong_mode"
   >(null);
+  const [diggerEligibilityMessage, setDiggerEligibilityMessage] = useState<string | null>(null);
   const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   /** Milestone total = contract amount (bid minus 15% deposit for exclusive gigs). */
@@ -96,7 +97,7 @@ export function PaymentContractDialog({
           "manage-payment-methods",
           { method: "GET" }
         ).catch(() => ({ paymentMethods: [] })),
-        invokeEdgeFunction<{ eligible?: boolean; reason?: string; milestoneTotal?: number }>(supabase, "check-payment-contract-eligibility", {
+        invokeEdgeFunction<{ eligible?: boolean; reason?: string; message?: string; milestoneTotal?: number }>(supabase, "check-payment-contract-eligibility", {
           body: { gigId, bidId },
         }).catch(() => ({ eligible: false, reason: "unknown" })),
       ]);
@@ -114,12 +115,19 @@ export function PaymentContractDialog({
       }
       if (eligibilityData?.eligible) {
         setDiggerEligibility("ok");
+        setDiggerEligibilityMessage(null);
       } else if (eligibilityData?.reason === "digger_payouts_pending_verification") {
         setDiggerEligibility("digger_payouts_pending_verification");
+        setDiggerEligibilityMessage(null);
+      } else if (eligibilityData?.reason === "digger_payouts_wrong_mode") {
+        setDiggerEligibility("digger_payouts_wrong_mode");
+        setDiggerEligibilityMessage((eligibilityData as any)?.message ?? null);
       } else if (eligibilityData?.reason === "digger_payouts_not_set_up") {
         setDiggerEligibility("digger_payouts_not_set_up");
+        setDiggerEligibilityMessage(null);
       } else {
         setDiggerEligibility("ok");
+        setDiggerEligibilityMessage(null);
       }
     } catch {
       setHasPaymentMethod(false);
@@ -269,6 +277,24 @@ export function PaymentContractDialog({
               <Info className="h-4 w-4 text-muted-foreground" />
               <AlertDescription className="text-sm">
                 The Digger suggested the milestone plan below. You can edit any description or amount.
+              </AlertDescription>
+            </Alert>
+          )}
+          {diggerEligibility === "digger_payouts_wrong_mode" && (
+            <Alert variant="destructive" className="border border-border rounded-lg bg-destructive/5 shadow-none">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="space-y-2">
+                <p className="text-sm">{diggerEligibilityMessage ?? "The professional's payout account is set up for a different payment mode (Sandbox vs Live). Switch the platform mode in Admin → Stripe mode, or ask them to connect again for the current mode."}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchEligibility}
+                  disabled={checkingEligibility}
+                >
+                  {checkingEligibility ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Check again
+                </Button>
               </AlertDescription>
             </Alert>
           )}
@@ -484,10 +510,11 @@ export function PaymentContractDialog({
               disabled={
                 loading ||
                 diggerEligibility === "digger_payouts_not_set_up" ||
-                diggerEligibility === "digger_payouts_pending_verification"
+                diggerEligibility === "digger_payouts_pending_verification" ||
+                diggerEligibility === "digger_payouts_wrong_mode"
               }
               title={
-                diggerEligibility === "digger_payouts_not_set_up" || diggerEligibility === "digger_payouts_pending_verification"
+                diggerEligibility === "digger_payouts_not_set_up" || diggerEligibility === "digger_payouts_pending_verification" || diggerEligibility === "digger_payouts_wrong_mode"
                   ? "The Digger must complete payout setup first"
                   : undefined
               }
@@ -498,7 +525,8 @@ export function PaymentContractDialog({
             </Button>
           </div>
           {(diggerEligibility === "digger_payouts_not_set_up" ||
-            diggerEligibility === "digger_payouts_pending_verification") && (
+            diggerEligibility === "digger_payouts_pending_verification" ||
+            diggerEligibility === "digger_payouts_wrong_mode") && (
             <p className="text-xs text-muted-foreground text-right">
               Once the Digger completes payout setup (Stripe Connect), you can create the contract here.
             </p>

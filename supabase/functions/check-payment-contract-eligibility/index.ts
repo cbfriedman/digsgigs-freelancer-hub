@@ -97,10 +97,12 @@ serve(async (req) => {
 
     // Payment method optional: gigger can approve milestones via Checkout
 
-    // Digger must have Stripe Connect set up OR alternative payout (PayPal/Payoneer/Wise)
+    // Digger must have Stripe Connect set up for the current platform mode (test vs live) OR alternative payout
+    const { secretKey: stripeKeyForMode, mode: stripeMode } = await getStripeConfig(supabaseAdmin);
+    const isLive = stripeMode === "live";
     let { data: diggerProfile } = await supabaseAdmin
       .from("digger_profiles")
-      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, payout_provider, payout_email, payout_external_id")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, stripe_connect_account_id_live, stripe_connect_charges_enabled_live, payout_provider, payout_email, payout_external_id")
       .eq("id", gig.awarded_digger_id)
       .single();
 
@@ -108,9 +110,23 @@ serve(async (req) => {
       ["paypal", "payoneer", "wise"].includes((diggerProfile as any)?.payout_provider ?? "") &&
       !!((diggerProfile as any)?.payout_email?.trim() || (diggerProfile as any)?.payout_external_id?.trim());
 
-    if (!diggerProfile?.stripe_connect_account_id && !alternativePayoutSet) {
+    const connectAccountId = isLive ? (diggerProfile as any)?.stripe_connect_account_id_live : diggerProfile?.stripe_connect_account_id;
+    let canReceivePayments = !!(isLive ? (diggerProfile as any)?.stripe_connect_charges_enabled_live : diggerProfile?.stripe_connect_charges_enabled);
+
+    if (!connectAccountId && !alternativePayoutSet) {
+      const hasOtherMode = isLive ? !!diggerProfile?.stripe_connect_account_id : !!(diggerProfile as any)?.stripe_connect_account_id_live;
       return new Response(
-        JSON.stringify({ eligible: false, reason: "digger_payouts_not_set_up", bidAmount: bid.amount, milestoneTotal }),
+        JSON.stringify({
+          eligible: false,
+          reason: hasOtherMode ? "digger_payouts_wrong_mode" : "digger_payouts_not_set_up",
+          bidAmount: bid.amount,
+          milestoneTotal,
+          message: hasOtherMode
+            ? (isLive
+                ? "The professional connected payouts for Sandbox only. Switch the platform to Sandbox (Admin → Stripe mode), or ask them to connect for Live."
+                : "The professional connected payouts for Live only. Switch the platform to Live (Admin → Stripe mode), or ask them to connect again with the platform in Sandbox.")
+            : undefined,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
@@ -127,31 +143,27 @@ serve(async (req) => {
     }
 
     // If our DB says not verified, sync from Stripe (webhook may be delayed or missing)
-    if (!diggerProfile.stripe_connect_charges_enabled) {
+    if (connectAccountId && !canReceivePayments) {
       try {
-        const { secretKey: stripeKey } = await getStripeConfig(supabaseAdmin);
-        if (stripeKey) {
-          const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-          const account = await stripe.accounts.retrieve(diggerProfile.stripe_connect_account_id);
+        if (stripeKeyForMode) {
+          const stripe = new Stripe(stripeKeyForMode, { apiVersion: "2023-10-16" });
+          const account = await stripe.accounts.retrieve(connectAccountId);
           const detailsSubmitted = !!account.details_submitted;
           const chargesEnabled = !!account.charges_enabled;
           const payoutsEnabled = !!account.payouts_enabled;
-          const canReceivePayments = chargesEnabled || payoutsEnabled;
-          await supabaseAdmin
-            .from("digger_profiles")
-            .update({
-              stripe_connect_onboarded: detailsSubmitted,
-              stripe_connect_charges_enabled: canReceivePayments,
-            })
-            .eq("id", diggerProfile.id);
-          diggerProfile = { ...diggerProfile, stripe_connect_charges_enabled: canReceivePayments };
+          canReceivePayments = chargesEnabled || payoutsEnabled || (stripeMode === "test" && detailsSubmitted);
+          const updatePayload = isLive
+            ? { stripe_connect_onboarded_live: detailsSubmitted, stripe_connect_charges_enabled_live: canReceivePayments }
+            : { stripe_connect_onboarded: detailsSubmitted, stripe_connect_charges_enabled: canReceivePayments };
+          await supabaseAdmin.from("digger_profiles").update(updatePayload).eq("id", diggerProfile.id);
+          diggerProfile = { ...diggerProfile, ...(isLive ? { stripe_connect_charges_enabled_live: canReceivePayments } : { stripe_connect_charges_enabled: canReceivePayments }) };
         }
       } catch {
         // Stripe API error: keep DB as-is and return pending
       }
     }
 
-    if (!diggerProfile.stripe_connect_charges_enabled) {
+    if (!canReceivePayments) {
       return new Response(
         JSON.stringify({ eligible: false, reason: "digger_payouts_pending_verification", bidAmount: bid.amount, milestoneTotal }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
