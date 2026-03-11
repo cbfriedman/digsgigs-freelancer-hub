@@ -56,6 +56,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
+    const currentYear = new Date().getFullYear();
+    const escapeHtml = (s: string) =>
+      String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
     // Format budget
     const budgetText = gig.budget_min && gig.budget_max
@@ -82,183 +85,72 @@ const handler = async (req: Request): Promise<Response> => {
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Your project is live</title>
             <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f5f5f5;
-              }
-              .container {
-                background: white;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-              }
-              .header {
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                color: white;
-                padding: 30px;
-                text-align: center;
-              }
-              .header h1 {
-                margin: 0;
-                font-size: 24px;
-              }
-              .header p {
-                margin: 10px 0 0 0;
-                opacity: 0.9;
-              }
-              .content {
-                padding: 30px;
-              }
-              .project-card {
-                background: #f8f9fa;
-                border-radius: 8px;
-                padding: 20px;
-                margin: 20px 0;
-              }
-              .project-title {
-                font-size: 18px;
-                font-weight: bold;
-                color: #1f2937;
-                margin-bottom: 15px;
-              }
-              .detail-row {
-                display: flex;
-                margin: 8px 0;
-              }
-              .detail-label {
-                font-weight: 600;
-                color: #6b7280;
-                width: 100px;
-                flex-shrink: 0;
-              }
-              .detail-value {
-                color: #1f2937;
-              }
-              .actions {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                margin: 25px 0;
-              }
-              .action-button {
-                display: inline-block;
-                padding: 14px 24px;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 15px;
-                text-align: center;
-              }
-              .primary-button {
-                background: #667eea;
-                color: white;
-              }
-              .secondary-button {
-                background: #f3f4f6;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-              }
-              .danger-button {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-              }
-              .info-box {
-                background: #eff6ff;
-                border-left: 4px solid #3b82f6;
-                padding: 15px;
-                margin: 20px 0;
-                border-radius: 4px;
-              }
-              .footer {
-                text-align: center;
-                color: #6b7280;
-                font-size: 12px;
-                padding: 20px;
-                border-top: 1px solid #e5e7eb;
-              }
-              .footer a {
-                color: #667eea;
-              }
+              body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
+              .wrapper { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
+              .card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+              .header { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #ffffff; padding: 32px 24px; text-align: center; }
+              .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+              .header p { margin: 8px 0 0 0; font-size: 15px; opacity: 0.95; }
+              .content { padding: 28px 24px; }
+              .content p { margin: 0 0 16px 0; font-size: 15px; color: #374151; }
+              .content p:last-of-type { margin-bottom: 0; }
+              .actions { margin: 24px 0; }
+              .action-row { margin-bottom: 10px; }
+              .btn { display: inline-block; padding: 12px 20px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center; }
+              .btn-primary { background: #7c3aed; color: #ffffff !important; }
+              .btn-secondary { background: #f3f4f6; color: #374151 !important; border: 1px solid #e5e7eb; }
+              .btn-danger { background: #fef2f2; color: #b91c1c !important; border: 1px solid #fecaca; }
+              .project-card { background: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb; }
+              .project-title { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 12px; }
+              .detail-row { margin: 6px 0; font-size: 14px; }
+              .detail-label { font-weight: 600; color: #6b7280; }
+              .detail-value { color: #1f2937; }
+              .info-box { background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+              .info-box strong { color: #5b21b6; }
+              .info-box p { margin: 8px 0 0 0; font-size: 14px; color: #4c1d95; }
+              .tip { color: #6b7280 !important; font-size: 14px !important; margin-top: 16px !important; }
+              .footer { text-align: center; color: #9ca3af; font-size: 12px; padding: 24px 24px; border-top: 1px solid #e5e7eb; background: #fafafa; }
+              .footer p { margin: 4px 0; }
+              .footer a { color: #7c3aed; text-decoration: none; }
             </style>
           </head>
           <body>
-            <div class="container">
-              <div class="header">
-                <h1>Your Project is Live! 🎉</h1>
-                <p>Freelancers are being notified and will reach out soon</p>
-              </div>
-              
-              <div class="content">
-                <p>Great news! Your project "<strong>${gig.title || "Your Project"}</strong>" has been confirmed and is now live on Digs and Gigs.</p>
-                
-                <p>You can manage your project at any time using the links below:</p>
-                
-                <div class="actions">
-                  <a href="${editUrl}" class="action-button secondary-button">
-                    ✏️ Edit Project Details
-                  </a>
-                  <a href="${cancelUrl}" class="action-button danger-button">
-                    ❌ Cancel This Project
-                  </a>
-                  <a href="${viewUrl}" class="action-button primary-button">
-                    👁️ View Your Project
-                  </a>
-                  <a href="${myGigsUrl}" class="action-button secondary-button" style="background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb;">
-                    📋 View All My Projects
-                  </a>
+            <div class="wrapper">
+              <div class="card">
+                <div class="header">
+                  <h1>Your project is live</h1>
+                  <p>Freelancers are being notified and can reach out soon.</p>
                 </div>
-                
-                <div class="project-card">
-                  <div class="project-title">Project Summary</div>
-                  
-                  <div class="detail-row">
-                    <span class="detail-label">Title:</span>
-                    <span class="detail-value">${gig.title || "Your Project"}</span>
+                <div class="content">
+                  <p>Your project <strong>“${escapeHtml(gig.title || "Your Project")}”</strong> is confirmed and live on Digs and Gigs.</p>
+                  <p>Use the links below to manage it anytime:</p>
+                  <div class="actions">
+                    <div class="action-row"><a href="${viewUrl}" class="btn btn-primary">View your project</a></div>
+                    <div class="action-row"><a href="${editUrl}" class="btn btn-secondary">Edit project details</a></div>
+                    <div class="action-row"><a href="${myGigsUrl}" class="btn btn-secondary">View all my projects</a></div>
+                    <div class="action-row"><a href="${cancelUrl}" class="btn btn-danger">Cancel this project</a></div>
                   </div>
-                  
-                  <div class="detail-row">
-                    <span class="detail-label">Budget:</span>
-                    <span class="detail-value">${budgetText}</span>
+                  <div class="project-card">
+                    <div class="project-title">Project summary</div>
+                    <div class="detail-row"><span class="detail-label">Title:</span> <span class="detail-value">${escapeHtml(gig.title || "Your Project")}</span></div>
+                    <div class="detail-row"><span class="detail-label">Budget:</span> <span class="detail-value">${escapeHtml(budgetText)}</span></div>
+                    <div class="detail-row"><span class="detail-label">Timeline:</span> <span class="detail-value">${escapeHtml(gig.timeline || "Flexible")}</span></div>
+                    <div class="detail-row"><span class="detail-label">Location:</span> <span class="detail-value">${escapeHtml(gig.location || "Remote")}</span></div>
                   </div>
-                  
-                  <div class="detail-row">
-                    <span class="detail-label">Timeline:</span>
-                    <span class="detail-value">${gig.timeline || "Flexible"}</span>
+                  <div class="info-box">
+                    <strong>What happens next?</strong>
+                    <p>Qualified freelancers are notified about your project and can unlock your contact details to reach out. You’ll get inquiries by email or phone with quotes and proposals.</p>
                   </div>
-                  
-                  <div class="detail-row">
-                    <span class="detail-label">Location:</span>
-                    <span class="detail-value">${gig.location || "Remote"}</span>
-                  </div>
+                  <p class="tip"><strong>Tip:</strong> Respond quickly when freelancers contact you—it leads to better pricing and faster completion.</p>
                 </div>
-                
-                <div class="info-box">
-                  <strong>📬 What happens next?</strong>
-                  <p style="margin: 10px 0 0 0;">
-                    Qualified freelancers will be notified about your project and can unlock your contact information to reach out directly. 
-                    You'll receive inquiries via email or phone with quotes and proposals.
-                  </p>
+                <div class="footer">
+                  <p>Questions? Reply to this email or visit our <a href="${siteUrl}/faq">FAQ</a>.</p>
+                  <p>© ${currentYear} Digs and Gigs. All rights reserved.</p>
+                  <p><a href="${siteUrl}/unsubscribe?email=${encodeURIComponent(gig.consumer_email)}">Unsubscribe</a></p>
                 </div>
-                
-                <p style="color: #6b7280; font-size: 14px;">
-                  <strong>Tip:</strong> Respond promptly when freelancers contact you! 
-                  Quick responses lead to better pricing and faster project completion.
-                </p>
-              </div>
-              
-              <div class="footer">
-                <p>Questions? Reply to this email or visit our <a href="${siteUrl}/faq">FAQ</a>.</p>
-                <p>© 2025 Digs and Gigs. All rights reserved.</p>
-                <p>
-                  <a href="${siteUrl}/unsubscribe?email=${encodeURIComponent(gig.consumer_email)}">Unsubscribe</a>
-                </p>
               </div>
             </div>
           </body>
