@@ -36,16 +36,28 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
   Loader2,
   ShieldAlert,
   RefreshCw,
-  Filter,
   MoreHorizontal,
   Ban,
   BellOff,
   AlertTriangle,
   User,
   CheckCircle2,
+  Settings2,
+  Save,
+  Trash2,
+  MessageSquare,
+  Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -75,12 +87,31 @@ interface UserProfile {
   last_violation_at: string | null;
 }
 
+interface UserInfo {
+  full_name: string | null;
+  email: string | null;
+}
+
+interface MessageRow {
+  id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
+/** Max messages to load so admin sees full chat history (Supabase default is 1000). */
+const MESSAGE_HISTORY_LIMIT = 5000;
+
 const DECISION_LABELS: Record<string, string> = {
   block: "Blocked",
   flag: "Flagged",
   allow: "Allowed",
   shadow_block: "Shadow Blocked",
 };
+
+const MODERATION_SETTINGS_KEY = "message_moderation";
+const DEFAULT_THRESHOLD_BLOCK = 85;
+const DEFAULT_THRESHOLD_FLAG = 40;
 
 export function MessageModerationDashboard() {
   const [events, setEvents] = useState<ModerationEvent[]>([]);
@@ -90,6 +121,25 @@ export function MessageModerationDashboard() {
   const [filterUserId, setFilterUserId] = useState<string>("");
   const [actionUser, setActionUser] = useState<{ id: string; action: string } | null>(null);
   const [muteUntil, setMuteUntil] = useState<string>("24");
+
+  // User email/name for display
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, UserInfo>>({});
+  // Message history dialog
+  const [historyDialog, setHistoryDialog] = useState<{ conversationId: string; userId: string } | null>(null);
+  const [historyMessages, setHistoryMessages] = useState<MessageRow[]>([]);
+  const [historySenderNames, setHistorySenderNames] = useState<Record<string, string>>({});
+  const [historyLoading, setHistoryLoading] = useState(false);
+  // Selection and delete
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState<"selected" | "all" | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Admin-configurable moderation sensitivity
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [thresholdBlock, setThresholdBlock] = useState(DEFAULT_THRESHOLD_BLOCK);
+  const [thresholdFlag, setThresholdFlag] = useState(DEFAULT_THRESHOLD_FLAG);
+  const [blockOnContactKeywords, setBlockOnContactKeywords] = useState(true);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -131,15 +181,155 @@ export function MessageModerationDashboard() {
     setProfiles(map);
   }, []);
 
+  const loadUserInfos = useCallback(async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+    if (error) return;
+    const map: Record<string, UserInfo> = {};
+    ((data || []) as { id: string; full_name: string | null; email: string | null }[]).forEach((p) => {
+      map[p.id] = { full_name: p.full_name ?? null, email: p.email ?? null };
+    });
+    setUserInfoMap((prev) => ({ ...prev, ...map }));
+  }, []);
+
+  const loadModerationSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("value")
+        .eq("key", MODERATION_SETTINGS_KEY)
+        .maybeSingle();
+      if (error) return;
+      const v = (data?.value || {}) as { threshold_block?: number; threshold_flag?: number; block_on_contact_keywords?: boolean };
+      if (typeof v.threshold_block === "number") setThresholdBlock(Math.min(99, Math.max(50, v.threshold_block)));
+      if (typeof v.threshold_flag === "number") setThresholdFlag(Math.min(80, Math.max(20, v.threshold_flag)));
+      if (typeof v.block_on_contact_keywords === "boolean") setBlockOnContactKeywords(v.block_on_contact_keywords);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  const saveModerationSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingsSaving(true);
+    try {
+      const block = Math.min(99, Math.max(50, Number(thresholdBlock) || DEFAULT_THRESHOLD_BLOCK));
+      const flag = Math.min(80, Math.max(20, Number(thresholdFlag) || DEFAULT_THRESHOLD_FLAG));
+      const value = { threshold_block: block, threshold_flag: flag, block_on_contact_keywords: blockOnContactKeywords };
+      const { error } = await supabase
+        .from("platform_settings")
+        .upsert(
+          {
+            key: MODERATION_SETTINGS_KEY,
+            value,
+            description: "Message moderation sensitivity (threshold_block, threshold_flag, block_on_contact_keywords).",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+      if (error) throw error;
+      setThresholdBlock(block);
+      setThresholdFlag(flag);
+      toast.success("Moderation settings saved. New messages will use these values.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save settings");
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     loadEvents();
   }, [loadEvents]);
 
   useEffect(() => {
+    loadModerationSettings();
+  }, [loadModerationSettings]);
+
+  useEffect(() => {
     const ids = [...new Set(events.map((e) => e.user_id))];
     loadProfiles(ids);
-  }, [events, loadProfiles]);
+    loadUserInfos(ids);
+  }, [events, loadProfiles, loadUserInfos]);
+
+  const openMessageHistory = async (conversationId: string, userId: string) => {
+    setHistoryDialog({ conversationId, userId });
+    setHistoryMessages([]);
+    setHistorySenderNames({});
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, sender_id, content, created_at")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true })
+        .range(0, MESSAGE_HISTORY_LIMIT - 1);
+      if (error) throw error;
+      const list = (data || []) as MessageRow[];
+      setHistoryMessages(list);
+      const senderIds = [...new Set(list.map((m) => m.sender_id))];
+      if (senderIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", senderIds);
+        const nameMap: Record<string, string> = {};
+        (profiles || []).forEach((p: { id: string; full_name: string | null }) => {
+          nameMap[p.id] = (p.full_name || "—").trim();
+        });
+        setHistorySenderNames(nameMap);
+      }
+    } catch (e) {
+      console.error("Load message history:", e);
+      toast.error("Failed to load message history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (deleteConfirm !== "selected" && deleteConfirm !== "all") return;
+    const idsToDelete = deleteConfirm === "all" ? events.map((e) => e.id) : [...selectedIds];
+    if (idsToDelete.length === 0) {
+      setDeleteConfirm(null);
+      return;
+    }
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("message_moderation_events")
+        .delete()
+        .in("id", idsToDelete);
+      if (error) throw error;
+      toast.success(deleteConfirm === "all" ? "All moderation events removed." : `${idsToDelete.length} event(s) removed.`);
+      setSelectedIds(new Set());
+      setDeleteConfirm(null);
+      loadEvents();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(new Set(events.map((e) => e.id)));
+    else setSelectedIds(new Set());
+  };
+
+  const toggleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   const handleAction = async () => {
     if (!actionUser) return;
@@ -189,6 +379,70 @@ export function MessageModerationDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Admin-configurable sensitivity — reduce false blocks on general wording */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5" />
+            Moderation sensitivity
+          </CardTitle>
+          <CardDescription>
+            Lower sensitivity if normal messages are being blocked. Block threshold: message is blocked when score ≥ this (50–99). Flag threshold: message is flagged for review when score ≥ this (20–80). Contact keywords: if off, phrases like &quot;text me&quot; or &quot;call me&quot; only add to score and do not auto-block.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {settingsLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading settings…
+            </div>
+          ) : (
+            <form onSubmit={saveModerationSettings} className="space-y-4 max-w-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mod-threshold-block">Block threshold (50–99)</Label>
+                  <Input
+                    id="mod-threshold-block"
+                    type="number"
+                    min={50}
+                    max={99}
+                    value={thresholdBlock}
+                    onChange={(e) => setThresholdBlock(Number(e.target.value) || DEFAULT_THRESHOLD_BLOCK)}
+                  />
+                  <p className="text-xs text-muted-foreground">Default 85. Higher = fewer blocks.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mod-threshold-flag">Flag threshold (20–80)</Label>
+                  <Input
+                    id="mod-threshold-flag"
+                    type="number"
+                    min={20}
+                    max={80}
+                    value={thresholdFlag}
+                    onChange={(e) => setThresholdFlag(Number(e.target.value) || DEFAULT_THRESHOLD_FLAG)}
+                  />
+                  <p className="text-xs text-muted-foreground">Default 40. Higher = fewer flags.</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="mod-block-contact-keywords"
+                  checked={blockOnContactKeywords}
+                  onCheckedChange={(checked) => setBlockOnContactKeywords(checked === true)}
+                />
+                <Label htmlFor="mod-block-contact-keywords" className="font-normal cursor-pointer">
+                  Block on contact phrases (&quot;text me&quot;, &quot;call me&quot;, etc.). Turn off to only add these to score and reduce false blocks on general wording.
+                </Label>
+              </div>
+              <Button type="submit" disabled={settingsSaving}>
+                {settingsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Save sensitivity
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -201,7 +455,7 @@ export function MessageModerationDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
               <Select value={filterDecision} onValueChange={setFilterDecision}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Decision" />
@@ -222,6 +476,28 @@ export function MessageModerationDashboard() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
+              {events.length > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={selectedIds.size === 0}
+                    onClick={() => setDeleteConfirm("selected")}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete selected ({selectedIds.size})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                    onClick={() => setDeleteConfirm("all")}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear all
+                  </Button>
+                </>
+              )}
             </div>
             <div className="flex gap-4">
               <Badge variant="destructive">Blocked: {stats.block}</Badge>
@@ -239,26 +515,60 @@ export function MessageModerationDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={
+                          events.length === 0
+                            ? false
+                            : selectedIds.size === events.length
+                              ? true
+                              : "indeterminate"
+                        }
+                        onCheckedChange={(c) => toggleSelectAll(c === true)}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Decision</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Reasons</TableHead>
                     <TableHead>Preview</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {events.map((ev) => {
                     const profile = profiles[ev.user_id];
+                    const userInfo = userInfoMap[ev.user_id];
                     return (
                       <TableRow key={ev.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(ev.id)}
+                            onCheckedChange={(c) => toggleSelectOne(ev.id, c === true)}
+                            aria-label={`Select event ${ev.id}`}
+                          />
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {format(new Date(ev.created_at), "MMM d, HH:mm")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-mono text-xs">{ev.user_id.slice(0, 8)}...</span>
+                          <div className="flex flex-col gap-1 min-w-[140px]">
+                            {userInfo && (
+                              <>
+                                <span className="font-medium text-foreground truncate" title={userInfo.full_name ?? undefined}>
+                                  {userInfo.full_name?.trim() || "—"}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate flex items-center gap-1" title={userInfo.email ?? undefined}>
+                                  <Mail className="h-3 w-3 shrink-0" />
+                                  {userInfo.email || "—"}
+                                </span>
+                              </>
+                            )}
+                            {!userInfo && (
+                              <span className="font-mono text-xs">{ev.user_id.slice(0, 8)}...</span>
+                            )}
                             {profile && (
                               <div className="flex gap-1 flex-wrap">
                                 {profile.is_banned && (
@@ -297,52 +607,65 @@ export function MessageModerationDashboard() {
                           </p>
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => setActionUser({ id: ev.user_id, action: "warn" })}
+                          <div className="flex items-center gap-1">
+                            {ev.conversation_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => openMessageHistory(ev.conversation_id, ev.user_id)}
                               >
-                                <AlertTriangle className="h-4 w-4 mr-2" />
-                                Warn user
-                              </DropdownMenuItem>
-                              {profile?.muted_until && new Date(profile.muted_until) > new Date() ? (
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                History
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => setActionUser({ id: ev.user_id, action: "unmute" })}
+                                  onClick={() => setActionUser({ id: ev.user_id, action: "warn" })}
                                 >
-                                  <BellOff className="h-4 w-4 mr-2" />
-                                  Unmute user
+                                  <AlertTriangle className="h-4 w-4 mr-2" />
+                                  Warn user
                                 </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => setActionUser({ id: ev.user_id, action: "mute" })}
-                                >
-                                  <BellOff className="h-4 w-4 mr-2" />
-                                  Mute user
-                                </DropdownMenuItem>
-                              )}
-                              {profile?.is_banned ? (
-                                <DropdownMenuItem
-                                  onClick={() => setActionUser({ id: ev.user_id, action: "unban" })}
-                                >
-                                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  Unban user
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => setActionUser({ id: ev.user_id, action: "ban" })}
-                                  className="text-destructive"
-                                >
-                                  <Ban className="h-4 w-4 mr-2" />
-                                  Ban user
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                {profile?.muted_until && new Date(profile.muted_until) > new Date() ? (
+                                  <DropdownMenuItem
+                                    onClick={() => setActionUser({ id: ev.user_id, action: "unmute" })}
+                                  >
+                                    <BellOff className="h-4 w-4 mr-2" />
+                                    Unmute user
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => setActionUser({ id: ev.user_id, action: "mute" })}
+                                  >
+                                    <BellOff className="h-4 w-4 mr-2" />
+                                    Mute user
+                                  </DropdownMenuItem>
+                                )}
+                                {profile?.is_banned ? (
+                                  <DropdownMenuItem
+                                    onClick={() => setActionUser({ id: ev.user_id, action: "unban" })}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Unban user
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => setActionUser({ id: ev.user_id, action: "ban" })}
+                                    className="text-destructive"
+                                  >
+                                    <Ban className="h-4 w-4 mr-2" />
+                                    Ban user
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -397,6 +720,99 @@ export function MessageModerationDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => !deleting && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteConfirm === "all" ? "Clear all moderation events" : "Delete selected events"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirm === "all"
+                ? `This will permanently remove all ${events.length} moderation event(s) from the log. This cannot be undone.`
+                : `This will permanently remove ${selectedIds.size} selected event(s). This cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => {
+                handleDeleteSelected();
+              }}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              {deleting ? "Removing…" : "Remove"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!historyDialog} onOpenChange={() => setHistoryDialog(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+          <div className="px-6 pt-6 pb-2 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Full chat history
+              </DialogTitle>
+            </DialogHeader>
+            {historyDialog && (
+              <p className="text-sm text-muted-foreground mt-1">
+                All messages in this conversation (user: {userInfoMap[historyDialog.userId]?.full_name?.trim() || userInfoMap[historyDialog.userId]?.email || historyDialog.userId.slice(0, 8) + "…"})
+                {userInfoMap[historyDialog.userId]?.email && ` · ${userInfoMap[historyDialog.userId].email}`}
+              </p>
+            )}
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col rounded-b-lg border-t overflow-hidden">
+            <div className="h-[50vh] min-h-[240px] max-h-[60vh] w-full overflow-y-auto overflow-x-hidden p-4 pr-6">
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : historyMessages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No messages in this conversation.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {historyMessages.length >= MESSAGE_HISTORY_LIMIT && (
+                      <p className="text-xs text-muted-foreground text-center py-1">
+                        Showing latest {MESSAGE_HISTORY_LIMIT} messages.
+                      </p>
+                    )}
+                    {historyMessages.map((msg) => {
+                      const isUser = historyDialog ? msg.sender_id === historyDialog.userId : false;
+                      const senderName = historySenderNames[msg.sender_id] || msg.sender_id.slice(0, 8) + "…";
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`text-sm rounded-lg p-3 ${
+                            isUser
+                              ? "bg-primary/10 border-l-2 border-primary ml-2"
+                              : "bg-muted/50 border-l-2 border-muted-foreground/30 mr-2"
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                            <span className="font-medium text-foreground">
+                              {senderName}
+                              {isUser && (
+                                <Badge variant="secondary" className="ml-1.5 text-xs">user</Badge>
+                              )}
+                            </span>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {format(new Date(msg.created_at), "MMM d, yyyy HH:mm")}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 break-words whitespace-pre-wrap">{msg.content || "(attachment)"}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

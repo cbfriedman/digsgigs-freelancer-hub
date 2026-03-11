@@ -147,9 +147,27 @@ serve(async (req: Request): Promise<Response> => {
       .eq("enabled", true);
     if (rules) dbRules.push(...rules);
 
+    // Admin-configurable sensitivity (platform_settings.message_moderation)
+    let scoringOptions: { thresholdBlock?: number; thresholdFlag?: number; blockOnContactKeywords?: boolean } | undefined;
+    const { data: modSetting } = await supabaseService
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "message_moderation")
+      .maybeSingle();
+    if (modSetting?.value && typeof modSetting.value === "object") {
+      const v = modSetting.value as { threshold_block?: number; threshold_flag?: number; block_on_contact_keywords?: boolean };
+      if (typeof v.threshold_block === "number" || typeof v.threshold_flag === "number" || typeof v.block_on_contact_keywords === "boolean") {
+        scoringOptions = {};
+        if (typeof v.threshold_block === "number") scoringOptions.thresholdBlock = v.threshold_block;
+        if (typeof v.threshold_flag === "number") scoringOptions.thresholdFlag = v.threshold_flag;
+        if (typeof v.block_on_contact_keywords === "boolean") scoringOptions.blockOnContactKeywords = v.block_on_contact_keywords;
+      }
+    }
+
     const moderationResult = runModeration(
       { content, dbRules },
-      { muted, banned }
+      { muted, banned },
+      scoringOptions
     ) as ModerationResult;
 
     const { raw, normalized } = normalizeText(content);

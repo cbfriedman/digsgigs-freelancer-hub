@@ -11,9 +11,10 @@ import type {
   SeverityLevel,
 } from "./types.ts";
 
-const THRESHOLD_BLOCK = 85;
-const THRESHOLD_FLAG = 40;
-const CONTACT_REASON_CODES: ReasonCode[] = [
+const DEFAULT_THRESHOLD_BLOCK = 85;
+const DEFAULT_THRESHOLD_FLAG = 40;
+/** Reason codes that trigger auto-block when "contact" violation is strict (block_on_contact_keywords true) */
+const CONTACT_STRICT_REASON_CODES: ReasonCode[] = [
   "contact_email",
   "contact_phone",
   "contact_social",
@@ -26,6 +27,25 @@ const CONTACT_REASON_CODES: ReasonCode[] = [
   "contact_facebook",
   "contact_keyword",
 ];
+/** When block_on_contact_keywords is false, only these trigger auto-block (not generic "text me" / "call me") */
+const CONTACT_ALWAYS_BLOCK_CODES: ReasonCode[] = [
+  "contact_email",
+  "contact_phone",
+  "contact_social",
+  "contact_whatsapp",
+  "contact_telegram",
+  "contact_wechat",
+  "contact_skype",
+  "contact_discord",
+  "contact_instagram",
+  "contact_facebook",
+];
+export interface ModerationScoringOptions {
+  thresholdBlock?: number;
+  thresholdFlag?: number;
+  /** If false, "contact_keyword" (e.g. "text me", "call me") only adds to score and does not auto-block */
+  blockOnContactKeywords?: boolean;
+}
 
 /** User-facing messages - do not expose internal logic */
 const USER_MESSAGES: Record<string, string> = {
@@ -40,8 +60,14 @@ const USER_MESSAGES: Record<string, string> = {
 export function computeModerationResult(
   detectorResults: DetectorResult[],
   userMuted: boolean,
-  userBanned: boolean
+  userBanned: boolean,
+  options: ModerationScoringOptions = {}
 ): ModerationResult {
+  const thresholdBlock = Math.min(99, Math.max(50, options.thresholdBlock ?? DEFAULT_THRESHOLD_BLOCK));
+  const thresholdFlag = Math.min(80, Math.max(20, options.thresholdFlag ?? DEFAULT_THRESHOLD_FLAG));
+  const blockOnContactKeywords = options.blockOnContactKeywords !== false;
+  const contactReasonCodes =
+    blockOnContactKeywords ? CONTACT_STRICT_REASON_CODES : CONTACT_ALWAYS_BLOCK_CODES;
   if (userBanned) {
     return {
       decision: "block",
@@ -82,7 +108,7 @@ export function computeModerationResult(
     }
   }
 
-  const hasContactViolation = [...reasonSet].some((r) => CONTACT_REASON_CODES.includes(r));
+  const hasContactViolation = [...reasonSet].some((r) => contactReasonCodes.includes(r));
   const hasPaymentViolation = detectorResults.some(
     (dr) => dr.detector === "off_platform_payment" && dr.matches.length > 0
   );
@@ -103,12 +129,12 @@ export function computeModerationResult(
     severity = "critical";
     userFacingMessage = USER_MESSAGES.payment;
     safeReasonCodes.push("contact_info", "payment_evasion");
-  } else if (hasPaymentViolation && totalScore >= THRESHOLD_BLOCK) {
+  } else if (hasPaymentViolation && totalScore >= thresholdBlock) {
     decision = "block";
     severity = "high";
     userFacingMessage = USER_MESSAGES.payment;
     safeReasonCodes.push("payment_evasion");
-  } else if (totalScore >= THRESHOLD_BLOCK) {
+  } else if (totalScore >= thresholdBlock) {
     decision = "block";
     severity = "high";
     if (reasonSet.has("profanity_high") || reasonSet.has("profanity_medium")) {
@@ -121,7 +147,7 @@ export function computeModerationResult(
       userFacingMessage = USER_MESSAGES.generic;
       safeReasonCodes.push("policy_violation");
     }
-  } else if (totalScore >= THRESHOLD_FLAG) {
+  } else if (totalScore >= thresholdFlag) {
     decision = "flag";
     severity = "medium";
     userFacingMessage = USER_MESSAGES.flagged;

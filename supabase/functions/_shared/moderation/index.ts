@@ -9,10 +9,11 @@ import { detectContactKeywords } from "./detectors/contactKeywords.ts";
 import { detectProfanity } from "./detectors/profanity.ts";
 import { detectOffPlatformPayment } from "./detectors/offPlatformPayment.ts";
 import { detectRestrictedPhrases, type ModerationRuleRow } from "./detectors/restrictedPhrases.ts";
-import { computeModerationResult } from "./scoring.ts";
+import { computeModerationResult, type ModerationScoringOptions } from "./scoring.ts";
 import type { ModerationResult, DetectorResult } from "./types.ts";
 
 export type { ModerationResult, ModerationDecision, DetectorResult, NormalizedText, ReasonCode } from "./types.ts";
+export type { ModerationScoringOptions } from "./scoring.ts";
 export { normalizeText } from "./normalize.ts";
 
 export interface ModerationInput {
@@ -27,7 +28,8 @@ export interface UserModerationState {
 
 export function runModeration(
   input: ModerationInput,
-  userState: UserModerationState = { muted: false, banned: false }
+  userState: UserModerationState = { muted: false, banned: false },
+  scoringOptions?: ModerationScoringOptions
 ): ModerationResult {
   const { raw, normalized, aggressive } = normalizeText(input.content);
 
@@ -43,6 +45,7 @@ export function runModeration(
   return computeModerationResult(
     detectorResults,
     userState.muted,
-    userState.banned
+    userState.banned,
+    scoringOptions ?? {}
   );
 }

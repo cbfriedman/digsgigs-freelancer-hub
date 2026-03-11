@@ -1027,8 +1027,7 @@ export function ContractMilestonesCard({
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        variant="secondary"
-                        className="hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         onClick={() => handleOpenSubmitWorkLogDialog(m.id)}
                         disabled={!!submittingId}
                       >
@@ -1341,7 +1340,7 @@ export function ContractMilestonesCard({
             <Button variant="outline" onClick={() => setSubmitWorkLogOpen(false)} disabled={submitWorkLogSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitWorkLogDialog} disabled={submitWorkLogSubmitting} className="hover:bg-orange-600 hover:text-white transition-colors">
+            <Button onClick={handleSubmitWorkLogDialog} disabled={submitWorkLogSubmitting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {submitWorkLogSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
               Submit for review
             </Button>
