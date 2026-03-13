@@ -52,6 +52,33 @@ interface OTPRequest {
   method: 'email' | 'sms';
 }
 
+function getTwilioFriendlyError(code: number | null, message: string): string {
+  switch (code) {
+    case 21608:
+      return "SMS trial accounts can only send to verified numbers. Add this number in Twilio Console -> Phone Numbers -> Verified Caller IDs, or upgrade your Twilio account.";
+    case 21607:
+      return "SMS is using a non-sandbox number. For Twilio trial, use the sandbox number from Twilio Console.";
+    case 21211:
+      return "Invalid destination phone number. Please use full E.164 format (e.g. +1234567890).";
+    case 21614:
+      return "Twilio reports this is not a valid mobile number for SMS. Try a different mobile number.";
+    case 21408:
+      return "Twilio geo permissions block SMS to this destination. Enable the destination country in Twilio Messaging Geo Permissions.";
+    case 30003:
+      return "Message could not be delivered to the handset (unreachable).";
+    case 30005:
+      return "Destination handset is unavailable for SMS delivery.";
+    case 30006:
+      return "Message cannot be delivered (landline/unreachable/carrier issue).";
+    case 30007:
+      return "Message was blocked by carrier filtering. This is a carrier/content policy issue.";
+    case 30008:
+      return "Message delivery failed due to an unknown carrier/network error.";
+    default:
+      return code != null ? `Twilio error ${code}: ${message}` : `Twilio error: ${message}`;
+  }
+}
+
 async function sendTwilioSMS(to: string, message: string) {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
     throw new Error("Twilio is not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER.");
@@ -77,26 +104,17 @@ async function sendTwilioSMS(to: string, message: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
+    let code: number | null = null;
+    let msg = errorText;
     try {
       const err = JSON.parse(errorText);
-      const code = err?.code ?? err?.error_code;
-      const msg = err?.message ?? err?.more_info ?? errorText;
-      // Trial accounts: 21608 = 'to' number not verified, 21607 = must use sandbox 'from' number
-      if (code === 21608) {
-        throw new Error(
-          "SMS trial accounts can only send to verified numbers. Add this number in Twilio Console → Phone Numbers → Verified Caller IDs, or upgrade your Twilio account."
-        );
-      }
-      if (code === 21607) {
-        throw new Error("SMS is using a non–sandbox number. For Twilio trial, use the sandbox number from the Twilio Console.");
-      }
-      throw new Error(`Twilio: ${msg}`);
-    } catch (parseErr: unknown) {
-      if (parseErr instanceof Error && !parseErr.message.startsWith("Twilio")) {
-        throw new Error(`Twilio API error: ${errorText}`);
-      }
-      throw parseErr;
+      const parsedCode = Number(err?.code ?? err?.error_code);
+      code = Number.isFinite(parsedCode) ? parsedCode : null;
+      msg = String(err?.message ?? err?.more_info ?? errorText);
+    } catch {
+      // Keep raw error text
     }
+    throw new Error(getTwilioFriendlyError(code, msg));
   }
 
   return await response.json();
@@ -497,8 +515,14 @@ Note: Test keys and production keys look the same but have different permissions
 
       try {
         const smsMessage = `Digs and Gigs: Your verification code is ${code}. This code expires in 5 minutes.`;
-        await sendTwilioSMS(phone!, smsMessage);
-        console.log("OTP SMS sent successfully to:", phone);
+        const twilioResponse = await sendTwilioSMS(phone!, smsMessage);
+        console.log("OTP SMS send accepted:", {
+          to: phone,
+          sid: twilioResponse?.sid ?? null,
+          status: twilioResponse?.status ?? null,
+          errorCode: twilioResponse?.error_code ?? null,
+          errorMessage: twilioResponse?.error_message ?? null,
+        });
         
         return new Response(JSON.stringify({ success: true, method: 'sms' }), {
           status: 200,
@@ -558,8 +582,10 @@ Note: Test keys and production keys look the same but have different permissions
       errorDetails.databaseError = true;
     } else if (errorMessage.includes("Twilio")) {
       statusCode = 502;
-      errorMessage = "SMS service temporarily unavailable. Please try email verification.";
       errorDetails.twilioError = true;
+      if (errorMessage.startsWith("Twilio API error:")) {
+        errorMessage = "SMS service temporarily unavailable. Please try email verification.";
+      }
     } else {
       // For unknown errors, include more details in development
       if (Deno.env.get("ENVIRONMENT") === "development" || !Deno.env.get("ENVIRONMENT")) {
