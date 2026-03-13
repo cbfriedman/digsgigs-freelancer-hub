@@ -76,8 +76,27 @@ async function sendTwilioSMS(to: string, message: string) {
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Twilio API error: ${error}`);
+    const errorText = await response.text();
+    try {
+      const err = JSON.parse(errorText);
+      const code = err?.code ?? err?.error_code;
+      const msg = err?.message ?? err?.more_info ?? errorText;
+      // Trial accounts: 21608 = 'to' number not verified, 21607 = must use sandbox 'from' number
+      if (code === 21608) {
+        throw new Error(
+          "SMS trial accounts can only send to verified numbers. Add this number in Twilio Console → Phone Numbers → Verified Caller IDs, or upgrade your Twilio account."
+        );
+      }
+      if (code === 21607) {
+        throw new Error("SMS is using a non–sandbox number. For Twilio trial, use the sandbox number from the Twilio Console.");
+      }
+      throw new Error(`Twilio: ${msg}`);
+    } catch (parseErr: unknown) {
+      if (parseErr instanceof Error && !parseErr.message.startsWith("Twilio")) {
+        throw new Error(`Twilio API error: ${errorText}`);
+      }
+      throw parseErr;
+    }
   }
 
   return await response.json();
@@ -491,9 +510,10 @@ Note: Test keys and production keys look the same but have different permissions
       } catch (smsError: any) {
         console.error("SMS sending error:", smsError);
         const errorMessage = smsError.message || "Failed to send SMS";
+        const isTwilioTrialHint = errorMessage.includes("verified numbers") || errorMessage.includes("Verified Caller IDs");
         return new Response(
-          JSON.stringify({ 
-            error: "Failed to send SMS. Please check your phone number or try email verification.",
+          JSON.stringify({
+            error: isTwilioTrialHint ? errorMessage : "Failed to send SMS. Please check your phone number or try email verification.",
             details: errorMessage
           }),
           {

@@ -132,6 +132,7 @@ export default function Account() {
   const [phoneVerifying, setPhoneVerifying] = useState(false);
   /** Last code we sent (dev only) – so you can complete verification if SMS doesn't arrive (e.g. Twilio trial) */
   const [phoneLastSentCode, setPhoneLastSentCode] = useState<string | null>(null);
+  const [phoneEmailFallbackSending, setPhoneEmailFallbackSending] = useState(false);
 
   const [mfaFactors, setMfaFactors] = useState<{ id: string; friendly_name?: string; factor_type: string }[]>([]);
   const [mfaLoading, setMfaLoading] = useState(false);
@@ -1032,9 +1033,35 @@ export default function Account() {
                   ) : (
                     <>
                       <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to {phoneValue}</p>
+                      {user?.email && phoneLastSentCode && (
+                        <p className="text-xs text-muted-foreground">
+                          Not receiving the SMS?{" "}
+                          <button
+                            type="button"
+                            disabled={phoneEmailFallbackSending}
+                            onClick={async () => {
+                              setPhoneEmailFallbackSending(true);
+                              try {
+                                await invokeEdgeFunction(supabase, "send-otp", {
+                                  body: { email: user.email, code: phoneLastSentCode, method: "email" },
+                                });
+                                toast.success("Verification code sent to your email.");
+                              } catch (e: unknown) {
+                                const msg = e instanceof Error ? e.message : "Failed to send to email";
+                                toast.error(typeof msg === "string" ? msg : "Failed to send to email");
+                              } finally {
+                                setPhoneEmailFallbackSending(false);
+                              }
+                            }}
+                            className="text-primary font-medium hover:underline disabled:opacity-50"
+                          >
+                            {phoneEmailFallbackSending ? "Sending…" : "Send code to my email instead"}
+                          </button>
+                        </p>
+                      )}
                       {import.meta.env.DEV && phoneLastSentCode && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5">
-                          Dev only (SMS may not arrive): your code is <strong>{phoneLastSentCode}</strong>
+                          Dev / trial: SMS may not arrive. Your code is <strong>{phoneLastSentCode}</strong>
                         </p>
                       )}
                       <div>
