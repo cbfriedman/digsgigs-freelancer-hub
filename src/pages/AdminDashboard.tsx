@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User, CreditCard } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User, CreditCard, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
 import { CpcDataUploader } from "@/components/CpcDataUploader";
 import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
 import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
+import LeadPipelineTab from "@/components/admin/LeadPipelineTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
@@ -365,6 +366,7 @@ const AdminDashboard = () => {
   }
 
   const menuItems = [
+    { id: "lead-pipeline", label: "Lead Pipeline", icon: Kanban },
     { id: "signup-analytics", label: "Signup Analytics", icon: TrendingUp },
     { id: "reminders", label: "Profile Reminders", icon: Mail },
     { id: "founding-diggers", label: "Founding Diggers", icon: Crown },
@@ -858,6 +860,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "cold-outreach" && (
                   <ColdOutreachTab />
+                )}
+
+                {activeTab === "lead-pipeline" && (
+                  <LeadPipelineTab />
                 )}
 
                 {activeTab === "message-violations" && (
