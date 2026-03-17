@@ -365,6 +365,7 @@ const AdminDashboard = () => {
   }
 
   const menuItems = [
+    { id: "lead-pipeline", label: "Lead Pipeline", icon: Kanban },
     { id: "signup-analytics", label: "Signup Analytics", icon: TrendingUp },
     { id: "reminders", label: "Profile Reminders", icon: Mail },
     { id: "founding-diggers", label: "Founding Diggers", icon: Crown },
