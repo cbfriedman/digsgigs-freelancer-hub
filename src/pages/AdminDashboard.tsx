@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User, CreditCard } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, ShieldCheck, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt, Trash2, User, CreditCard, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
