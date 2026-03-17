@@ -15,6 +15,7 @@ import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboar
 import { CpcDataUploader } from "@/components/CpcDataUploader";
 import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
 import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
+import LeadPipelineTab from "@/components/admin/LeadPipelineTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
