@@ -861,6 +861,10 @@ const AdminDashboard = () => {
                   <ColdOutreachTab />
                 )}
 
+                {activeTab === "lead-pipeline" && (
+                  <LeadPipelineTab />
+                )}
+
                 {activeTab === "message-violations" && (
                   <MessageModerationDashboard />
                 )}
