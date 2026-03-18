@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wrench, Briefcase, Plus, ArrowRight, User, Link2, Copy, UserPlus, FileText, Search, ShoppingBag } from "lucide-react";
+import { Wrench, Briefcase, ArrowRight, User, Link2, Copy, UserPlus, FileText, Search, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
@@ -631,6 +632,7 @@ export default function RoleDashboard() {
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
   const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
   const formatCount = (value: number | undefined) => (statsLoading ? "…" : String(value ?? 0));
+  const activeRoleLabel = activeRole === "digger" ? "Digger" : activeRole === "gigger" ? "Gigger" : null;
 
   // Get or create referral link for diggers
   useEffect(() => {
@@ -744,23 +746,77 @@ export default function RoleDashboard() {
     <PageLayout maxWidth="wide">
       <div className="space-y-6 sm:space-y-8 min-w-0 overflow-x-hidden">
         <EmailVerificationBanner />
-        
-        <header className="animate-fade-in-up">
-          <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1 break-words">
-            {nextAction.title}
-          </p>
-        </header>
 
-        {/* Single primary action (hidden when no roles — user chooses Digger/Gigger from cards below) */}
-        {nextAction.ctaLabel && nextAction.onClick && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto min-h-11 sm:min-h-0">
-              {nextAction.ctaLabel}
-              <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
-            </Button>
+        <Card className="border shadow-none animate-fade-in-up overflow-hidden">
+          <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
+                  Dashboard
+                </h1>
+                <p className="text-sm font-medium text-foreground/90 mt-1 break-words">
+                  {nextAction.title}
+                </p>
+                <p className="text-muted-foreground text-sm mt-1 break-words">
+                  {nextAction.description}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {activeRoleLabel && (
+                  <Badge variant="secondary" className="h-6 px-2.5">
+                    Active: {activeRoleLabel}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="h-6 px-2.5">
+                  Roles: {userRoles.length}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          {(nextAction.ctaLabel && nextAction.onClick) && (
+            <CardContent className="px-4 pb-4 pt-0 sm:px-6 sm:pb-5 sm:pt-0">
+              <Button onClick={nextAction.onClick} variant="default" className="w-full sm:w-auto min-h-11 sm:min-h-0">
+                {nextAction.ctaLabel}
+                <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
+              </Button>
+            </CardContent>
+          )}
+        </Card>
+
+        {(hasRoles && !statsLoading) && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {userRoles.includes("digger") && (
+              <>
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Digger leads</p>
+                    <p className="text-xl font-semibold tabular-nums">{formatCount(stats.digger?.leadsCount)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Digger contracts</p>
+                    <p className="text-xl font-semibold tabular-nums">{formatCount(stats.digger?.activeContractsCount)}</p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+            {userRoles.includes("gigger") && (
+              <>
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Posted gigs</p>
+                    <p className="text-xl font-semibold tabular-nums">{formatCount(stats.gigger?.gigsCount)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Gigger contracts</p>
+                    <p className="text-xl font-semibold tabular-nums">{formatCount(stats.gigger?.activeContractsCount)}</p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         )}
 
@@ -872,36 +928,46 @@ export default function RoleDashboard() {
                       </div>
                     );
                   })()}
-                  <div className="grid grid-cols-2 gap-2 min-w-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
-                      onClick={async () => { await openPreviewForRole("digger", "digger-leads"); }}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">Quick actions</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+                      <Button
+                        size="sm"
+                        className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
+                        onClick={async () => { await openPreviewForRole("digger", "digger-leads"); }}
+                      >
                         <span className="truncate">My Leads</span>
-                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.leadsCount)})</span>
-                      </span>
-                    </Button>
+                        <span className="tabular-nums text-primary-foreground/90">({formatCount(stats.digger?.leadsCount)})</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
+                        onClick={async () => { await openPreviewForRole("digger", "digger-browse"); }}
+                      >
+                        <span className="truncate">Browse gigs</span>
+                      </Button>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground pt-1">Manage</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
                       onClick={async () => { await openPreviewForRole("digger", "digger-bids"); }}
                     >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
-                        <span className="truncate">My Bids</span>
+                      <span className="inline-flex items-center justify-between min-w-0 w-full gap-2">
+                        <span className="truncate">My bids</span>
                         <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.bidsCount)})</span>
                       </span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
                       onClick={async () => { await openPreviewForRole("digger", "digger-awarded-gigs"); }}
                     >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                      <span className="inline-flex items-center justify-between min-w-0 w-full gap-2">
                         <span className="truncate">Awarded gigs</span>
                         <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.awardedGigsCount)})</span>
                       </span>
@@ -909,33 +975,26 @@ export default function RoleDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
                       onClick={async () => { await openPreviewForRole("digger", "digger-contracts"); }}
                     >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                      <span className="inline-flex items-center justify-between min-w-0 w-full gap-2">
                         <span className="truncate">Active contracts</span>
                         <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.digger?.activeContractsCount)})</span>
                       </span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
-                      onClick={async () => { await openPreviewForRole("digger", "digger-browse"); }}
-                    >
-                      Browse gigs
                     </Button>
                     {!hasDiggerProfile && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
+                        className="min-h-10 w-full min-w-0 overflow-hidden sm:col-span-2"
                         onClick={async () => { await openPreviewForRole("digger", "digger-profile"); }}
                       >
                         <User className="h-3.5 w-3.5 mr-1 shrink-0" />
                         <span className="truncate">Set up profile</span>
                       </Button>
                     )}
+                  </div>
                   </div>
                 </>
               ) : (
@@ -977,35 +1036,35 @@ export default function RoleDashboard() {
             <CardContent className="px-4 pb-4 pt-0 space-y-3 sm:p-5 sm:pt-0">
               {userRoles.includes('gigger') ? (
                 <>
-                  <div className="grid grid-cols-2 gap-2 min-w-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
-                      onClick={async () => { await openPreviewForRole("gigger", "gigger-gigs"); }}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
-                        <span className="truncate">My Gigs</span>
-                        <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.gigsCount)})</span>
-                      </span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
-                      onClick={async () => { await openPreviewForRole("gigger", "gigger-post"); }}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">Quick actions</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+                      <Button
+                        size="sm"
+                        className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
+                        onClick={async () => { await openPreviewForRole("gigger", "gigger-gigs"); }}
+                      >
+                        <span className="truncate">My gigs</span>
+                        <span className="tabular-nums text-primary-foreground/90">({formatCount(stats.gigger?.gigsCount)})</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
+                        onClick={async () => { await openPreviewForRole("gigger", "gigger-post"); }}
+                      >
                         <span className="truncate">Post gig</span>
-                      </span>
-                    </Button>
+                      </Button>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground pt-1">Manage</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
                       onClick={async () => { await openPreviewForRole("gigger", "gigger-awarded-gigs"); }}
                     >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                      <span className="inline-flex items-center justify-between min-w-0 w-full gap-2">
                         <span className="truncate">Awarded gigs</span>
                         <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.awardedGigsCount)})</span>
                       </span>
@@ -1013,10 +1072,10 @@ export default function RoleDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-h-10 w-full min-w-0 overflow-hidden"
+                      className="min-h-10 w-full min-w-0 overflow-hidden justify-between"
                       onClick={async () => { await openPreviewForRole("gigger", "gigger-contracts"); }}
                     >
-                      <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
+                      <span className="inline-flex items-center justify-between min-w-0 w-full gap-2">
                         <span className="truncate">Active contracts</span>
                         <span className="tabular-nums text-muted-foreground shrink-0">({formatCount(stats.gigger?.activeContractsCount)})</span>
                       </span>
@@ -1025,7 +1084,7 @@ export default function RoleDashboard() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="min-h-10 w-full min-w-0 overflow-hidden col-span-2"
+                        className="min-h-10 w-full min-w-0 overflow-hidden sm:col-span-2"
                         onClick={async () => { await openPreviewForRole("gigger", "gigger-profile"); }}
                       >
                         <span className="inline-flex items-center justify-center gap-1 min-w-0 max-w-full flex-wrap">
@@ -1033,6 +1092,7 @@ export default function RoleDashboard() {
                         </span>
                       </Button>
                     )}
+                  </div>
                   </div>
                 </>
               ) : (
