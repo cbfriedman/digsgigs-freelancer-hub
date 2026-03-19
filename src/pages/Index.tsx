@@ -3,6 +3,7 @@ import SEOHead from "@/components/SEOHead";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/components/StructuredData";
 import {
   HeroSection,
+  HeroIntroSection,
   HowItWorksSection,
   PricingPreviewSection,
   TrustSection,
@@ -26,6 +27,7 @@ const Index = () => {
       />
       
       <HeroSection />
+      <HeroIntroSection />
       <HowItWorksSection />
       <PricingPreviewSection />
       <TrustSection />
