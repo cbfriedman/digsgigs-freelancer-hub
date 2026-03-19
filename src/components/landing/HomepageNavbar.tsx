@@ -10,9 +10,9 @@ import {
   LogOut,
   ChevronDown,
   HelpCircle,
-  DollarSign
+  DollarSign,
+  Plus
 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sheet,
   SheetContent,
@@ -149,8 +149,17 @@ export const HomepageNavbar = () => {
             <HelpCircle className="mr-1.5 h-4 w-4" />
             How It Works
           </Button>
-          
-          <ThemeToggle className="shrink-0" />
+          <Button 
+            size="sm"
+            className="bg-gradient-accent text-accent-foreground shadow-sm hover:shadow-accent transition-all shrink-0"
+            onClick={() => {
+              trackButtonClick('Post a gig', 'header');
+              navigate("/post-gig");
+            }}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Post a gig
+          </Button>
           <div className="w-px h-6 bg-border mx-2" />
           
           {user ? (
@@ -181,8 +190,9 @@ export const HomepageNavbar = () => {
           ) : (
             <>
               <Button 
-                variant="ghost"
+                variant="outline"
                 size="sm"
+                className="border-accent text-accent hover:bg-accent/10 hover:text-accent"
                 onClick={() => {
                   trackButtonClick('Sign In', 'header');
                   navigateToLogin();
@@ -216,9 +226,17 @@ export const HomepageNavbar = () => {
               <SheetTitle className="font-display">Menu</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-2 mt-8">
-              <div className="flex items-center justify-between py-2 px-1 mb-2 border-b border-border">
-                <ThemeToggle />
-              </div>
+              <Button 
+                className="w-full h-12 bg-gradient-accent text-accent-foreground mb-2"
+                onClick={() => {
+                  trackButtonClick('Post a gig', 'header-mobile');
+                  navigate("/post-gig");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Post a gig
+              </Button>
               <Button 
                 variant="ghost" 
                 className="justify-start h-12" 
@@ -284,9 +302,12 @@ export const HomepageNavbar = () => {
               ) : (
                 <>
                   <Button 
-                    variant="ghost" 
-                    className="justify-start h-12" 
-                    onClick={() => navigateToLogin()}
+                    variant="outline" 
+                    className="justify-start h-12 border-accent text-accent hover:bg-accent/10 hover:text-accent" 
+                    onClick={() => {
+                      navigateToLogin();
+                      setMobileMenuOpen(false);
+                    }}
                   >
                     Sign In
                   </Button>

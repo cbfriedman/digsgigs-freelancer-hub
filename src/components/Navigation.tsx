@@ -21,7 +21,6 @@ import {
   Receipt,
   Search
 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -425,10 +424,16 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 scrolled ? "gap-1 scale-[0.95] origin-right" : "gap-2 scale-100"
               )}
             >
-              {/* When not logged in: Dark Mode in bar (no avatar dropdown) */}
+              {/* When not logged in: Post a gig in bar */}
               {!user && (
                 <>
-                  <ThemeToggle className="shrink-0" />
+                  <Button
+                    size="sm"
+                    className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                    onClick={() => navigate("/post-gig")}
+                  >
+                    Post a gig
+                  </Button>
                   <div className="h-6 w-px bg-border/50 mx-2" />
                 </>
               )}
@@ -437,10 +442,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               {!user ? (
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => navigateToLogin()}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="border-accent text-accent hover:bg-accent/10 hover:text-accent"
                   >
                     Sign In
                   </Button>
@@ -796,9 +801,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      {/* Dark Mode - prevent close on toggle */}
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent focus:outline-none">
-                        <ThemeToggle className="w-full" />
+                      <DropdownMenuItem onClick={() => navigate("/post-gig?quick=1")} className="cursor-pointer">
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        Post a gig
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {/* Role selection: make Digger vs Gigger mode unmistakable */}
@@ -1188,9 +1193,15 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
                     {/* Navigation Links */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                      <div className="flex items-center justify-between py-2 px-1 mb-2 border-b border-border/50">
-                        <ThemeToggle />
-                      </div>
+                      <Button
+                        className="w-full mb-3 bg-primary text-primary-foreground"
+                        onClick={() => {
+                          navigate("/post-gig?quick=1");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Post a gig
+                      </Button>
                       {isDiggerMode && (
                         <form
                           className="mb-3"
@@ -1584,7 +1595,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <>
                           <Button
                             variant="outline"
-                            className="w-full"
+                            className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
                             onClick={() => navigateToLogin()}
                           >
                             Sign In
